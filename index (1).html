@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vishal Navigation — Find Any Address, Pincode & Nearby Places</title>
+<meta name="description" content="Find correct address, pincode, post office and famous nearby places for any location in India." />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f2ec;--surface:#fff;--surface2:#ede9e0;
+  --border:#ddd8cc;--border2:#c4bfb2;--text:#1a1810;
+  --text2:#6a6354;--text3:#9a9386;--accent:#0f5c30;
+  --accent-l:#e6f2ec;--user-bg:#0f3820;--user-t:#c8e8d4;
+  --err-bg:#fdf0ef;--err-t:#8b2c2c;
+  --pin-bg:#fffae8;--pin-bd:#e8c040;--pin-t:#5a3e00;
+  --fix-bg:#fffae0;--fix-bd:#f0b800;--fix-t:#6b4000;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0c1510;--surface:#141e12;--surface2:#1a2818;
+  --border:#263822;--border2:#344e2c;--text:#e4eae0;
+  --text2:#84a878;--text3:#526848;--accent:#50c070;
+  --accent-l:#162018;--user-bg:#081810;--user-t:#90d8a8;
+  --err-bg:#280e0e;--err-t:#e06868;
+  --pin-bg:#201800;--pin-bd:#686018;--pin-t:#e0c060;
+  --fix-bg:#281e00;--fix-bd:#988010;--fix-t:#e0b840;
+}}
+html,body{height:100%;background:var(--bg);font-family:'Sora',sans-serif;color:var(--text);overflow:hidden}
+.page{display:grid;grid-template-rows:auto 1fr auto;height:100vh;max-width:740px;margin:0 auto;padding:0 16px}
+
+header{padding:14px 0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:38px;height:38px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.logo-text .name{font-size:17px;font-weight:600;letter-spacing:-.4px;color:var(--text)}
+.logo-text .tagline{font-size:11px;color:var(--text3);margin-top:1px}
+.hd-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--accent-l);color:var(--accent);border:1px solid var(--border);padding:4px 10px;border-radius:20px;white-space:nowrap}
+
+.chat-wrap{overflow-y:auto;padding:14px 0;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.chat-wrap::-webkit-scrollbar{width:4px}
+.chat-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.msg-wrap{display:flex;flex-direction:column;gap:3px}
+.msg-wrap.user{align-items:flex-end}
+.msg-wrap.ai{align-items:flex-start}
+.msg{max-width:90%;padding:11px 15px;font-size:13.5px;line-height:1.65;border-radius:16px}
+.msg.user{background:var(--user-bg);color:var(--user-t);border-radius:16px 4px 16px 16px}
+.msg.bot{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px 16px 16px 16px}
+.msg.error{background:var(--err-bg);color:var(--err-t);border:1px solid var(--err-t);border-radius:4px 16px 16px 16px}
+.msg-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:0 4px}
+
+.fix-banner{display:flex;align-items:center;gap:8px;background:var(--fix-bg);border:1px solid var(--fix-bd);color:var(--fix-t);border-radius:9px;padding:8px 12px;font-size:12.5px;margin-bottom:10px}
+
+.sec-lbl{font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:10px 0 5px}
+.full-addr{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;line-height:1.6;color:var(--text)}
+.meta-row{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.pill.pin{background:var(--pin-bg);border-color:var(--pin-bd);color:var(--pin-t);font-size:13px;font-weight:600}
+
+.nearby-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+@media(max-width:460px){.nearby-grid{grid-template-columns:1fr}}
+.ni{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;transition:border-color .15s}
+.ni:hover{border-color:var(--border2)}
+.ni-em{font-size:15px;flex-shrink:0;margin-top:1px}
+.ni-name{font-weight:500;color:var(--text);line-height:1.3;font-size:12px}
+.ni-type{font-size:11px;color:var(--text3);margin-top:1px}
+.vnote{margin-top:10px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+
+.typing-wrap{display:flex;align-items:center;gap:8px}
+.typing-dots{display:flex;gap:4px;padding:13px 17px;background:var(--surface);border:1px solid var(--border);border-radius:4px 16px 16px 16px}
+.typing-dots span{width:6px;height:6px;background:var(--text3);border-radius:50%;animation:bob 1.3s infinite ease-in-out}
+.typing-dots span:nth-child(2){animation-delay:.18s}
+.typing-dots span:nth-child(3){animation-delay:.36s}
+@keyframes bob{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
+
+.sugs{display:flex;gap:6px;flex-wrap:wrap;padding:6px 0 2px}
+.sug{font-size:12px;padding:5px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
+.sug:hover{background:var(--accent-l);border-color:var(--accent);color:var(--accent)}
+
+footer{padding:10px 0 16px;border-top:1px solid var(--border)}
+.inp-row{display:flex;gap:8px;align-items:center;background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:6px 6px 6px 14px;transition:border-color .2s}
+.inp-row:focus-within{border-color:var(--accent)}
+.inp-row input{flex:1;border:none;outline:none;background:transparent;font-size:14px;font-family:'Sora',sans-serif;color:var(--text)}
+.inp-row input::placeholder{color:var(--text3)}
+.send-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s}
+.send-btn:hover{opacity:.85}
+.send-btn:active{transform:scale(.94)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+.footer-note{text-align:center;font-size:10.5px;color:var(--text3);margin-top:7px;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">🧭</div>
+      <div class="logo-text">
+        <div class="name">Vishal Navigation</div>
+        <div class="tagline">Address · Pincode · Famous Nearby Places</div>
+      </div>
+    </div>
+    <div class="hd-badge">🇮🇳 All India</div>
+  </header>
+
+  <div class="chat-wrap" id="chat">
+    <div class="msg-wrap ai">
+      <div class="msg bot">
+        <strong>Namaste! 🙏</strong><br><br>
+        Type any <strong>area, colony, landmark or city</strong> in India — I'll instantly find:<br><br>
+        📮 Pincode &nbsp;·&nbsp; 🏤 Post Office<br>
+        🛕 Famous Temple &nbsp;·&nbsp; 🛍️ Famous Market<br>
+        🍬 Sweet Shop &nbsp;·&nbsp; 🏥 Hospital<br>
+        🏫 School &nbsp;·&nbsp; 🎓 College &nbsp;·&nbsp; 🚉 Station &amp; more!<br><br>
+        <span style="font-size:12px;color:var(--text3)">✏️ Spelling mistakes? No problem — auto-corrected!</span>
+      </div>
+    </div>
+    <div class="sugs" id="sugs">
+      <span class="sug" onclick="useSug(this)">Chandni Chowk, Delhi</span>
+      <span class="sug" onclick="useSug(this)">Koramangala, Bangalore</span>
+      <span class="sug" onclick="useSug(this)">Bandra West, Mumbai</span>
+      <span class="sug" onclick="useSug(this)">Sector 14, Gurugram</span>
+      <span class="sug" onclick="useSug(this)">Park Street, Kolkata</span>
+      <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="inp-row">
+      <input type="text" id="q" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune, MG Road Bangalore…" autocomplete="off" />
+      <button class="send-btn" id="btn" onclick="send()" aria-label="Search">➤</button>
+    </div>
+    <div class="footer-note">Vishal Navigation · Free · No login required</div>
+  </footer>
+
+</div>
+<script>
+const chat = document.getElementById('chat');
+const inp  = document.getElementById('q');
+const btn  = document.getElementById('btn');
+inp.addEventListener('keydown', e => { if(e.key==='Enter') send(); });
+
+function useSug(el){
+  inp.value = el.textContent;
+  const s = document.getElementById('sugs');
+  if(s) s.remove();
+  send();
+}
+
+function ts(){
+  return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function scroll(){ chat.scrollTop = chat.scrollHeight; }
+
+function addMsg(side, innerHtml){
+  const w = document.createElement('div');
+  w.className = 'msg-wrap ' + side;
+  w.innerHTML = innerHtml;
+  chat.appendChild(w); scroll();
+}
+
+function showTyping(){
+  const w = document.createElement('div');
+  w.className = 'msg-wrap ai'; w.id='typ';
+  w.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+  chat.appendChild(w); scroll();
+}
+function hideTyping(){ const t=document.getElementById('typ'); if(t)t.remove(); }
+
+const emojiMap=[
+  [/market|bazaar|bazar|mall|shopping|mandi/i,'🛍️'],
+  [/temple|mandir|masjid|mosque|church|gurudwara|dargah|shrine/i,'🛕'],
+  [/sweet|mithai|halwai|bakery|confection/i,'🍬'],
+  [/hospital|clinic|medical|nursing|health/i,'🏥'],
+  [/school|vidyalaya|primary|secondary/i,'🏫'],
+  [/college|university|institute|iit|nit|iim|polytechnic/i,'🎓'],
+  [/railway|metro|bus stand|bus terminal|isbt|station/i,'🚉'],
+  [/park|garden|maidan|botanical/i,'🌳'],
+  [/bank|atm/i,'🏦'],
+  [/restaurant|dhaba|food|hotel|biryani|chai/i,'🍽️'],
+  [/police|thana/i,'👮'],
+  [/post office|dak/i,'📮'],
+  [/petrol|pump|fuel/i,'⛽'],
+];
+function emo(type){ for(const[rx,e] of emojiMap) if(rx.test(type)) return e; return '📌'; }
+
+function buildCard(d){
+  let h='';
+  if(d.corrected){
+    h+=`<div class="fix-banner">✏️ <span>Corrected <strong>"${d.original}"</strong> → <strong>"${d.corrected}"</strong></span></div>`;
+  }
+  h+=`<div class="sec-lbl">📍 Full Address</div>`;
+  h+=`<div class="full-addr">${d.full_address}</div>`;
+  h+=`<div class="meta-row">`;
+  h+=`<span class="pill pin">📮 ${d.pincode}</span>`;
+  h+=`<span class="pill">🏤 ${d.post_office}</span>`;
+  h+=`<span class="pill">🗺️ ${d.district}, ${d.state}</span>`;
+  h+=`</div>`;
+  if(d.nearby&&d.nearby.length){
+    h+=`<div class="sec-lbl">🏙️ Famous Nearby Places</div>`;
+    h+=`<div class="nearby-grid">`;
+    d.nearby.forEach(p=>{
+      h+=`<div class="ni"><span class="ni-em">${emo(p.type)}</span><div><div class="ni-name">${p.name}</div><div class="ni-type">${p.type}</div></div></div>`;
+    });
+    h+=`</div>`;
+  }
+  if(d.verify_note) h+=`<div class="vnote">ℹ️ ${d.verify_note}</div>`;
+  return h;
+}
+
+const SYS=`You are a smart India address lookup tool. You ONLY answer queries about Indian addresses and locations. Refuse anything else politely.
+
+RULES:
+1. SPELL-CHECK: Detect and correct misspelled place names. If corrected, set original/corrected fields.
+2. WEB SEARCH: Use web_search to look up "[location name] pincode site:indiapost.gov.in OR pincode" to get the accurate pincode. MANDATORY.
+3. Return ONLY raw JSON — no markdown, no backticks, no extra words.
+
+JSON schema:
+{
+  "is_address_query": true,
+  "original": "original input if there was a typo, else null",
+  "corrected": "corrected place name if typo found, else null",
+  "full_address": "full proper address with area, city, district, state, India and pincode",
+  "pincode": "6-digit pincode verified via web search",
+  "post_office": "nearest post office name",
+  "district": "district name",
+  "state": "state name",
+  "nearby": [
+    {"name":"Famous local market name","type":"Famous Market"},
+    {"name":"Famous temple/mosque/church name","type":"Famous Temple / Mosque"},
+    {"name":"Famous local sweet shop","type":"Sweet Shop / Mithai"},
+    {"name":"Major hospital name","type":"Hospital"},
+    {"name":"Known school name","type":"School"},
+    {"name":"Known college/university","type":"College / University"},
+    {"name":"Nearest railway/metro/bus station","type":"Railway / Metro Station"},
+    {"name":"Nearby park or garden","type":"Park / Garden"},
+    {"name":"Major bank or ATM","type":"Bank / ATM"},
+    {"name":"Famous local dhaba or restaurant","type":"Famous Restaurant / Dhaba"},
+    {"name":"Nearest police station","type":"Police Station"},
+    {"name":"Nearest post office","type":"Post Office"}
+  ],
+  "verify_note": "Pincode verified via web search. For official check visit indiapost.gov.in"
+}
+
+If NOT an India address query:
+{"is_address_query":false,"message":"This tool only helps with India address lookups. Please enter any area, colony or landmark in India."}`;
+
+async function send(){
+  const q=inp.value.trim();
+  if(!q||btn.disabled) return;
+  inp.value=''; btn.disabled=true;
+  const s=document.getElementById('sugs'); if(s) s.remove();
+  addMsg('user',`<div class="msg user">${q.replace(/</g,'&lt;')}</div><span class="msg-time">${ts()}</span>`);
+  showTyping();
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1200,
+        system:SYS,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:q}]
+      })
+    });
+    const data=await res.json();
+    hideTyping();
+
+    if(data.error){
+      addMsg('ai',`<div class="msg error">⚠️ ${data.error.message||'Something went wrong. Please try again.'}</div>`);
+    } else if(data.content){
+      const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+      const clean=text.replace(/```json|```/g,'').trim();
+      try{
+        const p=JSON.parse(clean);
+        if(!p.is_address_query){
+          addMsg('ai',`<div class="msg bot" style="color:var(--text2)">🚫 ${p.message}</div><span class="msg-time">${ts()}</span>`);
+        } else {
+          addMsg('ai',`<div class="msg bot">${buildCard(p)}</div><span class="msg-time">${ts()}</span>`);
+        }
+      } catch {
+        const fb=text.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\b(\d{6})\b/g,'<span style="background:var(--pin-bg);border:1px solid var(--pin-bd);color:var(--pin-t);padding:1px 7px;border-radius:5px;font-weight:600;font-family:JetBrains Mono,monospace">📮 $1</span>');
+        addMsg('ai',`<div class="msg bot">${fb}</div><span class="msg-time">${ts()}</span>`);
+      }
+    }
+  } catch(e){
+    hideTyping();
+    addMsg('ai',`<div class="msg error">⚠️ Network error. Check your connection and try again.</div>`);
+  }
+  btn.disabled=false; inp.focus();
+}
+</script>
+</body>
+</html>
