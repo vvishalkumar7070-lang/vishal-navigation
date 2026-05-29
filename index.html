@@ -28,18 +28,18 @@
 }}
 html,body{height:100%;background:var(--bg);font-family:'Sora',sans-serif;color:var(--text);overflow:hidden}
 .page{display:grid;grid-template-rows:auto 1fr auto;height:100vh;max-width:740px;margin:0 auto;padding:0 16px}
-
+ 
 header{padding:14px 0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-mark{width:38px;height:38px;background:var(--accent);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .logo-text .name{font-size:17px;font-weight:600;letter-spacing:-.4px;color:var(--text)}
 .logo-text .tagline{font-size:11px;color:var(--text3);margin-top:1px}
 .hd-badge{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--accent-l);color:var(--accent);border:1px solid var(--border);padding:4px 10px;border-radius:20px;white-space:nowrap}
-
+ 
 .chat-wrap{overflow-y:auto;padding:14px 0;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .chat-wrap::-webkit-scrollbar{width:4px}
 .chat-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-
+ 
 .msg-wrap{display:flex;flex-direction:column;gap:3px}
 .msg-wrap.user{align-items:flex-end}
 .msg-wrap.ai{align-items:flex-start}
@@ -48,15 +48,15 @@ header{padding:14px 0 12px;display:flex;align-items:center;justify-content:space
 .msg.bot{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px 16px 16px 16px}
 .msg.error{background:var(--err-bg);color:var(--err-t);border:1px solid var(--err-t);border-radius:4px 16px 16px 16px}
 .msg-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:0 4px}
-
+ 
 .fix-banner{display:flex;align-items:center;gap:8px;background:var(--fix-bg);border:1px solid var(--fix-bd);color:var(--fix-t);border-radius:9px;padding:8px 12px;font-size:12.5px;margin-bottom:10px}
-
+ 
 .sec-lbl{font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:10px 0 5px}
 .full-addr{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;line-height:1.6;color:var(--text)}
 .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 2px}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .pill.pin{background:var(--pin-bg);border-color:var(--pin-bd);color:var(--pin-t);font-size:13px;font-weight:600}
-
+ 
 .nearby-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
 @media(max-width:460px){.nearby-grid{grid-template-columns:1fr}}
 .ni{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;transition:border-color .15s}
@@ -65,18 +65,18 @@ header{padding:14px 0 12px;display:flex;align-items:center;justify-content:space
 .ni-name{font-weight:500;color:var(--text);line-height:1.3;font-size:12px}
 .ni-type{font-size:11px;color:var(--text3);margin-top:1px}
 .vnote{margin-top:10px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
-
+ 
 .typing-wrap{display:flex;align-items:center;gap:8px}
 .typing-dots{display:flex;gap:4px;padding:13px 17px;background:var(--surface);border:1px solid var(--border);border-radius:4px 16px 16px 16px}
 .typing-dots span{width:6px;height:6px;background:var(--text3);border-radius:50%;animation:bob 1.3s infinite ease-in-out}
 .typing-dots span:nth-child(2){animation-delay:.18s}
 .typing-dots span:nth-child(3){animation-delay:.36s}
 @keyframes bob{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
-
+ 
 .sugs{display:flex;gap:6px;flex-wrap:wrap;padding:6px 0 2px}
 .sug{font-size:12px;padding:5px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--surface);color:var(--text2);cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif}
 .sug:hover{background:var(--accent-l);border-color:var(--accent);color:var(--accent)}
-
+ 
 footer{padding:10px 0 16px;border-top:1px solid var(--border)}
 .inp-row{display:flex;gap:8px;align-items:center;background:var(--surface);border:1.5px solid var(--border2);border-radius:14px;padding:6px 6px 6px 14px;transition:border-color .2s}
 .inp-row:focus-within{border-color:var(--accent)}
@@ -91,7 +91,7 @@ footer{padding:10px 0 16px;border-top:1px solid var(--border)}
 </head>
 <body>
 <div class="page">
-
+ 
   <header>
     <div class="logo">
       <div class="logo-mark">🧭</div>
@@ -102,7 +102,7 @@ footer{padding:10px 0 16px;border-top:1px solid var(--border)}
     </div>
     <div class="hd-badge">🇮🇳 All India</div>
   </header>
-
+ 
   <div class="chat-wrap" id="chat">
     <div class="msg-wrap ai">
       <div class="msg bot">
@@ -124,7 +124,7 @@ footer{padding:10px 0 16px;border-top:1px solid var(--border)}
       <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
     </div>
   </div>
-
+ 
   <footer>
     <div class="inp-row">
       <input type="text" id="q" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune, MG Road Bangalore…" autocomplete="off" />
@@ -132,33 +132,33 @@ footer{padding:10px 0 16px;border-top:1px solid var(--border)}
     </div>
     <div class="footer-note">Vishal Navigation · Free · No login required</div>
   </footer>
-
+ 
 </div>
 <script>
 const chat = document.getElementById('chat');
 const inp  = document.getElementById('q');
 const btn  = document.getElementById('btn');
 inp.addEventListener('keydown', e => { if(e.key==='Enter') send(); });
-
+ 
 function useSug(el){
   inp.value = el.textContent;
   const s = document.getElementById('sugs');
   if(s) s.remove();
   send();
 }
-
+ 
 function ts(){
   return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
 }
 function scroll(){ chat.scrollTop = chat.scrollHeight; }
-
+ 
 function addMsg(side, innerHtml){
   const w = document.createElement('div');
   w.className = 'msg-wrap ' + side;
   w.innerHTML = innerHtml;
   chat.appendChild(w); scroll();
 }
-
+ 
 function showTyping(){
   const w = document.createElement('div');
   w.className = 'msg-wrap ai'; w.id='typ';
@@ -166,7 +166,7 @@ function showTyping(){
   chat.appendChild(w); scroll();
 }
 function hideTyping(){ const t=document.getElementById('typ'); if(t)t.remove(); }
-
+ 
 const emojiMap=[
   [/market|bazaar|bazar|mall|shopping|mandi/i,'🛍️'],
   [/temple|mandir|masjid|mosque|church|gurudwara|dargah|shrine/i,'🛕'],
@@ -183,7 +183,7 @@ const emojiMap=[
   [/petrol|pump|fuel/i,'⛽'],
 ];
 function emo(type){ for(const[rx,e] of emojiMap) if(rx.test(type)) return e; return '📌'; }
-
+ 
 function buildCard(d){
   let h='';
   if(d.corrected){
@@ -207,14 +207,14 @@ function buildCard(d){
   if(d.verify_note) h+=`<div class="vnote">ℹ️ ${d.verify_note}</div>`;
   return h;
 }
-
+ 
 const SYS=`You are a smart India address lookup tool. You ONLY answer queries about Indian addresses and locations. Refuse anything else politely.
-
+ 
 RULES:
 1. SPELL-CHECK: Detect and correct misspelled place names. If corrected, set original/corrected fields.
 2. WEB SEARCH: Use web_search to look up "[location name] pincode site:indiapost.gov.in OR pincode" to get the accurate pincode. MANDATORY.
 3. Return ONLY raw JSON — no markdown, no backticks, no extra words.
-
+ 
 JSON schema:
 {
   "is_address_query": true,
@@ -241,10 +241,10 @@ JSON schema:
   ],
   "verify_note": "Pincode verified via web search. For official check visit indiapost.gov.in"
 }
-
+ 
 If NOT an India address query:
 {"is_address_query":false,"message":"This tool only helps with India address lookups. Please enter any area, colony or landmark in India."}`;
-
+ 
 async function send(){
   const q=inp.value.trim();
   if(!q||btn.disabled) return;
@@ -252,26 +252,24 @@ async function send(){
   const s=document.getElementById('sugs'); if(s) s.remove();
   addMsg('user',`<div class="msg user">${q.replace(/</g,'&lt;')}</div><span class="msg-time">${ts()}</span>`);
   showTyping();
-
+ 
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const GEMINI_KEY='AIzaSyAQ.Ab8RN6Jmy1epGnrmjAPdYlVcnXFbtW1R81Bq-QY8t-geGxVs5g';
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1200,
-        system:SYS,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:[{role:'user',content:q}]
+        contents:[{parts:[{text: SYS + '\n\nUser query: ' + q}]}],
+        generationConfig:{temperature:0.2,maxOutputTokens:1200}
       })
     });
     const data=await res.json();
     hideTyping();
-
+ 
     if(data.error){
       addMsg('ai',`<div class="msg error">⚠️ ${data.error.message||'Something went wrong. Please try again.'}</div>`);
-    } else if(data.content){
-      const text=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    } else {
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
       const clean=text.replace(/```json|```/g,'').trim();
       try{
         const p=JSON.parse(clean);
