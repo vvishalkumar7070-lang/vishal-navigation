@@ -257,6 +257,24 @@ async function send(){
   showTyping();
 
   try{
+    // Step 1: Get real verified pincode from free India Post API
+    let verifiedPincode='', verifiedPO='', verifiedDistrict='', verifiedState='';
+    try{
+      const pinRes=await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(q)}`);
+      const pinData=await pinRes.json();
+      if(pinData[0]&&pinData[0].Status==='Success'&&pinData[0].PostOffice.length){
+        verifiedPincode=pinData[0].PostOffice[0].Pincode;
+        verifiedPO=pinData[0].PostOffice[0].Name;
+        verifiedDistrict=pinData[0].PostOffice[0].District;
+        verifiedState=pinData[0].PostOffice[0].State;
+      }
+    } catch(pe){ console.log('Pincode API fallback to AI'); }
+
+    // Step 2: Send verified data to Groq AI
+    const userMsg = verifiedPincode
+      ? `Location: ${q}. VERIFIED DATA (use exactly, do NOT change): Pincode: ${verifiedPincode}, Post Office: ${verifiedPO}, District: ${verifiedDistrict}, State: ${verifiedState}.`
+      : q;
+
     const GROQ_KEY='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';
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -265,7 +283,7 @@ async function send(){
         model:'llama-3.3-70b-versatile',
         max_tokens:1200,
         temperature:0.2,
-        messages:[{role:'system',content:SYS},{role:'user',content:q}]
+        messages:[{role:'system',content:SYS},{role:'user',content:userMsg}]
       })
     });
     const data=await res.json();
