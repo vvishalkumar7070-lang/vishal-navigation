@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vishal Navigation — Company Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#06101a;--surface:#0b1828;--card:#0f1e2e;--border:#1a2d42;
+  --blue:#42a5f5;--blue2:#1565c0;--green:#00e676;--amber:#ffa726;--red:#ef5350;
+  --text:#ddeeff;--muted:#4a6a88;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#0a1e38 0%,var(--bg) 70%);}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 80px rgba(66,165,245,.08);}
+.login-logo{font-family:var(--mono);font-size:13px;color:var(--blue);letter-spacing:3px;margin-bottom:8px;}
+.login-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:32px;}
+.inp{width:100%;background:#07111d;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 16px;font-size:14px;font-family:var(--font);margin-bottom:12px;outline:none;transition:.2s;}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(66,165,245,.1);}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:14px;cursor:pointer;font-family:var(--font);transition:.2s;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(66,165,245,.3);}
+.err{color:var(--red);font-size:12px;margin-top:8px;}
+#dashboard{display:none;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-logo{font-family:var(--mono);font-size:12px;color:var(--blue);letter-spacing:2px;}
+.badge-co{background:rgba(66,165,245,.15);color:var(--blue);border:1px solid rgba(66,165,245,.3);border-radius:6px;padding:2px 8px;font-size:11px;font-family:var(--mono);}
+.btn-sm{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--font);}
+.main{padding:28px;max-width:1100px;margin:0 auto;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.stat-val{font-size:28px;font-weight:700;font-family:var(--mono);}
+.stat-val.blue{color:var(--blue);}
+.stat-val.green{color:var(--green);}
+.stat-val.amber{color:var(--amber);}
+.section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:24px;overflow:hidden;}
+.section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.section-title{font-size:14px;font-weight:600;}
+.table{width:100%;border-collapse:collapse;}
+.table th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 12px;border-bottom:1px solid var(--border);}
+.table td{padding:12px;font-size:13px;border-bottom:1px solid rgba(26,45,66,.5);}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:rgba(255,255,255,.02);}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;font-family:var(--mono);}
+.pill-green{background:rgba(0,230,118,.15);color:var(--green);}
+.pill-blue{background:rgba(66,165,245,.15);color:var(--blue);}
+.form-inp{background:#07111d;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:13px;font-family:var(--font);outline:none;}
+.form-inp:focus{border-color:var(--blue);}
+.btn-export{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:8px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:var(--font);}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--blue);color:var(--blue);border-radius:10px;padding:12px 20px;font-size:13px;z-index:300;transform:translateY(80px);opacity:0;transition:.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">▸ VISHAL NAVIGATION</div>
+    <div class="login-title">Company Portal</div>
+    <div class="login-sub">Login with your company credentials</div>
+    <input class="inp" id="coUser" type="text" placeholder="Company Login ID"/>
+    <input class="inp" id="coPass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-primary" onclick="doLogin()">Login</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="dashboard">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span class="topbar-logo">VISHAL NAV</span>
+      <span id="coNameDisplay" style="font-size:15px;font-weight:600;"></span>
+      <span class="badge-co">COMPANY</span>
+    </div>
+    <button class="btn-sm" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="main">
+    <div style="margin-bottom:20px;">
+      <div style="font-size:20px;font-weight:700;" id="welcomeMsg">Welcome</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Your company dashboard</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Agents</div>
+        <div class="stat-val blue" id="s-agents">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Addresses Captured</div>
+        <div class="stat-val green" id="s-addresses">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Today</div>
+        <div class="stat-val amber" id="s-today">0</div>
+      </div>
+    </div>
+
+    <!-- Agents -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">👤 Your Agents</span>
+      </div>
+      <div style="padding:0;">
+        <table class="table">
+          <thead><tr><th>Agent Name</th><th>Agent ID</th><th>Addresses Captured</th><th>Status</th></tr></thead>
+          <tbody id="agentsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Addresses -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">📍 Captured Addresses</span>
+        <div style="display:flex;gap:8px;">
+          <input class="form-inp" id="searchAddr" placeholder="Search..." oninput="renderAddresses()" style="width:180px;padding:7px 12px;"/>
+          <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
+        </div>
+      </div>
+      <div style="padding:0;">
+        <table class="table">
+          <thead><tr><th>Agent</th><th>Address</th><th>Pincode</th><th>District</th><th>State</th><th>Time</th></tr></thead>
+          <tbody id="addrTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA_KEY='vn_data';
+let currentCompany=null;
+
+function getData(){
+  try{return JSON.parse(localStorage.getItem(DATA_KEY))||{companies:[],agents:[],addresses:[]};}
+  catch(e){return {companies:[],agents:[],addresses:[]};}
+}
+
+function doLogin(){
+  const lid=document.getElementById('coUser').value.trim();
+  const pass=document.getElementById('coPass').value;
+  const d=getData();
+  const co=d.companies.find(c=>c.loginId===lid && c.password===pass);
+  if(co){
+    currentCompany=co;
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    document.getElementById('coNameDisplay').textContent=co.name;
+    document.getElementById('welcomeMsg').textContent='Welcome, '+co.name;
+    renderAll();
+  } else {
+    document.getElementById('loginErr').textContent='Invalid credentials.';
+  }
+}
+
+function logout(){
+  currentCompany=null;
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('coUser').value='';document.getElementById('coPass').value='';
+}
+
+function renderAll(){
+  const d=getData();
+  const myAgents=d.agents.filter(a=>a.companyId===currentCompany.id);
+  const myAddresses=d.addresses.filter(a=>a.companyId===currentCompany.id);
+  const today=new Date().toDateString();
+  const todayActive=new Set(myAddresses.filter(a=>new Date(a.time).toDateString()===today).map(a=>a.agentId)).size;
+
+  document.getElementById('s-agents').textContent=myAgents.length;
+  document.getElementById('s-addresses').textContent=myAddresses.length;
+  document.getElementById('s-today').textContent=todayActive;
+
+  // Agents table
+  const at=document.getElementById('agentsTable');
+  at.innerHTML='';
+  myAgents.forEach(ag=>{
+    const cnt=myAddresses.filter(a=>a.agentId===ag.id).length;
+    at.innerHTML+=`<tr>
+      <td><strong>${ag.name}</strong></td>
+      <td><code style="color:var(--green);font-size:12px;">${ag.agentId}</code></td>
+      <td>${cnt}</td>
+      <td><span class="pill pill-green">Active</span></td>
+    </tr>`;
+  });
+  if(!myAgents.length) at.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No agents assigned yet</td></tr>';
+
+  renderAddresses();
+}
+
+function renderAddresses(){
+  if(!currentCompany) return;
+  const d=getData();
+  const q=(document.getElementById('searchAddr').value||'').toLowerCase();
+  const myAgents=d.agents.filter(a=>a.companyId===currentCompany.id);
+  let addrs=d.addresses.filter(a=>a.companyId===currentCompany.id).filter(a=>
+    !q || (a.address||'').toLowerCase().includes(q) || (a.pincode||'').includes(q)
+  ).reverse();
+
+  const tb=document.getElementById('addrTable');
+  tb.innerHTML='';
+  addrs.forEach(a=>{
+    const ag=myAgents.find(x=>x.id===a.agentId);
+    tb.innerHTML+=`<tr>
+      <td>${ag?ag.name:a.agentId}</td>
+      <td>${a.address}</td>
+      <td><span class="pill pill-blue">${a.pincode||'-'}</span></td>
+      <td style="color:var(--muted);">${a.district||'-'}</td>
+      <td style="color:var(--muted);">${a.state||'-'}</td>
+      <td style="color:var(--muted);font-size:11px;">${new Date(a.time).toLocaleString('en-IN')}</td>
+    </tr>`;
+  });
+  if(!addrs.length) tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No addresses found</td></tr>';
+}
+
+function exportCSV(){
+  const d=getData();
+  const myAgents=d.agents.filter(a=>a.companyId===currentCompany.id);
+  const addrs=d.addresses.filter(a=>a.companyId===currentCompany.id);
+  let csv='Agent,Address,Pincode,District,State,Time\n';
+  addrs.forEach(a=>{
+    const ag=myAgents.find(x=>x.id===a.agentId);
+    csv+=`"${ag?ag.name:a.agentId}","${a.address}","${a.pincode||''}","${a.district||''}","${a.state||''}","${new Date(a.time).toLocaleString('en-IN')}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const lnk=document.createElement('a');lnk.href=url;lnk.download=currentCompany.name+'_addresses.csv';lnk.click();
+}
+</script>
+</body>
+</html>
