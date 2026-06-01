@@ -292,6 +292,22 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
         <button class="send-btn" id="btn" onclick="send()" aria-label="Search">➤</button>
       </div>
       <div class="footer-note">Vishal Navigation · Free · 🎤 Voice + 🤖 Agent</div>
+
+<!-- Floating Agent Button -->
+<div style="position:fixed;bottom:90px;right:20px;z-index:50">
+  <button onclick="window.location.href='agent.html'" 
+    style="background:linear-gradient(135deg,#0f3820,#0f5c30);color:#c8e8d4;border:none;
+           border-radius:50px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;
+           font-family:'Sora',sans-serif;box-shadow:0 4px 20px rgba(15,92,48,.4);
+           display:flex;align-items:center;gap:8px;transition:all .2s;
+           border:1px solid rgba(80,192,112,.3)"
+    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(15,92,48,.5)'"
+    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(15,92,48,.4)'">
+    <span style="font-size:16px">🎙️</span>
+    <span>Agent Login</span>
+    <span style="background:rgba(80,192,112,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-family:'JetBrains Mono',monospace">PRO</span>
+  </button>
+</div>
     </footer>
   </div><!-- end ls-main -->
 
@@ -648,7 +664,7 @@ function toggleAgent(){
 
 async function agentFollowUps(location, district, state){
   if(!agentMode) return null;
-  const GROQ_KEY='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';
+  const GROQ_KEY='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';
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
@@ -796,7 +812,7 @@ async function send(){
       ? `Location: ${resolvedQ}.${geoHint} VERIFIED PINCODE DATA from India Post database (use exactly, do NOT guess or change): Pincode: ${verifiedPincode}, Post Office: ${verifiedPO}, District: ${verifiedDistrict}, State: ${verifiedState}.${nearbyHint} Show micro level nearby places within 200 meters only. If this is a remote, mountain or Northeast India location, still provide best available address details.`
       : `Location: ${resolvedQ}.${geoHint}${nearbyHint} Show micro level nearby places within 200 meters only. If this is a remote, mountain or Northeast India location, still provide best available address details.`;
 
-    const GROQ_KEY='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';
+    const GROQ_KEY='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';
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
