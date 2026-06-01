@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Vishal Navigation — Agent Mode</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#04090f;--surface:#080f18;--card:#0c1520;--border:#162030;
+  --green:#00e676;--green2:#00c853;--amber:#ffa726;--red:#ef5350;--blue:#42a5f5;
+  --text:#ddeeff;--muted:#3d5a73;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+
+/* ── LANDSCAPE FORCE ──────────────────────── */
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+
+/* ── LOGIN ────────────────────────────────── */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#071520 0%,var(--bg) 70%);}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:360px;text-align:center;box-shadow:0 24px 80px rgba(0,230,118,.07);}
+.login-logo{font-family:var(--mono);font-size:12px;color:var(--green);letter-spacing:3px;margin-bottom:6px;}
+.login-title{font-size:20px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:28px;}
+.inp{width:100%;background:#060d17;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:11px 15px;font-size:13px;font-family:var(--font);margin-bottom:10px;outline:none;transition:.2s;}
+.inp:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,.1);}
+.btn-login{width:100%;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;font-weight:700;border:none;border-radius:10px;padding:12px;font-size:14px;cursor:pointer;font-family:var(--font);transition:.2s;}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,230,118,.3);}
+.err{color:var(--red);font-size:12px;margin-top:6px;}
+
+/* ── AGENT DASHBOARD ──────────────────────── */
+#agentDash{display:none;height:100vh;flex-direction:column;}
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tl{display:flex;align-items:center;gap:10px;}
+.tlogo{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:2px;}
+.agent-name{font-size:13px;font-weight:600;}
+.tr-bar{display:flex;align-items:center;gap:8px;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,230,118,.4);}50%{box-shadow:0 0 0 6px rgba(0,230,118,0);}}
+.live-label{font-size:11px;color:var(--green);font-family:var(--mono);}
+.addr-count{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:6px;padding:3px 10px;font-size:11px;font-family:var(--mono);}
+.btn-sm{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:var(--font);}
+
+/* ── SPLIT LAYOUT ─────────────────────────── */
+.split{display:flex;flex:1;overflow:hidden;}
+/* LEFT PANEL */
+.left-panel{width:58%;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px;gap:16px;overflow-y:auto;}
+/* RIGHT PANEL */
+.right-panel{width:42%;display:flex;flex-direction:column;overflow:hidden;}
+.right-top{flex:1;padding:16px;overflow-y:auto;}
+.right-bottom{border-top:1px solid var(--border);padding:14px;flex-shrink:0;}
+
+/* ── LISTEN BUTTON ────────────────────────── */
+.listen-zone{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.listen-btn{width:120px;height:120px;border-radius:50%;border:none;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-family:var(--font);font-weight:700;font-size:13px;transition:.3s;color:#000;background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 0 40px rgba(0,230,118,.2);}
+.listen-btn.listening{background:linear-gradient(135deg,var(--red),#c62828);color:#fff;box-shadow:0 0 40px rgba(239,83,80,.4);animation:listenPulse 1s infinite;}
+.listen-btn.processing{background:linear-gradient(135deg,var(--amber),#e65100);color:#000;box-shadow:0 0 40px rgba(255,167,38,.3);}
+@keyframes listenPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.listen-icon{font-size:32px;}
+.listen-sub{font-size:10px;opacity:.8;}
+
+/* TRIGGER WORDS */
+.trigger-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.chip{background:rgba(66,165,245,.1);color:var(--blue);border:1px solid rgba(66,165,245,.2);border-radius:20px;padding:3px 10px;font-size:10px;font-family:var(--mono);}
+
+/* AUDIO WAVE */
+.wave-container{height:48px;display:flex;align-items:center;justify-content:center;gap:3px;}
+.wave-bar{width:4px;border-radius:2px;background:var(--green);opacity:.3;transition:.1s;animation:none;}
+.wave-bar.active{opacity:1;animation:waveAnim .8s ease-in-out infinite alternate;}
+.wave-bar:nth-child(1){animation-delay:0s; height:12px;}
+.wave-bar:nth-child(2){animation-delay:.1s; height:20px;}
+.wave-bar:nth-child(3){animation-delay:.2s; height:32px;}
+.wave-bar:nth-child(4){animation-delay:.3s; height:40px;}
+.wave-bar:nth-child(5){animation-delay:.4s; height:48px;}
+.wave-bar:nth-child(6){animation-delay:.3s; height:40px;}
+.wave-bar:nth-child(7){animation-delay:.2s; height:32px;}
+.wave-bar:nth-child(8){animation-delay:.1s; height:20px;}
+.wave-bar:nth-child(9){animation-delay:0s; height:12px;}
+@keyframes waveAnim{0%{transform:scaleY(.5);}100%{transform:scaleY(1.4);}}
+
+/* TRANSCRIPT BOX */
+.transcript-box{background:#060d17;border:1px solid var(--border);border-radius:12px;padding:14px;min-height:60px;font-size:13px;color:var(--muted);font-family:var(--mono);}
+.transcript-box.active{border-color:var(--green);color:var(--text);}
+
+/* RESULT CARD */
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;border-left:3px solid var(--green);animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.result-card.amber{border-left-color:var(--amber);}
+.result-card.red{border-left-color:var(--red);}
+.pincode-badge{display:inline-block;background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:8px;padding:4px 14px;font-size:20px;font-weight:700;font-family:var(--mono);margin-bottom:8px;}
+.full-addr{font-size:14px;color:var(--text);margin-bottom:10px;line-height:1.5;}
+.addr-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.meta-tag{background:rgba(255,255,255,.05);border-radius:6px;padding:3px 10px;font-size:11px;color:var(--muted);}
+
+/* CONFIDENCE BAR */
+.conf-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.conf-label{font-size:11px;color:var(--muted);min-width:80px;}
+.conf-track{flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;}
+.conf-fill{height:100%;border-radius:3px;transition:.5s;}
+.conf-fill.high{background:var(--green);}
+.conf-fill.med{background:var(--amber);}
+.conf-fill.low{background:var(--red);}
+.conf-pct{font-size:12px;font-family:var(--mono);min-width:36px;text-align:right;}
+
+/* ACTION BUTTONS */
+.action-row{display:flex;gap:8px;}
+.btn-confirm{flex:1;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;border:none;border-radius:9px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.btn-retry{background:rgba(66,165,245,.15);color:var(--blue);border:1px solid rgba(66,165,245,.3);border-radius:9px;padding:10px 14px;font-size:12px;cursor:pointer;font-family:var(--font);}
+.btn-edit-addr{background:rgba(255,167,38,.15);color:var(--amber);border:1px solid rgba(255,167,38,.3);border-radius:9px;padding:10px 14px;font-size:12px;cursor:pointer;font-family:var(--font);}
+
+/* EDIT BOX */
+.edit-area{display:none;margin-top:10px;}
+.edit-inp{width:100%;background:#060d17;border:1px solid var(--amber);color:var(--text);border-radius:8px;padding:10px;font-size:13px;font-family:var(--font);outline:none;margin-bottom:8px;}
+.btn-search-manual{width:100%;background:linear-gradient(135deg,var(--amber),#e65100);color:#000;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);}
+
+/* MANUAL SEARCH */
+.manual-section{margin-top:12px;}
+.manual-label{font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;}
+.manual-row{display:flex;gap:8px;}
+.manual-inp{flex:1;background:#060d17;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;transition:.2s;}
+.manual-inp:focus{border-color:var(--blue);}
+.btn-manual-go{background:var(--blue);color:#000;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;}
+
+/* HISTORY LOG */
+.history-title{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.history-list{display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 200px);overflow-y:auto;}
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.hist-addr{flex:1;color:var(--text);line-height:1.4;}
+.hist-pin{color:var(--green);font-family:var(--mono);font-size:11px;white-space:nowrap;}
+.hist-time{color:var(--muted);font-size:10px;white-space:nowrap;}
+.btn-copy{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;}
+.btn-copy:hover{color:var(--green);border-color:var(--green);}
+.empty-hist{font-size:12px;color:var(--muted);text-align:center;padding:20px 0;}
+.btn-export-log{width:100%;background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--font);}
+
+/* DUPLICATE WARNING */
+.dup-warning{background:rgba(255,167,38,.1);border:1px solid rgba(255,167,38,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--amber);margin-bottom:8px;display:none;}
+
+/* STATUS BAR */
+.status-bar{background:var(--surface);border-top:1px solid var(--border);padding:6px 20px;display:flex;align-items:center;gap:16px;font-size:11px;color:var(--muted);flex-shrink:0;}
+.status-dot{width:7px;height:7px;border-radius:50%;}
+.status-dot.green{background:var(--green);}
+.status-dot.amber{background:var(--amber);}
+
+/* TOAST */
+.toast{position:fixed;bottom:60px;right:20px;background:var(--card);border:1px solid var(--green);color:var(--green);border-radius:10px;padding:10px 18px;font-size:12px;z-index:300;transform:translateY(60px);opacity:0;transition:.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* QUALITY INDICATOR */
+.quality-bar{display:flex;gap:4px;align-items:center;}
+.q-block{width:10px;height:14px;border-radius:2px;}
+
+/* LANDSCAPE ON MOBILE */
+@media (max-width:768px){
+  .split{flex-direction:column;}
+  .left-panel,.right-panel{width:100%;}
+  .left-panel{height:55vh;}
+  .right-panel{height:45vh;}
+}
+@media (orientation:portrait) and (max-width:768px){
+  /* Encourage landscape */
+  .rotate-hint{display:flex !important;}
+}
+.rotate-hint{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-size:16px;color:var(--text);}
+.rotate-icon{font-size:48px;animation:rotateHint 2s infinite;}
+@keyframes rotateHint{0%,100%{transform:rotate(0);}50%{transform:rotate(90deg);}}
+</style>
+</head>
+<body>
+
+<!-- ROTATE HINT for portrait mobile -->
+<div class="rotate-hint">
+  <div class="rotate-icon">📱</div>
+  <div>Rotate to landscape for best experience</div>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">▸ VISHAL NAVIGATION</div>
+    <div class="login-title">Agent Mode</div>
+    <div class="login-sub">Login with your agent credentials</div>
+    <input class="inp" id="agId" placeholder="Agent ID (e.g. AGT001)"/>
+    <input class="inp" id="agPass" type="password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-login" onclick="doLogin()">Login & Start</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- AGENT DASHBOARD -->
+<div id="agentDash">
+  <div class="topbar">
+    <div class="tl">
+      <span class="tlogo">VISHAL NAV</span>
+      <span class="agent-name" id="agentNameDisplay">Agent</span>
+      <span id="companyBadge" style="font-size:11px;color:var(--muted);"></span>
+    </div>
+    <div class="tr-bar">
+      <div class="live-dot"></div>
+      <span class="live-label">LIVE</span>
+      <span class="addr-count" id="addrCounter">0 captured</span>
+      <button class="btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="split">
+    <!-- LEFT: Voice Capture -->
+    <div class="left-panel">
+
+      <!-- Listen Button -->
+      <div class="listen-zone">
+        <button class="listen-btn" id="listenBtn" onclick="toggleListen()">
+          <span class="listen-icon" id="listenIcon">🎙️</span>
+          <span id="listenLabel">LISTEN</span>
+          <span class="listen-sub" id="listenSub">Click to start</span>
+        </button>
+        <div style="font-size:12px;color:var(--muted);text-align:center;max-width:240px;">
+          Auto-activates when it hears: address, ghar, deliver, pincode, rehta, colony, mohalla...
+        </div>
+      </div>
+
+      <!-- Trigger Words -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Trigger Words</div>
+        <div class="trigger-chips">
+          <span class="chip">address</span><span class="chip">ghar</span><span class="chip">rehta</span>
+          <span class="chip">deliver</span><span class="chip">pincode</span><span class="chip">colony</span>
+          <span class="chip">mohalla</span><span class="chip">location</span><span class="chip">main rehta</span>
+          <span class="chip">yahan</span><span class="chip">located</span><span class="chip">gali</span>
+        </div>
+      </div>
+
+      <!-- Wave -->
+      <div class="wave-container" id="waveContainer">
+        <div class="wave-bar" id="wb1"></div><div class="wave-bar" id="wb2"></div>
+        <div class="wave-bar" id="wb3"></div><div class="wave-bar" id="wb4"></div>
+        <div class="wave-bar" id="wb5"></div><div class="wave-bar" id="wb6"></div>
+        <div class="wave-bar" id="wb7"></div><div class="wave-bar" id="wb8"></div>
+        <div class="wave-bar" id="wb9"></div>
+      </div>
+
+      <!-- Live Transcript -->
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Live Transcript</div>
+        <div class="transcript-box" id="transcriptBox">Waiting for voice...</div>
+      </div>
+
+      <!-- Audio Quality -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:11px;color:var(--muted);">Audio Quality:</span>
+        <div class="quality-bar" id="qualityBar">
+          <div class="q-block" style="background:var(--red);height:10px;"></div>
+          <div class="q-block" style="background:var(--border);height:12px;"></div>
+          <div class="q-block" style="background:var(--border);height:14px;"></div>
+          <div class="q-block" style="background:var(--border);height:16px;"></div>
+          <div class="q-block" style="background:var(--border);height:18px;"></div>
+        </div>
+        <span style="font-size:11px;color:var(--muted);" id="qualityLabel">Poor</span>
+      </div>
+
+      <!-- Manual Fallback -->
+      <div class="manual-section">
+        <div class="manual-label">Manual fallback — type address</div>
+        <div class="manual-row">
+          <input class="manual-inp" id="manualInp" placeholder="Type address here..." onkeydown="if(event.key==='Enter')manualSearch()"/>
+          <button class="btn-manual-go" onclick="manualSearch()">GO</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results + History -->
+    <div class="right-panel">
+      <div class="right-top">
+        <!-- RESULT SECTION -->
+        <div id="resultSection" style="display:none;margin-bottom:16px;">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Captured Address</div>
+          <div class="dup-warning" id="dupWarning">⚠️ Duplicate detected — this address was captured before!</div>
+          <div class="result-card" id="resultCard">
+            <div class="pincode-badge" id="rPincode">-</div>
+            <div class="full-addr" id="rAddress">-</div>
+            <div class="addr-meta" id="rMeta"></div>
+            <div class="conf-row">
+              <span class="conf-label">Confidence</span>
+              <div class="conf-track"><div class="conf-fill high" id="confFill" style="width:0%;"></div></div>
+              <span class="conf-pct" id="confPct">-</span>
+            </div>
+            <div class="action-row">
+              <button class="btn-confirm" onclick="confirmAddress()">✅ Confirm & Save</button>
+              <button class="btn-retry" onclick="retryCapture()">🔄</button>
+              <button class="btn-edit-addr" onclick="toggleEdit()">✏️</button>
+            </div>
+            <div class="edit-area" id="editArea">
+              <input class="edit-inp" id="editInp" placeholder="Edit address then search..."/>
+              <button class="btn-search-manual" onclick="searchEdited()">Search Edited Address</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- WAITING STATE -->
+        <div id="waitState" style="text-align:center;padding:32px 0;color:var(--muted);">
+          <div style="font-size:40px;margin-bottom:12px;">👂</div>
+          <div style="font-size:14px;">Listening for address...</div>
+          <div style="font-size:12px;margin-top:6px;">Trigger word detected → auto captures</div>
+        </div>
+
+        <!-- HISTORY -->
+        <div>
+          <div class="history-title">📋 Today's Address Log</div>
+          <div class="history-list" id="historyList">
+            <div class="empty-hist">No addresses captured yet</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-bottom">
+        <button class="btn-export-log" onclick="exportLog()">📥 Export to CSV</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot green"></div>
+    <span id="statusText">Ready — awaiting trigger word</span>
+    <span style="margin-left:auto;" id="clockDisp"></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const DATA_KEY = 'vn_data';
+let currentAgent = null;
+let currentCompany = null;
+let recognition = null;
+let isListening = false;
+let captureMode = false;
+let captureBuffer = '';
+let retryCount = 0;
+const MAX_RETRY = 2;
+let addressLog = [];
+const GROQ_KEY = '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';
+
+const TRIGGER_WORDS = ['address','ghar','rehta hoon','rehti hoon','deliver','pincode','location',
+  'colony','mohalla','gali','main rehta','yahan','located','stay at','live at','my address',
+  'mera ghar','hamare yahan','flat','sector','nagar','vihar','enclave'];
+
+function getData(){
+  try{return JSON.parse(localStorage.getItem(DATA_KEY))||{companies:[],agents:[],addresses:[]};}
+  catch(e){return{companies:[],agents:[],addresses:[]};}
+}
+function saveData(d){ localStorage.setItem(DATA_KEY,JSON.stringify(d)); }
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function doLogin(){
+  const aid = document.getElementById('agId').value.trim();
+  const pass = document.getElementById('agPass').value;
+  const d = getData();
+  const ag = d.agents.find(a=>a.agentId===aid && a.password===pass);
+  if(ag){
+    currentAgent = ag;
+    currentCompany = d.companies.find(c=>c.id===ag.companyId);
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('agentDash').style.display='flex';
+    document.getElementById('agentNameDisplay').textContent=ag.name;
+    document.getElementById('companyBadge').textContent=currentCompany?'— '+currentCompany.name:'';
+    loadTodayLog();
+    startClock();
+    updateQuality();
+    setStatus('Ready — click LISTEN or speak trigger word','green');
+  } else {
+    document.getElementById('loginErr').textContent='Invalid Agent ID or Password.';
+  }
+}
+
+function logout(){
+  currentAgent=null;currentCompany=null;addressLog=[];
+  stopListening();
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('agentDash').style.display='none';
+  document.getElementById('agId').value='';document.getElementById('agPass').value='';
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+function startClock(){
+  setInterval(()=>{
+    document.getElementById('clockDisp').textContent=new Date().toLocaleTimeString('en-IN',{hour12:false});
+  },1000);
+}
+
+// ── SPEECH RECOGNITION ────────────────────────────────────────────────────────
+function setupRecognition(){
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRec){ showToast('Speech recognition not supported. Use Chrome.','amber'); return null; }
+  const r = new SpeechRec();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = 'en-IN';
+  r.maxAlternatives = 3;
+
+  r.onresult = (e)=>{
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    const full=(final+interim).toLowerCase().trim();
+    document.getElementById('transcriptBox').textContent=full||'Listening...';
+    document.getElementById('transcriptBox').classList.add('active');
+
+    // Trigger word detection
+    if(!captureMode){
+      const triggered=TRIGGER_WORDS.some(w=>full.includes(w));
+      if(triggered){
+        captureMode=true;
+        captureBuffer=full;
+        setStatus('🔴 Trigger detected — capturing address...','amber');
+        setTimeout(()=>{ if(captureMode) processCapture(captureBuffer); },8000);
+      }
+    } else {
+      captureBuffer=full;
+    }
+  };
+
+  r.onend=()=>{
+    if(isListening){ try{r.start();}catch(e){} }
+  };
+
+  r.onerror=(e)=>{
+    if(e.error==='not-allowed'){ showToast('Mic permission denied!','red'); stopListening(); }
+  };
+
+  return r;
+}
+
+function toggleListen(){
+  if(isListening) stopListening();
+  else startListening();
+}
+
+function startListening(){
+  recognition = setupRecognition();
+  if(!recognition) return;
+  try{
+    recognition.start();
+    isListening=true;
+    captureMode=false;
+    captureBuffer='';
+    setWaveActive(true);
+    document.getElementById('listenBtn').classList.add('listening');
+    document.getElementById('listenBtn').classList.remove('processing');
+    document.getElementById('listenIcon').textContent='🛑';
+    document.getElementById('listenLabel').textContent='LISTENING';
+    document.getElementById('listenSub').textContent='Click to stop';
+    document.getElementById('transcriptBox').textContent='Listening for trigger words...';
+    document.getElementById('transcriptBox').classList.add('active');
+    setStatus('🎙️ Listening — waiting for trigger word...','green');
+    updateQuality(true);
+  }catch(e){ showToast('Could not start mic','red'); }
+}
+
+function stopListening(){
+  if(recognition){ try{recognition.stop();}catch(e){} recognition=null; }
+  isListening=false;captureMode=false;
+  setWaveActive(false);
+  document.getElementById('listenBtn').classList.remove('listening','processing');
+  document.getElementById('listenIcon').textContent='🎙️';
+  document.getElementById('listenLabel').textContent='LISTEN';
+  document.getElementById('listenSub').textContent='Click to start';
+  document.getElementById('transcriptBox').textContent='Waiting for voice...';
+  document.getElementById('transcriptBox').classList.remove('active');
+  setStatus('Stopped — click LISTEN to resume','green');
+  updateQuality(false);
+}
+
+// ── PROCESS CAPTURE ───────────────────────────────────────────────────────────
+async function processCapture(text){
+  captureMode=false;
+  if(!text || text.length<10){ handleLowConf(); return; }
+  document.getElementById('listenBtn').classList.remove('listening');
+  document.getElementById('listenBtn').classList.add('processing');
+  document.getElementById('listenIcon').textContent='⚡';
+  document.getElementById('listenLabel').textContent='PROCESSING';
+  setStatus('⚡ Extracting address from transcript...','amber');
+
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+GROQ_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[
+          {role:'system',content:`You are an India address extractor for call center agents.
+Extract ONLY the address from the transcript. Return JSON:
+{"address":"full address string","pincode":"6-digit pincode or empty","district":"district or empty","state":"state or empty","confidence":0-100}
+If no clear address found, return {"address":"","confidence":0}
+Only return JSON, nothing else.`},
+          {role:'user',content:'Transcript: '+text}
+        ],
+        temperature:0.1,max_tokens:200
+      })
+    });
+    const data=await res.json();
+    const raw=data.choices?.[0]?.message?.content||'{}';
+    let parsed={};
+    try{
+      const clean=raw.replace(/```json|```/g,'').trim();
+      parsed=JSON.parse(clean);
+    }catch(e){}
+
+    document.getElementById('listenBtn').classList.remove('processing');
+    document.getElementById('listenBtn').classList.add('listening');
+    document.getElementById('listenIcon').textContent='🛑';
+    document.getElementById('listenLabel').textContent='LISTENING';
+
+    if(!parsed.address || parsed.confidence<30){
+      retryCount++;
+      if(retryCount<=MAX_RETRY){
+        setStatus('Low confidence — retrying ('+retryCount+'/'+MAX_RETRY+')...','amber');
+        showToast('Low confidence, retrying...','amber');
+        setTimeout(()=>{ captureMode=false; },2000);
+        return;
+      } else { handleLowConf(); return; }
+    }
+
+    retryCount=0;
+    showResult(parsed);
+  }catch(e){
+    document.getElementById('listenBtn').classList.remove('processing');
+    document.getElementById('listenBtn').classList.add('listening');
+    document.getElementById('listenIcon').textContent='🛑';
+    document.getElementById('listenLabel').textContent='LISTENING';
+    showToast('Processing error — use manual fallback','red');
+    setStatus('Error — use manual type below','amber');
+  }
+}
+
+// ── SHOW RESULT ───────────────────────────────────────────────────────────────
+function showResult(data){
+  const conf=data.confidence||50;
+  document.getElementById('waitState').style.display='none';
+  document.getElementById('resultSection').style.display='block';
+
+  document.getElementById('rPincode').textContent=data.pincode||'No Pincode';
+  document.getElementById('rAddress').textContent=data.address||'Unknown';
+  document.getElementById('rMeta').innerHTML=
+    (data.district?`<span class="meta-tag">📍 ${data.district}</span>`:'') +
+    (data.state?`<span class="meta-tag">🗺️ ${data.state}</span>`:'') +
+    `<span class="meta-tag">🤖 AI Extracted</span>`;
+
+  // Confidence bar
+  const fill=document.getElementById('confFill');
+  const cls=conf>=70?'high':conf>=45?'med':'low';
+  fill.className='conf-fill '+cls;
+  fill.style.width=conf+'%';
+  document.getElementById('confPct').textContent=conf+'%';
+  document.getElementById('confPct').style.color=conf>=70?'var(--green)':conf>=45?'var(--amber)':'var(--red)';
+
+  const rc=document.getElementById('resultCard');
+  rc.className='result-card '+(conf>=70?'green':conf>=45?'amber':'red');
+
+  // Duplicate check
+  const isDup=addressLog.some(a=>a.address===data.address);
+  document.getElementById('dupWarning').style.display=isDup?'block':'none';
+
+  // Store pending
+  window._pendingAddr=data;
+  setStatus('Address captured — confirm or retry','green');
+}
+
+// ── CONFIRM ───────────────────────────────────────────────────────────────────
+function confirmAddress(){
+  const pa=window._pendingAddr;
+  if(!pa) return;
+  saveAddress(pa);
+  document.getElementById('resultSection').style.display='none';
+  document.getElementById('waitState').style.display='block';
+  window._pendingAddr=null;
+  showToast('✅ Address saved!','green');
+  setStatus('Saved — back to listening','green');
+}
+
+function saveAddress(pa){
+  const entry={
+    id:'addr_'+Date.now(),
+    agentId:currentAgent.id,
+    companyId:currentCompany?currentCompany.id:'',
+    address:pa.address,
+    pincode:pa.pincode||'',
+    district:pa.district||'',
+    state:pa.state||'',
+    confidence:pa.confidence||50,
+    time:Date.now()
+  };
+  addressLog.push(entry);
+  const d=getData();
+  d.addresses.push(entry);
+  saveData(d);
+  renderHistory();
+  document.getElementById('addrCounter').textContent=addressLog.length+' captured';
+}
+
+// ── RETRY / EDIT ──────────────────────────────────────────────────────────────
+function retryCapture(){
+  document.getElementById('resultSection').style.display='none';
+  document.getElementById('waitState').style.display='block';
+  window._pendingAddr=null;
+  retryCount=0;
+  setStatus('Retrying — waiting for trigger word...','green');
+}
+
+function toggleEdit(){
+  const ea=document.getElementById('editArea');
+  ea.style.display=ea.style.display==='block'?'none':'block';
+  if(ea.style.display==='block'){
+    document.getElementById('editInp').value=window._pendingAddr?.address||'';
+    document.getElementById('editInp').focus();
+  }
+}
+
+function searchEdited(){
+  const v=document.getElementById('editInp').value.trim();
+  if(!v){showToast('Enter an address','amber');return;}
+  window._pendingAddr={address:v,pincode:'',district:'',state:'',confidence:70};
+  showResult(window._pendingAddr);
+  document.getElementById('editArea').style.display='none';
+}
+
+// ── MANUAL SEARCH ─────────────────────────────────────────────────────────────
+async function manualSearch(){
+  const v=document.getElementById('manualInp').value.trim();
+  if(!v){showToast('Type an address','amber');return;}
+  setStatus('Searching...','amber');
+  window._pendingAddr={address:v,pincode:'',district:'',state:'',confidence:75};
+  showResult(window._pendingAddr);
+  document.getElementById('manualInp').value='';
+}
+
+// ── LOW CONFIDENCE HANDLER ────────────────────────────────────────────────────
+function handleLowConf(){
+  retryCount=0;
+  showToast('Could not extract address clearly — use manual fallback','red');
+  setStatus('Could not extract — use manual type','amber');
+  document.getElementById('listenBtn').classList.remove('processing');
+  if(isListening){
+    document.getElementById('listenBtn').classList.add('listening');
+    document.getElementById('listenIcon').textContent='🛑';
+    document.getElementById('listenLabel').textContent='LISTENING';
+  }
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function loadTodayLog(){
+  const d=getData();
+  const today=new Date().toDateString();
+  addressLog=d.addresses.filter(a=>a.agentId===currentAgent.id && new Date(a.time).toDateString()===today);
+  document.getElementById('addrCounter').textContent=addressLog.length+' captured';
+  renderHistory();
+}
+
+function renderHistory(){
+  const list=document.getElementById('historyList');
+  if(!addressLog.length){ list.innerHTML='<div class="empty-hist">No addresses captured yet</div>'; return; }
+  list.innerHTML=addressLog.slice().reverse().map((a,i)=>`
+    <div class="hist-item">
+      <div>
+        <div class="hist-addr">${a.address}</div>
+        <div class="hist-time">${new Date(a.time).toLocaleTimeString('en-IN',{hour12:true})}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+        <span class="hist-pin">${a.pincode||'—'}</span>
+        <button class="btn-copy" onclick="copyAddr('${a.address.replace(/'/g,"\\'")}')">copy</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyAddr(addr){
+  navigator.clipboard.writeText(addr).then(()=>showToast('Copied!','green')).catch(()=>{});
+}
+
+function exportLog(){
+  if(!addressLog.length){showToast('No addresses to export','amber');return;}
+  let csv='Address,Pincode,District,State,Time\n';
+  addressLog.forEach(a=>{
+    csv+=`"${a.address}","${a.pincode||''}","${a.district||''}","${a.state||''}","${new Date(a.time).toLocaleString('en-IN')}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const lnk=document.createElement('a');lnk.href=url;lnk.download='my_addresses_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';lnk.click();
+  showToast('Exported!','green');
+}
+
+// ── WAVE & QUALITY ────────────────────────────────────────────────────────────
+function setWaveActive(on){
+  document.querySelectorAll('.wave-bar').forEach(b=>{ on?b.classList.add('active'):b.classList.remove('active'); });
+}
+
+function updateQuality(on){
+  const colors=[on?'var(--green)':'var(--red)', on?'var(--green)':'var(--border)',
+    on?'var(--green)':'var(--border)', on?'var(--amber)':'var(--border)', on?'var(--green)':'var(--border)'];
+  const heights=[10,12,14,16,18];
+  const bar=document.getElementById('qualityBar');
+  bar.querySelectorAll('.q-block').forEach((b,i)=>{
+    b.style.background=on?'var(--green)':'var(--border)';
+    b.style.height=heights[i]+'px';
+  });
+  document.getElementById('qualityLabel').textContent=on?'Good':'Idle';
+  document.getElementById('qualityLabel').style.color=on?'var(--green)':'var(--muted)';
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(msg,type){
+  document.getElementById('statusText').textContent=msg;
+  document.querySelector('.status-dot').className='status-dot '+(type||'green');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg,type='green'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.borderColor=type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--amber)';
+  t.style.color=type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--amber)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
