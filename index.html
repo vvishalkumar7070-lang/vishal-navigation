@@ -59,13 +59,20 @@ header{padding:14px 0 12px;display:flex;align-items:center;justify-content:space
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 11px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-family:'JetBrains Mono',monospace}
 .pill.pin{background:var(--pin-bg);border-color:var(--pin-bd);color:var(--pin-t);font-size:13px;font-weight:600}
 
-.nearby-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+.nearby-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-top:8px}
 @media(max-width:460px){.nearby-grid{grid-template-columns:1fr}}
-.ni{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12.5px;transition:border-color .15s}
-.ni:hover{border-color:var(--border2)}
-.ni-em{font-size:15px;flex-shrink:0;margin-top:1px}
-.ni-name{font-weight:500;color:var(--text);line-height:1.3;font-size:12px}
-.ni-type{font-size:11px;color:var(--text3);margin-top:1px}
+.ni{display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:12px;transition:all .2s}
+.ni:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(15,92,48,.1)}
+.ni-header{display:flex;align-items:center;gap:8px}
+.ni-em{font-size:18px;flex-shrink:0}
+.ni-info{flex:1}
+.ni-name{font-weight:600;color:var(--text);line-height:1.3;font-size:13px}
+.ni-type{font-size:11px;color:var(--text3);margin-top:2px}
+.ni-distance{font-size:10px;color:var(--accent);font-weight:600;background:var(--accent-l);padding:2px 6px;border-radius:12px}
+.ni-details{display:flex;gap:6px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--border)}
+.ni-detail-item{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text2)}
+.ni-detail-label{font-weight:600;color:var(--text3)}
+
 .vnote{margin-top:10px;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 
 .typing-wrap{display:flex;align-items:center;gap:8px}
@@ -90,82 +97,61 @@ footer{padding:10px 0 16px;border-top:1px solid var(--border)}
 .send-btn:disabled{opacity:.35;cursor:not-allowed}
 .footer-note{text-align:center;font-size:10.5px;color:var(--text3);margin-top:7px;font-family:'JetBrains Mono',monospace}
 
-/* ===== VISUAL UPGRADES ===== */
-
-/* Animated gradient header */
 header{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);position:relative;overflow:hidden}
 header::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(15,92,48,.04),transparent);animation:shimmer 3s infinite;pointer-events:none}
 @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 
-/* Logo pulse */
 .logo-mark{animation:logoPulse 3s ease-in-out infinite}
 @keyframes logoPulse{0%,100%{box-shadow:0 0 0 0 rgba(15,92,48,.3)}50%{box-shadow:0 0 0 8px rgba(15,92,48,.0)}}
 
-/* Glowing search bar */
 .inp-row{transition:all .3s ease;position:relative}
 .inp-row:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(15,92,48,.12),0 2px 12px rgba(15,92,48,.08);transform:translateY(-1px)}
 .inp-row input{transition:all .2s}
 
-/* Send button upgrade */
 .send-btn{background:linear-gradient(135deg,#0f5c30,#1a8a48);box-shadow:0 2px 8px rgba(15,92,48,.3);transition:all .2s}
 .send-btn:hover{box-shadow:0 4px 16px rgba(15,92,48,.4);transform:translateY(-1px)}
 .send-btn:active{transform:scale(.94) translateY(0)}
 
-/* Slide-in animation for messages */
 .msg-wrap{animation:slideIn .3s ease-out}
 @keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-/* Enhanced pincode pill */
 .pill.pin{font-size:15px;font-weight:700;padding:6px 16px;background:linear-gradient(135deg,var(--pin-bg),#fff9d0);box-shadow:0 2px 8px rgba(232,192,64,.2);border-width:2px;letter-spacing:.5px}
 
-/* Better nearby cards */
 .ni{transition:all .2s ease;cursor:default;position:relative;overflow:hidden}
 .ni::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(15,92,48,.03));opacity:0;transition:opacity .2s}
-.ni:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .ni:hover::before{opacity:1}
 .ni-em{font-size:18px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--accent-l);border-radius:8px;flex-shrink:0}
 
-/* Full address card upgrade */
 .full-addr{background:linear-gradient(135deg,var(--surface2),var(--surface));border-left:3px solid var(--accent);padding:12px 14px;font-size:13px;line-height:1.7;border-radius:0 8px 8px 0}
 
-/* Section label upgrade */
 .sec-lbl{font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin:12px 0 6px;display:flex;align-items:center;gap:6px}
 .sec-lbl::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 
-/* Typing dots upgrade */
 .typing-dots span{background:var(--accent);opacity:.6}
 .typing-dots span:nth-child(2){opacity:.8}
 .typing-dots span:nth-child(3){opacity:1}
 
-/* Loading text */
 .loading-text{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:4px;animation:fadeInOut 1.5s infinite}
 @keyframes fadeInOut{0%,100%{opacity:.4}50%{opacity:1}}
 
-/* Badge upgrades */
 .hd-badge{background:linear-gradient(135deg,var(--accent-l),#e8f5ee);border-color:var(--accent);color:var(--accent);font-weight:600;box-shadow:0 1px 4px rgba(15,92,48,.1)}
 
-/* Powered by badge */
 .powered-badge{font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);padding:3px 8px;border-radius:20px;white-space:nowrap}
 
-/* Result card glow on appear */
 .msg.bot{animation:cardAppear .4s ease-out;border-left:3px solid var(--accent)}
 @keyframes cardAppear{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-/* Suggestion chips upgrade */
 .sug{transition:all .2s ease;font-weight:500}
 .sug:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
 
-/* Google maps link button */
 .maps-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:7px 16px;background:linear-gradient(135deg,#1a73e8,#1557b0);color:#fff;border:none;border-radius:20px;text-decoration:none;transition:all .2s}
 .maps-btn:hover{box-shadow:0 4px 16px rgba(26,115,232,.4);transform:translateY(-1px)}
 
-/* ── PORTRAIT (default) ── */
 .page{display:flex;flex-direction:column;height:100vh;max-width:740px;margin:0 auto;padding:0 16px;overflow:hidden}
 .page>header{flex-shrink:0}
 .ls-sidebar{display:none}
 .ls-main{display:flex;flex-direction:column;flex:1;min-height:0}
 
-/* ── LANDSCAPE ── */
 @media(orientation:landscape) and (max-height:600px){
   body{overflow:hidden}
   .page{
@@ -194,7 +180,7 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
   .msg.bot{border-left-width:2px}
   .pill.pin{font-size:12px;padding:4px 10px}
   .pill{font-size:10px;padding:3px 8px}
-  .nearby-grid{grid-template-columns:1fr 1fr}
+  .nearby-grid{grid-template-columns:1fr}
   .ni{padding:5px 8px}
   .ni-em{width:26px;height:26px;font-size:14px}
   .ni-name{font-size:11px}
@@ -210,15 +196,16 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
   .chat-wrap{padding:10px 20px}
   footer{padding:8px 20px 12px}
 }
-/* Mic button styles */
+
 .mic-btn{background:transparent;border:1.5px solid var(--border2);border-radius:10px;width:38px;height:38px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
 .mic-btn:hover{background:var(--accent-l);border-color:var(--accent)}
 .mic-btn.listening{background:var(--mic-active);border-color:var(--mic-active);color:#fff;animation:micPulse 1s infinite}
 @keyframes micPulse{0%,100%{box-shadow:0 0 0 0 var(--mic-pulse)}50%{box-shadow:0 0 0 8px var(--mic-pulse)}}
 .mic-btn:disabled{opacity:.3;cursor:not-allowed}
+
 .voice-preview{font-size:12px;color:var(--accent);font-style:italic;padding:2px 4px;min-height:0;max-height:0;overflow:hidden;transition:max-height .2s;opacity:0}
 .voice-preview.show{max-height:24px;opacity:1}
-/* Agent badge */
+
 .agent-badge{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 8px;border-radius:20px;white-space:nowrap;margin-left:4px;cursor:pointer;transition:all .2s;border:1px solid var(--border);color:var(--text3)}
 .agent-badge.on{background:linear-gradient(135deg,#1a3a8a,#2a5ac0);color:#a0c4ff;border-color:#2a5ac0;box-shadow:0 1px 6px rgba(42,90,192,.3)}
 .msg.agent-think{background:linear-gradient(135deg,#1a3a8a18,#2a5ac010);border:1px dashed #2a5ac060;border-radius:4px 16px 16px 16px;color:var(--text2);font-size:12.5px;font-style:italic}
@@ -227,14 +214,10 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
 .fchip{font-size:12px;padding:5px 12px;border:1px solid #2a5ac060;border-radius:20px;background:#2a5ac010;color:#2a5ac0;cursor:pointer;transition:all .2s;font-family:'Sora',sans-serif}
 .fchip:hover{background:#2a5ac020;transform:translateY(-1px)}
 .no-mic-note{font-size:11px;color:var(--err-t);background:var(--err-bg);border:1px solid var(--err-t);border-radius:8px;padding:6px 12px;margin-bottom:8px;display:none}
-.ls-sidebar{display:none}
-.ls-sidebar-label{font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:8px 12px 4px;border-bottom:1px solid var(--border);flex-shrink:0}
-.ls-chat-scroll{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
 </style>
 </head>
 <body>
 <div class="page">
-
   <header>
     <div class="logo">
       <div class="logo-mark">🧭</div>
@@ -250,7 +233,6 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
     </div>
   </header>
 
-  <!-- LANDSCAPE: left sidebar -->
   <div class="ls-sidebar">
     <div class="ls-sidebar-label">💬 Chat History</div>
     <div class="ls-chat-scroll" id="lsHistory">
@@ -259,28 +241,27 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
   </div>
 
   <div class="ls-main">
-
     <div class="chat-wrap" id="chat">
-    <div class="msg-wrap ai">
-      <div class="msg bot">
-        <strong>Namaste! 🙏</strong><br><br>
-        Type or <strong>speak</strong> any <strong>area, colony, landmark or city</strong> in India — I'll instantly find:<br><br>
-        📮 Pincode &nbsp;·&nbsp; 🏤 Post Office<br>
-        🛕 Famous Temple &nbsp;·&nbsp; 🛍️ Famous Market<br>
-        🍬 Sweet Shop &nbsp;·&nbsp; 🏥 Hospital<br>
-        🏫 School &nbsp;·&nbsp; 🎓 College &nbsp;·&nbsp; 🚉 Station &amp; more!<br><br>
-        <span style="font-size:12px;color:var(--text3)">🎤 Tap mic to speak (Groq Whisper) &nbsp;•&nbsp; 🤖 Enable Agent for smart follow-ups &nbsp;•&nbsp; ✏️ Auto-corrected!</span>
+      <div class="msg-wrap ai">
+        <div class="msg bot">
+          <strong>Namaste! 🙏</strong><br><br>
+          Type or <strong>speak</strong> any <strong>area, colony, landmark or city</strong> in India — I'll instantly find:<br><br>
+          📮 Pincode &nbsp;·&nbsp; 🏤 Post Office<br>
+          🛕 Famous Temple &nbsp;·&nbsp; 🛍️ Famous Market<br>
+          🍬 Sweet Shop &nbsp;·&nbsp; 🏥 Hospital<br>
+          🏫 School &nbsp;·&nbsp; 🎓 College &nbsp;·&nbsp; 🚉 Station &amp; more!<br><br>
+          <span style="font-size:12px;color:var(--text3)">🎤 Tap mic to speak (Groq Whisper) &nbsp;•&nbsp; 10 Nearby landmarks within 200m &nbsp;•&nbsp; ✏️ Auto-corrected!</span>
+        </div>
+      </div>
+      <div class="sugs" id="sugs">
+        <span class="sug" onclick="useSug(this)">Chandni Chowk, Delhi</span>
+        <span class="sug" onclick="useSug(this)">Koramangala, Bangalore</span>
+        <span class="sug" onclick="useSug(this)">Bandra West, Mumbai</span>
+        <span class="sug" onclick="useSug(this)">Sector 14, Gurugram</span>
+        <span class="sug" onclick="useSug(this)">Park Street, Kolkata</span>
+        <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
       </div>
     </div>
-    <div class="sugs" id="sugs">
-      <span class="sug" onclick="useSug(this)">Chandni Chowk, Delhi</span>
-      <span class="sug" onclick="useSug(this)">Koramangala, Bangalore</span>
-      <span class="sug" onclick="useSug(this)">Bandra West, Mumbai</span>
-      <span class="sug" onclick="useSug(this)">Sector 14, Gurugram</span>
-      <span class="sug" onclick="useSug(this)">Park Street, Kolkata</span>
-      <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
-    </div>
-  </div>
 
     <footer>
       <div class="no-mic-note" id="noMicNote">⚠️ Voice input not supported. Please use Chrome or Edge.</div>
@@ -290,27 +271,25 @@ header::before{content:'';position:absolute;inset:0;background:linear-gradient(9
         <button class="mic-btn" id="micBtn" onclick="toggleMic()" aria-label="Voice input" title="Speak your location">🎤</button>
         <button class="send-btn" id="btn" onclick="send()" aria-label="Search">➤</button>
       </div>
-      <div class="footer-note">Vishal Navigation · Free · 🎤 Groq Whisper Voice + 🤖 Agent</div>
-
-<!-- Floating Agent Button -->
-<div style="position:fixed;bottom:90px;right:20px;z-index:50">
-  <button onclick="window.location.href='agent.html'" 
-    style="background:linear-gradient(135deg,#0f3820,#0f5c30);color:#c8e8d4;border:none;
-           border-radius:50px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;
-           font-family:'Sora',sans-serif;box-shadow:0 4px 20px rgba(15,92,48,.4);
-           display:flex;align-items:center;gap:8px;transition:all .2s;
-           border:1px solid rgba(80,192,112,.3)"
-    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(15,92,48,.5)'"
-    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(15,92,48,.4)'">
-    <span style="font-size:16px">🎙️</span>
-    <span>Agent Login</span>
-    <span style="background:rgba(80,192,112,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-family:'JetBrains Mono',monospace">PRO</span>
-  </button>
-</div>
+      <div class="footer-note">Vishal Navigation · Free · 🎤 Groq Whisper Voice + 10 Nearby Landmarks</div>
+      <div style="position:fixed;bottom:90px;right:20px;z-index:50">
+        <button onclick="window.location.href='agent.html'" 
+          style="background:linear-gradient(135deg,#0f3820,#0f5c30);color:#c8e8d4;border:none;
+                 border-radius:50px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;
+                 font-family:'Sora',sans-serif;box-shadow:0 4px 20px rgba(15,92,48,.4);
+                 display:flex;align-items:center;gap:8px;transition:all .2s;
+                 border:1px solid rgba(80,192,112,.3)"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(15,92,48,.5)'"
+          onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(15,92,48,.4)'">
+          <span style="font-size:16px">🎙️</span>
+          <span>Agent Login</span>
+          <span style="background:rgba(80,192,112,.2);padding:2px 8px;border-radius:10px;font-size:10px;font-family:'JetBrains Mono',monospace">PRO</span>
+        </button>
+      </div>
     </footer>
-  </div><!-- end ls-main -->
-
+  </div>
 </div>
+
 <script>
 const chat = document.getElementById('chat');
 const inp  = document.getElementById('q');
@@ -339,17 +318,9 @@ function addMsg(side, innerHtml){
 function showTyping(){
   const w = document.createElement('div');
   w.className = 'msg-wrap ai'; w.id='typ';
-  const loadingMsgs = [
-    'Searching 154,000+ pincodes...',
-    'Locating on map...',
-    'Finding nearby places...',
-    'Almost there...'
-  ];
+  const loadingMsgs = ['Searching 154,000+ pincodes...','Locating on map...','Finding 10 nearby landmarks...','Almost there...'];
   const randMsg = loadingMsgs[Math.floor(Math.random()*loadingMsgs.length)];
-  w.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
-    <div class="typing-dots"><span></span><span></span><span></span></div>
-    <span class="loading-text">${randMsg}</span>
-  </div>`;
+  w.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div class="typing-dots"><span></span><span></span><span></span></div><span class="loading-text">${randMsg}</span></div>`;
   chat.appendChild(w); scroll();
 }
 function hideTyping(){ const t=document.getElementById('typ'); if(t)t.remove(); }
@@ -371,6 +342,20 @@ const emojiMap=[
 ];
 function emo(type){ for(const[rx,e] of emojiMap) if(rx.test(type)) return e; return '📌'; }
 
+// Enhanced nearby landmarks database with pincode & post office info
+const PINCODE_DB = {
+  "Chandni Chowk, New Delhi": {"p":"110006","po":"Chandni Chowk"},
+  "Connaught Place, New Delhi": {"p":"110001","po":"New Delhi GPO"},
+  "Bandra West, Mumbai": {"p":"400050","po":"Bandra"},
+  "Koramangala, Bangalore": {"p":"560034","po":"Koramangala"},
+  "Park Street, Kolkata": {"p":"700016","po":"Park Street"},
+  "Hazratganj, Lucknow": {"p":"226001","po":"Hazratganj"},
+  "Sector 14, Gurugram": {"p":"122001","po":"Sector 14"},
+  "MG Road, Bangalore": {"p":"560001","po":"MG Road"},
+  "Juhu, Mumbai": {"p":"400049","po":"Juhu"},
+  "Salt Lake City, Kolkata": {"p":"700064","po":"Salt Lake"}
+};
+
 function buildCard(d){
   let h='';
   if(d.corrected){
@@ -384,27 +369,33 @@ function buildCard(d){
   h+=`<span class="pill">🗺️ ${d.district}, ${d.state}</span>`;
   h+=`</div>`;
   if(d.nearby&&d.nearby.length){
-    h+=`<div class="sec-lbl">🏙️ Known Nearby Places <span style="font-size:10px;color:var(--text3)">(general area)</span></div>`;
+    h+=`<div class="sec-lbl">🏙️ 10 Nearby Landmarks <span style="font-size:10px;color:var(--text3)">(within 200m)</span></div>`;
     h+=`<div class="nearby-grid">`;
-    d.nearby.forEach(p=>{
-      h+=`<div class="ni"><span class="ni-em">${emo(p.type)}</span><div><div class="ni-name">${p.name}</div><div class="ni-type">${p.type}</div></div></div>`;
+    d.nearby.slice(0, 10).forEach((p, idx) => {
+      h+=`<div class="ni">
+        <div class="ni-header">
+          <span class="ni-em">${emo(p.type)}</span>
+          <div class="ni-info">
+            <div class="ni-name">${idx + 1}. ${p.name}</div>
+            <div class="ni-type">${p.type}</div>
+          </div>
+          ${p.distance ? `<span class="ni-distance">${p.distance}</span>` : ''}
+        </div>
+        <div class="ni-details">
+          ${p.pincode ? `<div class="ni-detail-item"><span class="ni-detail-label">📮</span> ${p.pincode}</div>` : ''}
+          ${p.post_office ? `<div class="ni-detail-item"><span class="ni-detail-label">🏤</span> ${p.post_office}</div>` : ''}
+        </div>
+      </div>`;
     });
     h+=`</div>`;
   }
   if(d.verify_note) h+=`<div class="vnote">ℹ️ ${d.verify_note}</div>`;
-  
   const mapsQuery = encodeURIComponent((d.full_address || '') + ' India');
-  h+=`<div style="margin-top:10px">
-    <a href="https://www.google.com/maps/search/${mapsQuery}" target="_blank" 
-       class="maps-btn" style="background:linear-gradient(135deg,var(--accent),#1a8a48)">
-      🗺️ Verify on Google Maps
-    </a>
-  </div>`;
-  
+  h+=`<div style="margin-top:10px"><a href="https://www.google.com/maps/search/${mapsQuery}" target="_blank" class="maps-btn" style="background:linear-gradient(135deg,var(--accent),#1a8a48)">🗺️ Verify on Google Maps</a></div>`;
   return h;
 }
 
-// ========== GROQ WHISPER INTEGRATION FOR MIC BUTTON ==========
+// ========== GROQ WHISPER INTEGRATION FOR MIC BUTTON (IMPROVED) ==========
 let recognitionActive = false;
 let mediaRecorder;
 let audioChunks = [];
@@ -413,8 +404,6 @@ let stream;
 const GROQ_API_KEY = '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';
 
 async function toggleMic() {
-  const micBtn = document.getElementById('micBtn');
-  
   if (!recognitionActive) {
     startMicRecording();
   } else {
@@ -430,53 +419,79 @@ async function startMicRecording() {
     
     stream = await navigator.mediaDevices.getUserMedia({ 
       audio: { 
-        sampleRate: 16000,
-        channelCount: 1,
         echoCancellation: true,
-        noiseSuppression: true
+        noiseSuppression: true,
+        autoGainControl: true
       } 
     });
     
-    mediaRecorder = new MediaRecorder(stream, { 
-      mimeType: 'audio/wav',
-      audioBitsPerSecond: 128000 
-    });
+    let mimeType = 'audio/webm';
+    if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      mimeType = 'audio/mp4';
+    } else if (MediaRecorder.isTypeSupported('audio/wav')) {
+      mimeType = 'audio/wav';
+    } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+      mimeType = 'audio/ogg';
+    }
     
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType, audioBitsPerSecond: 128000 });
     audioChunks = [];
     
     mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
+      if (event.data.size > 0) audioChunks.push(event.data);
     };
     
     mediaRecorder.onstop = async () => {
-      const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
       await transcribeWithGroqWhisper(audioBlob);
     };
     
+    mediaRecorder.onerror = (event) => {
+      console.error('MediaRecorder error:', event.error);
+      addMsg('ai', `<span style="color:var(--err-t)">❌ Recording error: ${event.error}</span>`);
+      stopMicRecording();
+    };
+    
     mediaRecorder.start();
-    addMsg('ai', `<span style="color:var(--accent)">🎤 Listening...</span>`);
+    addMsg('ai', `<span style="color:var(--accent)">🎤 Listening... (click again to stop)</span>`);
     
   } catch (error) {
     console.error('Mic Error:', error);
-    addMsg('ai', `<span style="color:var(--err-t)">❌ Microphone access denied</span>`);
     recognitionActive = false;
     document.getElementById('micBtn').classList.remove('listening');
+    
+    if (error.name === 'NotAllowedError') {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ Microphone permission denied. Please enable it in browser settings and try again.</span>`);
+    } else if (error.name === 'NotFoundError') {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ No microphone found. Please connect a microphone.</span>`);
+    } else if (error.name === 'NotReadableError') {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ Microphone is in use by another application.</span>`);
+    } else if (error.name === 'SecurityError') {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ Microphone blocked by browser security policy. Try in an incognito window.</span>`);
+    } else {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ Microphone error: ${error.message}</span>`);
+    }
   }
 }
 
 function stopMicRecording() {
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.stop();
+  }
+  if (stream) {
     stream.getTracks().forEach(track => track.stop());
   }
-  
   recognitionActive = false;
-  const micBtn = document.getElementById('micBtn');
-  micBtn.classList.remove('listening');
+  document.getElementById('micBtn').classList.remove('listening');
 }
 
 async function transcribeWithGroqWhisper(audioBlob) {
   try {
+    if (audioBlob.size === 0) {
+      addMsg('ai', `<span style="color:var(--err-t)">❌ No audio recorded. Please try again.</span>`);
+      return;
+    }
+    
     showTyping();
     
     const formData = new FormData();
@@ -493,19 +508,27 @@ async function transcribeWithGroqWhisper(audioBlob) {
     });
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Transcription failed');
+      let errorMsg = 'Transcription failed';
+      try {
+        const error = await response.json();
+        errorMsg = error.error?.message || error.message || errorMsg;
+      } catch (e) {
+        errorMsg = `Server error (${response.status})`;
+      }
+      throw new Error(errorMsg);
     }
     
     const result = await response.json();
-    const transcribedText = result.text || '';
+    const transcribedText = (result.text || '').trim();
     
     hideTyping();
     
-    if (transcribedText.trim()) {
+    if (transcribedText) {
       inp.value = transcribedText;
       addMsg('user', `<div class="msg user"><span class="msg-time">${ts()}</span><br>${transcribedText}</div>`);
-      send();
+      setTimeout(() => send(), 300);
+    } else {
+      addMsg('ai', `<span style="color:var(--text2)">🎤 No speech detected. Please try again.</span>`);
     }
     
   } catch (error) {
@@ -516,7 +539,6 @@ async function transcribeWithGroqWhisper(audioBlob) {
 }
 // ========== END GROQ WHISPER INTEGRATION ==========
 
-// ========== INDIA LOCATION ALIASES / SHORTCUTS ==========
 const ALIASES = {
   "cp":"Connaught Place, New Delhi","ndls":"New Delhi Railway Station","dli":"Delhi",
   "igi":"Indira Gandhi International Airport Delhi","iit d":"IIT Delhi","iit delhi":"IIT Delhi",
@@ -574,10 +596,9 @@ function resolveAlias(q) {
   return ALIASES[lower] || q;
 }
 
-// ========== OVERPASS API - 200m MICRO NEARBY ==========
 async function fetchMicroNearby(lat, lon) {
   const radius = 200;
-  const query = `[out:json][timeout:10];(node["amenity"](around:${radius},${lat},${lon});node["shop"](around:${radius},${lat},${lon});node["tourism"](around:${radius},${lat},${lon});node["historic"](around:${radius},${lat},${lon});node["building"](around:${radius},${lat},${lon});way["amenity"](around:${radius},${lat},${lon});way["shop"](around:${radius},${lat},${lon}););out center 20;`;
+  const query = `[out:json][timeout:10];(node["amenity"](around:${radius},${lat},${lon});node["shop"](around:${radius},${lat},${lon});node["tourism"](around:${radius},${lat},${lon});node["historic"](around:${radius},${lat},${lon});node["building"](around:${radius},${lat},${lon});way["amenity"](around:${radius},${lat},${lon});way["shop"](around:${radius},${lat},${lon}););out center 100;`;
   try {
     const res = await fetch('https://overpass-api.de/api/interpreter', {method:'POST',body:query});
     const data = await res.json();
@@ -592,8 +613,17 @@ async function fetchMicroNearby(lat, lon) {
         const dy = (lat-elat)*110540;
         dist = `~${Math.round(Math.sqrt(dx*dx+dy*dy))}m`;
       }
-      return { name, type: type.replace(/_/g,' '), distance: dist };
-    }).slice(0, 12);
+      // Try to match pincode from database
+      let pincode = '', postoffice = '';
+      for(let key in PINCODE_DB) {
+        if(name.toLowerCase().includes(key.toLowerCase().split(',')[0])) {
+          pincode = PINCODE_DB[key].p;
+          postoffice = PINCODE_DB[key].po;
+          break;
+        }
+      }
+      return { name, type: type.replace(/_/g,' '), distance: dist, pincode, post_office: postoffice };
+    }).slice(0, 20); // Get more to filter to 10 later
   } catch(e) {
     return [];
   }
@@ -617,7 +647,6 @@ async function geocodeLocation(query) {
       const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=in&addressdetails=1`,{ headers: { 'Accept-Language': 'en', 'User-Agent': 'VishalNavigation/1.0' } });
       const data = await res.json();
       if(data.length > 0) {
-        console.log(`Geocoded with query: "${q}"`);
         return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
       }
     } catch(e) { console.log('Geocode error:', e); }
@@ -625,7 +654,6 @@ async function geocodeLocation(query) {
   return null;
 }
 
-// Demo pincode data
 const PIN_DB=[{"n":"New Delhi","p":"110001","po":"New Delhi GPO","d":"New Delhi","s":"Delhi"},{"n":"Chandni Chowk","p":"110006","po":"Chandni Chowk","d":"New Delhi","s":"Delhi"},{"n":"Bandra West","p":"400050","po":"Bandra","d":"Mumbai","s":"Maharashtra"},{"n":"Koramangala","p":"560034","po":"Koramangala","d":"Bangalore","s":"Karnataka"}];
 
 async function send() {
@@ -655,7 +683,7 @@ async function send() {
       post_office: pindata.po,
       district: pindata.d,
       state: pindata.s,
-      nearby: nearbyPlaces,
+      nearby: nearbyPlaces.slice(0, 10), // Limit to 10 nearby landmarks
       corrected: resolvedQuery !== query ? { original: query, corrected: resolvedQuery } : null
     };
     hideTyping();
