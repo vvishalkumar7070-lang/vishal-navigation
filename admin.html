@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vishal Navigation — Super Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#080c12;--surface:#0d1420;--card:#111927;--border:#1e2d40;
+  --green:#00e676;--green2:#00c853;--amber:#ffa726;--red:#ef5350;
+  --blue:#42a5f5;--text:#e8f0fe;--muted:#5c7a9a;--font:'Sora',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+/* LOGIN */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at 50% 0%,#0a2540 0%,var(--bg) 70%);}
+.login-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px 40px;width:380px;text-align:center;box-shadow:0 24px 80px rgba(0,230,118,.08);}
+.login-logo{font-family:var(--mono);font-size:13px;color:var(--green);letter-spacing:3px;margin-bottom:8px;}
+.login-title{font-size:22px;font-weight:700;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--muted);margin-bottom:32px;}
+.inp{width:100%;background:#0a1020;border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 16px;font-size:14px;font-family:var(--font);margin-bottom:12px;outline:none;transition:.2s;}
+.inp:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,.1);}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;font-weight:700;border:none;border-radius:10px;padding:13px;font-size:14px;cursor:pointer;font-family:var(--font);transition:.2s;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,230,118,.3);}
+.err{color:var(--red);font-size:12px;margin-top:8px;}
+/* DASHBOARD */
+#dashboard{display:none;}
+/* TOP BAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.topbar-logo{font-family:var(--mono);font-size:12px;color:var(--green);letter-spacing:2px;}
+.topbar-title{font-size:15px;font-weight:600;}
+.badge-admin{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:6px;padding:2px 8px;font-size:11px;font-family:var(--mono);}
+.btn-sm{background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--font);transition:.2s;}
+.btn-sm:hover{border-color:var(--green);color:var(--green);}
+/* LAYOUT */
+.layout{display:flex;min-height:calc(100vh - 56px);}
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;flex-shrink:0;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--muted);transition:.15s;border-left:3px solid transparent;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03);}
+.nav-item.active{color:var(--green);border-left-color:var(--green);background:rgba(0,230,118,.05);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+/* MAIN */
+.main{flex:1;padding:28px;overflow-y:auto;}
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:50%;opacity:.08;transform:translate(20px,-20px);}
+.stat-card.green::before{background:var(--green);}
+.stat-card.blue::before{background:var(--blue);}
+.stat-card.amber::before{background:var(--amber);}
+.stat-card.red::before{background:var(--red);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.stat-val{font-size:28px;font-weight:700;font-family:var(--mono);margin-bottom:4px;}
+.stat-val.green{color:var(--green);}
+.stat-val.blue{color:var(--blue);}
+.stat-val.amber{color:var(--amber);}
+.stat-val.red{color:var(--red);}
+.stat-sub{font-size:11px;color:var(--muted);}
+/* SECTION */
+.section{background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:24px;overflow:hidden;}
+.section-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.section-title{font-size:14px;font-weight:600;}
+.section-body{padding:20px;}
+/* TABLE */
+.table{width:100%;border-collapse:collapse;}
+.table th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:8px 12px;border-bottom:1px solid var(--border);}
+.table td{padding:12px;font-size:13px;border-bottom:1px solid rgba(30,45,64,.5);}
+.table tr:last-child td{border-bottom:none;}
+.table tr:hover td{background:rgba(255,255,255,.02);}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600;font-family:var(--mono);}
+.pill-green{background:rgba(0,230,118,.15);color:var(--green);}
+.pill-amber{background:rgba(255,167,38,.15);color:var(--amber);}
+.pill-red{background:rgba(239,83,80,.15);color:var(--red);}
+.pill-blue{background:rgba(66,165,245,.15);color:var(--blue);}
+/* ACTION BTNS */
+.btn-danger{background:rgba(239,83,80,.15);color:var(--red);border:1px solid rgba(239,83,80,.3);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--font);}
+.btn-edit{background:rgba(66,165,245,.15);color:var(--blue);border:1px solid rgba(66,165,245,.3);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--font);}
+.btn-success{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--font);}
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
+.form-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.form-inp{background:#0a1020;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:13px;font-family:var(--font);outline:none;transition:.2s;}
+.form-inp:focus{border-color:var(--green);}
+.form-select{background:#0a1020;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 14px;font-size:13px;font-family:var(--font);outline:none;}
+/* TABS */
+.tab-bar{display:flex;gap:4px;margin-bottom:20px;}
+.tab{padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);transition:.15s;}
+.tab.active{background:var(--card);color:var(--text);border:1px solid var(--border);}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:480px;max-width:95vw;padding:28px;box-shadow:0 32px 80px rgba(0,0,0,.5);}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--card);border:1px solid var(--green);color:var(--green);border-radius:10px;padding:12px 20px;font-size:13px;z-index:300;transform:translateY(80px);opacity:0;transition:.3s;}
+.toast.show{transform:translateY(0);opacity:1;}
+/* PAGE VISIBILITY */
+.page{display:none;}
+.page.active{display:block;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">▸ VISHAL NAVIGATION</div>
+    <div class="login-title">Super Admin Portal</div>
+    <div class="login-sub">Restricted access — Admin only</div>
+    <input class="inp" id="adminUser" type="text" placeholder="Admin Username"/>
+    <input class="inp" id="adminPass" type="password" placeholder="Admin Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-primary" onclick="doLogin()">Login</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-logo">VISHAL NAV</span>
+      <span class="topbar-title">Super Admin</span>
+      <span class="badge-admin">ADMIN</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:12px;color:var(--muted);" id="clockDisplay"></span>
+      <button class="btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-item active" onclick="showPage('overview')" id="nav-overview">
+        <span class="nav-icon">📊</span> Overview
+      </div>
+      <div class="nav-item" onclick="showPage('companies')" id="nav-companies">
+        <span class="nav-icon">🏢</span> Companies
+      </div>
+      <div class="nav-item" onclick="showPage('agents')" id="nav-agents">
+        <span class="nav-icon">👤</span> All Agents
+      </div>
+      <div class="nav-item" onclick="showPage('addresses')" id="nav-addresses">
+        <span class="nav-icon">📍</span> All Addresses
+      </div>
+      <div class="nav-item" onclick="showPage('settings')" id="nav-settings">
+        <span class="nav-icon">⚙️</span> Settings
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- OVERVIEW PAGE -->
+      <div class="page active" id="page-overview">
+        <div style="margin-bottom:20px;">
+          <div style="font-size:20px;font-weight:700;">Dashboard Overview</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Live system summary</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card green">
+            <div class="stat-label">Companies</div>
+            <div class="stat-val green" id="stat-companies">0</div>
+            <div class="stat-sub">registered</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-label">Total Agents</div>
+            <div class="stat-val blue" id="stat-agents">0</div>
+            <div class="stat-sub">across all companies</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-label">Addresses Captured</div>
+            <div class="stat-val amber" id="stat-addresses">0</div>
+            <div class="stat-sub">all time</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Active Today</div>
+            <div class="stat-val red" id="stat-active">0</div>
+            <div class="stat-sub">agents logged in</div>
+          </div>
+        </div>
+
+        <!-- Recent Companies -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">📋 Recent Companies</span>
+            <button class="btn-success" onclick="showPage('companies')">View All</button>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <table class="table">
+              <thead><tr><th>Company</th><th>Agents</th><th>Addresses</th><th>Status</th><th>Created</th></tr></thead>
+              <tbody id="recentCompaniesTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Addresses -->
+        <div class="section">
+          <div class="section-header">
+            <span class="section-title">📍 Recent Addresses Captured</span>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <table class="table">
+              <thead><tr><th>Agent</th><th>Company</th><th>Address</th><th>Pincode</th><th>Time</th></tr></thead>
+              <tbody id="recentAddressTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPANIES PAGE -->
+      <div class="page" id="page-companies">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div style="font-size:20px;font-weight:700;">Companies</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px;">Manage all registered companies</div>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="openModal('addCompany')">+ Add Company</button>
+        </div>
+        <div class="section">
+          <div class="section-body" style="padding:0;">
+            <table class="table">
+              <thead><tr><th>Company Name</th><th>Login ID</th><th>Agents</th><th>Addresses</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="companiesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AGENTS PAGE -->
+      <div class="page" id="page-agents">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div style="font-size:20px;font-weight:700;">All Agents</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px;">View and manage agents across all companies</div>
+          </div>
+          <button class="btn-primary" style="width:auto;padding:10px 20px;" onclick="openModal('addAgent')">+ Add Agent</button>
+        </div>
+        <div class="section">
+          <div class="section-body" style="padding:0;">
+            <table class="table">
+              <thead><tr><th>Agent Name</th><th>Agent ID</th><th>Company</th><th>Addresses</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="agentsTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADDRESSES PAGE -->
+      <div class="page" id="page-addresses">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <div>
+            <div style="font-size:20px;font-weight:700;">All Addresses</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px;">Every address captured by all agents</div>
+          </div>
+          <button class="btn-success" onclick="exportAllAddresses()">📥 Export CSV</button>
+        </div>
+        <!-- Filters -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+          <select class="form-select" id="filterCompany" onchange="renderAddresses()" style="min-width:160px;">
+            <option value="">All Companies</option>
+          </select>
+          <input class="form-inp" id="filterSearch" placeholder="Search address..." oninput="renderAddresses()" style="min-width:200px;"/>
+        </div>
+        <div class="section">
+          <div class="section-body" style="padding:0;">
+            <table class="table">
+              <thead><tr><th>Agent</th><th>Company</th><th>Address</th><th>Pincode</th><th>District</th><th>State</th><th>Time</th></tr></thead>
+              <tbody id="addressesTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div class="page" id="page-settings">
+        <div style="font-size:20px;font-weight:700;margin-bottom:20px;">Settings</div>
+        <div class="section">
+          <div class="section-header"><span class="section-title">🔐 Change Admin Password</span></div>
+          <div class="section-body">
+            <div class="form-group" style="max-width:320px;">
+              <label class="form-label">Current Password</label>
+              <input class="form-inp" id="curPass" type="password"/>
+            </div>
+            <div style="height:10px;"></div>
+            <div class="form-group" style="max-width:320px;">
+              <label class="form-label">New Password</label>
+              <input class="form-inp" id="newPass" type="password"/>
+            </div>
+            <div style="height:10px;"></div>
+            <div class="form-group" style="max-width:320px;">
+              <label class="form-label">Confirm New Password</label>
+              <input class="form-inp" id="confPass" type="password"/>
+            </div>
+            <div style="height:16px;"></div>
+            <button class="btn-primary" style="width:auto;padding:10px 24px;" onclick="changeAdminPass()">Update Password</button>
+          </div>
+        </div>
+        <div class="section" style="margin-top:16px;">
+          <div class="section-header"><span class="section-title">🗑️ Danger Zone</span></div>
+          <div class="section-body">
+            <button class="btn-danger" onclick="clearAllData()">Clear All Data (Reset System)</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+</div><!-- /dashboard -->
+
+<!-- ADD COMPANY MODAL -->
+<div class="modal-overlay" id="modal-addCompany">
+  <div class="modal">
+    <div class="modal-title">🏢 Add New Company</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Company Name</label>
+        <input class="form-inp" id="co-name" placeholder="Vision Plus Ltd"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Login ID</label>
+        <input class="form-inp" id="co-id" placeholder="visionplus"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-inp" id="co-pass" type="password" placeholder="••••••••"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Email</label>
+        <input class="form-inp" id="co-email" placeholder="hr@company.com"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('addCompany')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:10px 24px;" onclick="addCompany()">Create Company</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD AGENT MODAL -->
+<div class="modal-overlay" id="modal-addAgent">
+  <div class="modal">
+    <div class="modal-title">👤 Add New Agent</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Agent Name</label>
+        <input class="form-inp" id="ag-name" placeholder="Rahul Sharma"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Agent ID</label>
+        <input class="form-inp" id="ag-id" placeholder="AGT001"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-inp" id="ag-pass" type="password" placeholder="••••••••"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Company</label>
+        <select class="form-select" id="ag-company"></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('addAgent')">Cancel</button>
+      <button class="btn-primary" style="width:auto;padding:10px 24px;" onclick="addAgent()">Create Agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA STORE ────────────────────────────────────────────────────────────────
+const ADMIN_KEY = 'vn_admin_pass';
+const DATA_KEY  = 'vn_data';
+
+function getData() {
+  try { return JSON.parse(localStorage.getItem(DATA_KEY)) || {companies:[],agents:[],addresses:[]}; }
+  catch(e){ return {companies:[],agents:[],addresses:[]}; }
+}
+function saveData(d){ localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+function getAdminPass(){ return localStorage.getItem(ADMIN_KEY) || 'admin123'; }
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+function doLogin(){
+  const u = document.getElementById('adminUser').value.trim();
+  const p = document.getElementById('adminPass').value;
+  if(u === 'admin' && p === getAdminPass()){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    refreshAll();
+    startClock();
+  } else {
+    document.getElementById('loginErr').textContent = 'Invalid credentials.';
+  }
+}
+function logout(){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('adminUser').value='';
+  document.getElementById('adminPass').value='';
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+function startClock(){
+  function tick(){
+    document.getElementById('clockDisplay').textContent = new Date().toLocaleTimeString('en-IN',{hour12:false});
+  }
+  tick(); setInterval(tick,1000);
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='overview') renderOverview();
+  if(name==='companies') renderCompanies();
+  if(name==='agents') renderAgents();
+  if(name==='addresses') renderAddresses();
+}
+
+// ── REFRESH ALL ───────────────────────────────────────────────────────────────
+function refreshAll(){ renderOverview(); renderCompanies(); renderAgents(); renderAddresses(); }
+
+// ── OVERVIEW ──────────────────────────────────────────────────────────────────
+function renderOverview(){
+  const d = getData();
+  document.getElementById('stat-companies').textContent = d.companies.length;
+  document.getElementById('stat-agents').textContent = d.agents.length;
+  document.getElementById('stat-addresses').textContent = d.addresses.length;
+  // active today (addresses captured today)
+  const today = new Date().toDateString();
+  const activeAgents = new Set(d.addresses.filter(a=>new Date(a.time).toDateString()===today).map(a=>a.agentId));
+  document.getElementById('stat-active').textContent = activeAgents.size;
+
+  // recent companies
+  const rct = document.getElementById('recentCompaniesTable');
+  rct.innerHTML = '';
+  d.companies.slice(-5).reverse().forEach(co=>{
+    const agents = d.agents.filter(a=>a.companyId===co.id).length;
+    const addrs  = d.addresses.filter(a=>a.companyId===co.id).length;
+    rct.innerHTML += `<tr>
+      <td><strong>${co.name}</strong></td>
+      <td>${agents}</td><td>${addrs}</td>
+      <td><span class="pill pill-green">Active</span></td>
+      <td style="color:var(--muted);font-size:11px;">${new Date(co.created).toLocaleDateString('en-IN')}</td>
+    </tr>`;
+  });
+  if(!d.companies.length) rct.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No companies yet</td></tr>';
+
+  // recent addresses
+  const rat = document.getElementById('recentAddressTable');
+  rat.innerHTML = '';
+  d.addresses.slice(-5).reverse().forEach(a=>{
+    const ag = d.agents.find(x=>x.id===a.agentId);
+    const co = d.companies.find(x=>x.id===a.companyId);
+    rat.innerHTML += `<tr>
+      <td>${ag?ag.name:a.agentId}</td>
+      <td style="color:var(--muted);">${co?co.name:'-'}</td>
+      <td>${a.address}</td>
+      <td><span class="pill pill-blue">${a.pincode||'-'}</span></td>
+      <td style="color:var(--muted);font-size:11px;">${new Date(a.time).toLocaleTimeString('en-IN')}</td>
+    </tr>`;
+  });
+  if(!d.addresses.length) rat.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No addresses captured yet</td></tr>';
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────────────────────
+function renderCompanies(){
+  const d = getData();
+  const tb = document.getElementById('companiesTable');
+  tb.innerHTML = '';
+  d.companies.forEach(co=>{
+    const agents = d.agents.filter(a=>a.companyId===co.id).length;
+    const addrs  = d.addresses.filter(a=>a.companyId===co.id).length;
+    tb.innerHTML += `<tr>
+      <td><strong>${co.name}</strong><br><span style="font-size:11px;color:var(--muted);">${co.email||''}</span></td>
+      <td><code style="color:var(--blue);font-size:12px;">${co.loginId}</code></td>
+      <td>${agents}</td><td>${addrs}</td>
+      <td><span class="pill pill-green">Active</span></td>
+      <td style="display:flex;gap:6px;padding:12px;">
+        <button class="btn-danger" onclick="deleteCompany('${co.id}')">Delete</button>
+        <button class="btn-edit" onclick="resetCoPass('${co.id}')">Reset Pass</button>
+      </td>
+    </tr>`;
+  });
+  if(!d.companies.length) tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No companies yet. Add one!</td></tr>';
+}
+
+function addCompany(){
+  const name=document.getElementById('co-name').value.trim();
+  const lid =document.getElementById('co-id').value.trim();
+  const pass=document.getElementById('co-pass').value;
+  const email=document.getElementById('co-email').value.trim();
+  if(!name||!lid||!pass){showToast('Fill all required fields','red');return;}
+  const d=getData();
+  if(d.companies.find(c=>c.loginId===lid)){showToast('Login ID already exists','red');return;}
+  d.companies.push({id:'co_'+Date.now(),name,loginId:lid,password:pass,email,created:Date.now()});
+  saveData(d); closeModal('addCompany');
+  document.getElementById('co-name').value='';document.getElementById('co-id').value='';
+  document.getElementById('co-pass').value='';document.getElementById('co-email').value='';
+  showToast('Company created!','green'); renderCompanies(); renderOverview();
+}
+
+function deleteCompany(id){
+  if(!confirm('Delete this company and ALL its agents/addresses?')) return;
+  const d=getData();
+  d.companies=d.companies.filter(c=>c.id!==id);
+  d.agents=d.agents.filter(a=>a.companyId!==id);
+  d.addresses=d.addresses.filter(a=>a.companyId!==id);
+  saveData(d); renderCompanies(); renderOverview(); showToast('Company deleted','red');
+}
+
+function resetCoPass(id){
+  const np=prompt('Enter new password for this company:');
+  if(!np) return;
+  const d=getData();
+  const co=d.companies.find(c=>c.id===id);
+  if(co){co.password=np;saveData(d);showToast('Password updated','green');}
+}
+
+// ── AGENTS ────────────────────────────────────────────────────────────────────
+function renderAgents(){
+  const d=getData();
+  const tb=document.getElementById('agentsTable');
+  tb.innerHTML='';
+  const sel=document.getElementById('ag-company');
+  sel.innerHTML='<option value="">Select Company</option>';
+  d.companies.forEach(co=>{ sel.innerHTML+=`<option value="${co.id}">${co.name}</option>`; });
+
+  d.agents.forEach(ag=>{
+    const co=d.companies.find(c=>c.id===ag.companyId);
+    const addrs=d.addresses.filter(a=>a.agentId===ag.id).length;
+    tb.innerHTML+=`<tr>
+      <td><strong>${ag.name}</strong></td>
+      <td><code style="color:var(--green);font-size:12px;">${ag.agentId}</code></td>
+      <td>${co?co.name:'Unknown'}</td>
+      <td>${addrs}</td>
+      <td><span class="pill pill-green">Active</span></td>
+      <td style="display:flex;gap:6px;padding:12px;">
+        <button class="btn-danger" onclick="deleteAgent('${ag.id}')">Delete</button>
+        <button class="btn-edit" onclick="resetAgPass('${ag.id}')">Reset Pass</button>
+      </td>
+    </tr>`;
+  });
+  if(!d.agents.length) tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No agents yet.</td></tr>';
+}
+
+function addAgent(){
+  const name=document.getElementById('ag-name').value.trim();
+  const agId=document.getElementById('ag-id').value.trim();
+  const pass=document.getElementById('ag-pass').value;
+  const coId=document.getElementById('ag-company').value;
+  if(!name||!agId||!pass||!coId){showToast('Fill all fields','red');return;}
+  const d=getData();
+  if(d.agents.find(a=>a.agentId===agId)){showToast('Agent ID exists','red');return;}
+  d.agents.push({id:'ag_'+Date.now(),name,agentId:agId,password:pass,companyId:coId,created:Date.now()});
+  saveData(d); closeModal('addAgent');
+  document.getElementById('ag-name').value='';document.getElementById('ag-id').value='';
+  document.getElementById('ag-pass').value='';
+  showToast('Agent created!','green'); renderAgents(); renderOverview();
+}
+
+function deleteAgent(id){
+  if(!confirm('Delete this agent?')) return;
+  const d=getData();
+  d.agents=d.agents.filter(a=>a.id!==id);
+  d.addresses=d.addresses.filter(a=>a.agentId!==id);
+  saveData(d); renderAgents(); renderOverview(); showToast('Agent deleted','red');
+}
+
+function resetAgPass(id){
+  const np=prompt('Enter new password:');
+  if(!np) return;
+  const d=getData();
+  const ag=d.agents.find(a=>a.id===id);
+  if(ag){ag.password=np;saveData(d);showToast('Password updated','green');}
+}
+
+// ── ADDRESSES ─────────────────────────────────────────────────────────────────
+function renderAddresses(){
+  const d=getData();
+  // Populate filter
+  const fc=document.getElementById('filterCompany');
+  const curVal=fc.value;
+  fc.innerHTML='<option value="">All Companies</option>';
+  d.companies.forEach(co=>fc.innerHTML+=`<option value="${co.id}">${co.name}</option>`);
+  fc.value=curVal;
+
+  const filterCo=fc.value;
+  const filterQ=(document.getElementById('filterSearch').value||'').toLowerCase();
+
+  let rows=d.addresses.filter(a=>{
+    if(filterCo && a.companyId!==filterCo) return false;
+    if(filterQ && !(a.address||'').toLowerCase().includes(filterQ) && !(a.pincode||'').includes(filterQ)) return false;
+    return true;
+  }).reverse();
+
+  const tb=document.getElementById('addressesTable');
+  tb.innerHTML='';
+  rows.forEach(a=>{
+    const ag=d.agents.find(x=>x.id===a.agentId);
+    const co=d.companies.find(x=>x.id===a.companyId);
+    tb.innerHTML+=`<tr>
+      <td>${ag?ag.name:a.agentId}</td>
+      <td style="color:var(--muted);">${co?co.name:'-'}</td>
+      <td>${a.address}</td>
+      <td><span class="pill pill-blue">${a.pincode||'-'}</span></td>
+      <td style="color:var(--muted);">${a.district||'-'}</td>
+      <td style="color:var(--muted);">${a.state||'-'}</td>
+      <td style="color:var(--muted);font-size:11px;">${new Date(a.time).toLocaleString('en-IN')}</td>
+    </tr>`;
+  });
+  if(!rows.length) tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No addresses found</td></tr>';
+}
+
+function exportAllAddresses(){
+  const d=getData();
+  let csv='Agent,Company,Address,Pincode,District,State,Time\n';
+  d.addresses.forEach(a=>{
+    const ag=d.agents.find(x=>x.id===a.agentId);
+    const co=d.companies.find(x=>x.id===a.companyId);
+    csv+=`"${ag?ag.name:a.agentId}","${co?co.name:'-'}","${a.address}","${a.pincode||''}","${a.district||''}","${a.state||''}","${new Date(a.time).toLocaleString('en-IN')}"\n`;
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const lnk=document.createElement('a');lnk.href=url;lnk.download='all_addresses.csv';lnk.click();
+  showToast('CSV exported!','green');
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function changeAdminPass(){
+  const cur=document.getElementById('curPass').value;
+  const np=document.getElementById('newPass').value;
+  const cp=document.getElementById('confPass').value;
+  if(cur!==getAdminPass()){showToast('Current password wrong','red');return;}
+  if(np!==cp){showToast('Passwords do not match','red');return;}
+  if(np.length<6){showToast('Min 6 characters','red');return;}
+  localStorage.setItem(ADMIN_KEY,np);
+  showToast('Password updated!','green');
+  document.getElementById('curPass').value='';document.getElementById('newPass').value='';document.getElementById('confPass').value='';
+}
+
+function clearAllData(){
+  if(!confirm('This will delete ALL companies, agents and addresses. Are you sure?')) return;
+  localStorage.removeItem(DATA_KEY);
+  showToast('All data cleared','red');
+  refreshAll();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(name){
+  document.getElementById('modal-'+name).classList.add('show');
+  if(name==='addAgent'){
+    const d=getData();
+    const sel=document.getElementById('ag-company');
+    sel.innerHTML='<option value="">Select Company</option>';
+    d.companies.forEach(co=>sel.innerHTML+=`<option value="${co.id}">${co.name}</option>`);
+  }
+}
+function closeModal(name){ document.getElementById('modal-'+name).classList.remove('show'); }
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg,type='green'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.borderColor=type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--amber)';
+  t.style.color=type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--amber)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{ if(e.target===el) el.classList.remove('show'); });
+});
+</script>
+</body>
+</html>
