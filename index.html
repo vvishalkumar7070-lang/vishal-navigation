@@ -895,8 +895,11 @@ function buildPubCard(d){
     h+=`<div class="addr-lbl">🏙️ Nearby Places <span style="font-size:9px;color:var(--text3)">(within 200m)</span></div>`;
     h+=`<div class="nearby-list">`;
     d.nearby.slice(0,10).forEach((p,i)=>{
-      const mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(p.name+', India');
-      h+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(p.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7;margin-left:4px">↗</div></a>`;
+      // Include full address context so Google Maps opens exact location
+      const locationContext = d.full_address || (d.district+', '+d.state+', India');
+      const mapsQuery = p.name + ' near ' + locationContext;
+      const mapsUrl = 'https://www.google.com/maps/search/'+encodeURIComponent(mapsQuery);
+      h+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open exact location in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(p.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7;margin-left:4px">↗</div></a>`;
     });
     h+=`</div>`;
   }
@@ -977,7 +980,17 @@ async function pubSearch(){
           let cardHtml=buildPubCard(p);
           if(microNearby.length>0){
             cardHtml+=`<div class="addr-lbl" style="margin-top:10px">📍 Real Nearby <span style="font-size:9px;color:var(--text3)">(OpenStreetMap verified)</span></div><div class="nearby-list">`;
-            microNearby.forEach((item,i)=>{cardHtml+=`<div class="ni" onclick="window.open('https://www.google.com/maps/search/${encodeURIComponent(item.name+' India')}','_blank')" style="cursor:pointer" title="Open in Google Maps"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></div>`;});
+            microNearby.forEach((item,i)=>{
+              // Use coordinates if available for pinpoint accuracy
+              let mapsUrl;
+              if(coords&&item.distance){
+                // Search near exact coordinates
+                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name)+'/@'+coords.lat+','+coords.lon+',17z';
+              } else {
+                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name+' near '+(parsed.district||'')+' '+(parsed.state||'')+' India');
+              }
+              cardHtml+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open exact location in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></a>`;
+            });
             cardHtml+=`</div>`;
           } else {
             cardHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">📍 Micro nearby data unavailable · <a href="https://maps.google.com/?q=${encodeURIComponent(resolvedQ)}" target="_blank" style="color:var(--green)">View on Google Maps</a></div>`;
@@ -1582,7 +1595,14 @@ function rejectAddr(){
 
 function openMaps(){
   if(!currentResult) return;
-  window.open(`https://www.google.com/maps/search/${encodeURIComponent(currentResult.rawAddress+' India')}`,'_blank');
+  let url;
+  if(currentResult.coords){
+    // Open exact coordinates on map
+    url=`https://www.google.com/maps/@${currentResult.coords.lat},${currentResult.coords.lon},17z`;
+  } else {
+    url=`https://www.google.com/maps/search/${encodeURIComponent(currentResult.rawAddress+', '+( currentResult.district||'')+', '+(currentResult.state||'')+', India')}`;
+  }
+  window.open(url,'_blank');
 }
 
 function showEdit(){
@@ -1658,7 +1678,7 @@ function renderHistory(){
     div.className='hi-item'+(item.isDuplicate?' dup':'');
     div.innerHTML=`<div class="hi-addr">${item.address}${item.district?', '+item.district:''}</div>
       <div class="hi-meta"><span class="hi-pin">${item.pincode}</span><span class="hi-time">${item.time?.split(',')[1]?.trim()||item.time}</span>${item.state?`<span class="hi-state">${item.state}</span>`:''}</div>
-      <div class="hi-btns"><button class="hi-btn" onclick="copyHi(${idx})">📋 Copy</button><button class="hi-btn" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(item.address+' India')}','_blank')">🗺️ Maps</button></div>`;
+      <div class="hi-btns"><button class="hi-btn" onclick="copyHi(${idx})">📋 Copy</button><button class="hi-btn" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(item.address+(item.district?\', \'+item.district:\'\')+\', \'+item.state+\', India')}','_blank')">🗺️ Maps</button></div>`;
     list.appendChild(div);
   });
 }
