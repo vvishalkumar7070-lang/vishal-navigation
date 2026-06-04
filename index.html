@@ -895,7 +895,8 @@ function buildPubCard(d){
     h+=`<div class="addr-lbl">🏙️ Nearby Places <span style="font-size:9px;color:var(--text3)">(within 200m)</span></div>`;
     h+=`<div class="nearby-list">`;
     d.nearby.slice(0,10).forEach((p,i)=>{
-      h+=`<div class="ni"><div class="ni-em">${emo(p.type)}</div><div><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}</div>`;
+      const mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(p.name+', India');
+      h+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(p.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7;margin-left:4px">↗</div></a>`;
     });
     h+=`</div>`;
   }
@@ -976,7 +977,7 @@ async function pubSearch(){
           let cardHtml=buildPubCard(p);
           if(microNearby.length>0){
             cardHtml+=`<div class="addr-lbl" style="margin-top:10px">📍 Real Nearby <span style="font-size:9px;color:var(--text3)">(OpenStreetMap verified)</span></div><div class="nearby-list">`;
-            microNearby.forEach((item,i)=>{cardHtml+=`<div class="ni"><div class="ni-em">${emo(item.type)}</div><div><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}</div>`;});
+            microNearby.forEach((item,i)=>{cardHtml+=`<div class="ni" onclick="window.open('https://www.google.com/maps/search/${encodeURIComponent(item.name+' India')}','_blank')" style="cursor:pointer" title="Open in Google Maps"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></div>`;});
             cardHtml+=`</div>`;
           } else {
             cardHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">📍 Micro nearby data unavailable · <a href="https://maps.google.com/?q=${encodeURIComponent(resolvedQ)}" target="_blank" style="color:var(--green)">View on Google Maps</a></div>`;
@@ -996,37 +997,153 @@ async function pubSearch(){
   document.getElementById('pubQ').focus();
 }
 
-function togglePubMic(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Use Chrome for voice input','err');return;}
+// Public mic state
+let pubSilenceTimer=null;
+let pubAudioChunks=[];
+let pubMediaRecorder=null;
+let pubStream=null;
+
+async function togglePubMic(){
   if(pubMicActive){
-    pubRecognition?.stop();
-    pubMicActive=false;
-    document.getElementById('pubMic').classList.remove('active');
-    document.getElementById('pubMic').textContent='🎤';
+    stopPubMic();
     return;
   }
+
+  pubMicActive=true;
+  const micBtn=document.getElementById('pubMic');
+  micBtn.classList.add('active');
+  micBtn.textContent='⏹';
+  document.getElementById('pubQ').placeholder='Listening... speak any location in India';
+
+  // Try Groq Whisper first for best accuracy
+  try{
+    pubStream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+    });
+
+    const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
+    pubMediaRecorder=new MediaRecorder(pubStream,{mimeType});
+    pubAudioChunks=[];
+
+    pubMediaRecorder.ondataavailable=e=>{if(e.data.size>0) pubAudioChunks.push(e.data);};
+
+    pubMediaRecorder.onstop=async()=>{
+      if(!pubMicActive||pubAudioChunks.length===0) return;
+      const blob=new Blob(pubAudioChunks,{type:mimeType});
+      pubAudioChunks=[];
+
+      // Show processing indicator
+      micBtn.textContent='⚙️';
+      document.getElementById('pubQ').placeholder='Processing your voice...';
+
+      try{
+        const formData=new FormData();
+        formData.append('file',blob,'audio.webm');
+        formData.append('model','whisper-large-v3-turbo');
+        formData.append('response_format','json');
+        formData.append('temperature','0');
+        formData.append('prompt','India address, location, area, colony, city, village, pincode, gali, mohalla, sector, nagar. पता, घर, गली, मोहल्ला');
+
+        const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+GROQ_KEY},
+          body:formData
+        });
+        const data=await res.json();
+        const text=(data.text||'').trim();
+
+        if(text&&text.length>1){
+          document.getElementById('pubQ').value=text;
+          stopPubMic();
+          // Immediately search whatever was said
+          setTimeout(pubSearch,200);
+        } else {
+          document.getElementById('pubQ').placeholder='Could not hear clearly, try again';
+          stopPubMic();
+        }
+      }catch(e){
+        // Fallback to Web Speech API
+        stopPubMic();
+        useFallbackMic();
+      }
+    };
+
+    // Record for max 8 seconds then auto-process
+    pubMediaRecorder.start();
+    pubSilenceTimer=setTimeout(()=>{
+      if(pubMediaRecorder?.state==='recording') pubMediaRecorder.stop();
+    },8000);
+
+  }catch(e){
+    // No mic permission or not supported — use Web Speech API
+    stopPubMic();
+    useFallbackMic();
+  }
+}
+
+function stopPubMic(){
+  pubMicActive=false;
+  clearTimeout(pubSilenceTimer);
+  if(pubMediaRecorder&&pubMediaRecorder.state!=='inactive'){
+    try{pubMediaRecorder.stop();}catch(e){}
+  }
+  if(pubStream){
+    pubStream.getTracks().forEach(t=>t.stop());
+    pubStream=null;
+  }
+  const micBtn=document.getElementById('pubMic');
+  if(micBtn){
+    micBtn.classList.remove('active');
+    micBtn.textContent='🎤';
+  }
+  document.getElementById('pubQ').placeholder='e.g. Lajpat Nagar Delhi, Camp Pune…';
+}
+
+function useFallbackMic(){
+  // Web Speech API fallback — captures everything user says
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Microphone not supported in this browser. Use Chrome.','err');return;}
+
+  pubMicActive=true;
+  const micBtn=document.getElementById('pubMic');
+  micBtn.classList.add('active');
+  micBtn.textContent='⏹';
+
   pubRecognition=new SR();
   pubRecognition.continuous=false;
   pubRecognition.interimResults=true;
-  pubRecognition.lang=navigator.language||'en-IN';
-  pubMicActive=true;
-  document.getElementById('pubMic').classList.add('active');
-  document.getElementById('pubMic').textContent='⏹';
+  pubRecognition.lang='hi-IN'; // Hindi first, auto-detects English too
+
   pubRecognition.onresult=e=>{
-    let t='';
-    for(let i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript;
-    document.getElementById('pubQ').value=t;
+    let interim='',final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
+      else interim+=e.results[i][0].transcript;
+    }
+    // Show live what user is saying
+    document.getElementById('pubQ').value=final||interim;
   };
+
   pubRecognition.onend=()=>{
     pubMicActive=false;
-    document.getElementById('pubMic').classList.remove('active');
-    document.getElementById('pubMic').textContent='🎤';
+    micBtn.classList.remove('active');
+    micBtn.textContent='🎤';
+    document.getElementById('pubQ').placeholder='e.g. Lajpat Nagar Delhi, Camp Pune…';
     const v=document.getElementById('pubQ').value.trim();
-    if(v) setTimeout(pubSearch,400);
+    // Search immediately — no trigger word needed
+    if(v) setTimeout(pubSearch,200);
   };
-  pubRecognition.onerror=()=>{pubMicActive=false;document.getElementById('pubMic').classList.remove('active');document.getElementById('pubMic').textContent='🎤';};
+
+  pubRecognition.onerror=e=>{
+    pubMicActive=false;
+    micBtn.classList.remove('active');
+    micBtn.textContent='🎤';
+    if(e.error==='not-allowed') toast('Microphone permission denied','err');
+    else if(e.error==='no-speech') toast('No speech detected, try again','err');
+  };
+
   pubRecognition.start();
+  document.getElementById('pubQ').placeholder='Listening... speak any India location';
 }
 
 
@@ -1181,7 +1298,8 @@ async function transcribeChunk(blob){
     formData.append('model','whisper-large-v3-turbo');
     formData.append('response_format','json');
     formData.append('temperature','0');
-    // No language specified = auto-detect all 20 languages
+    formData.append('prompt','Address, pincode, gali, mohalla, sector, colony, nagar, district, state, India. पता, घर, गली, मोहल्ला, सेक्टर, कॉलोनी, नगर, जिला, राज्य');
+    // Prompt helps Whisper understand Indian address context in any language
 
     // Layer 2: Sending to Groq Whisper
     updateLayerUI(2);
@@ -1240,13 +1358,28 @@ async function transcribeChunk(blob){
 
     if(captureMode){
       clearTimeout(silenceTimer);
+      // When customer stops speaking (3 second silence) → auto process
       silenceTimer=setTimeout(()=>{
-        if(captureMode&&currentTranscript.split(' ').length>4){
+        if(captureMode&&currentTranscript.split(' ').length>3){
           clearTimeout(captureTimer);
           captureMode=false;
           processCapture(currentTranscript);
         }
-      },3000);
+      },2500); // reduced to 2.5s for faster response
+    }
+
+    // Also auto-trigger if we hear enough words even without silence
+    if(!captureMode&&currentTranscript.split(' ').length>8){
+      const newFiredNow=checkAllTriggers(currentTranscript);
+      if(newFiredNow.size>=1){
+        captureMode=true;
+        silenceTimer=setTimeout(()=>{
+          if(captureMode){
+            captureMode=false;
+            processCapture(currentTranscript);
+          }
+        },2500);
+      }
     }
 
     if(!captureMode&&isListening){
@@ -1753,41 +1886,50 @@ const PIN_DB=[{"n":"(Gandhinagar) Sector 16","p":"382016","po":"(Gandhinagar) Se
 
 function searchPinDB(query) {
   const q = query.toLowerCase().trim();
-  // Extract meaningful parts - ignore common words
-  const stopwords = new Set(['the','of','and','in','at','near','road','nagar','vihar','colony','phase','sector','block','part','area','town','city','village']);
+  const stopwords = new Set(['the','of','and','in','at','near','road','nagar','vihar','colony','phase','sector','block','part','area','town','city','village','gram','gaon','ka','ki','ke','hai','mein','se','per','wala']);
   const parts = query.split(',').map(p=>p.trim().toLowerCase());
-  const primaryQ = parts[0]; // most specific part
-  const words = primaryQ.split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
-  const allWords = q.split(/\s+/).filter(w => w.length > 2);
+  const primaryQ = parts[0];
+  const allWords = q.split(' ').filter(w=>w.length>2&&!stopwords.has(w));
 
-  let results = PIN_DB.filter(r => {
-    const name = r.n.toLowerCase();
-    const dist = (r.d||'').toLowerCase();
-    const state = (r.s||'').toLowerCase();
-    
-    // Exact match
-    if(name === primaryQ || name === q) return true;
-    // All key words in name
-    if(words.length > 0 && words.every(w => name.includes(w))) return true;
-    // Match across name + district (for "Selesih Aizawl" type queries)
-    if(allWords.length > 1) {
-      const combined = name + ' ' + dist + ' ' + state;
-      if(allWords.every(w => combined.includes(w))) return true;
-    }
-    return false;
+  // Level 1: Exact match
+  let exact = PIN_DB.filter(r=>{
+    const name=r.n.toLowerCase();
+    return name===q||name===primaryQ;
   });
-  
-  // Sort: exact > starts with > contains
-  results.sort((a, b) => {
-    const an = a.n.toLowerCase(), bn = b.n.toLowerCase();
-    if(an === primaryQ) return -1;
-    if(bn === primaryQ) return 1;
-    if(an.startsWith(primaryQ)) return -1;
-    if(bn.startsWith(primaryQ)) return 1;
-    return an.length - bn.length;
+  if(exact.length>0) return exact.slice(0,5);
+
+  // Level 2: Starts with
+  let startsWith = PIN_DB.filter(r=>{
+    const name=r.n.toLowerCase();
+    return allWords.some(p=>p.length>3&&name.startsWith(p));
   });
-  
-  return results.slice(0, 5);
+  if(startsWith.length>0){
+    startsWith.sort((a,b)=>a.n.length-b.n.length);
+    return startsWith.slice(0,5);
+  }
+
+  // Level 3: All words match in name+district+state
+  let allMatch = PIN_DB.filter(r=>{
+    const combined=(r.n+' '+(r.d||'')+' '+(r.s||'')).toLowerCase();
+    return allWords.length>0&&allWords.every(w=>combined.includes(w));
+  });
+  if(allMatch.length>0){
+    allMatch.sort((a,b)=>a.n.length-b.n.length);
+    return allMatch.slice(0,5);
+  }
+
+  // Level 4: Fuzzy - any word match (catches villages with alternate spellings)
+  let anyMatch = PIN_DB.filter(r=>{
+    const name=r.n.toLowerCase();
+    const dist=(r.d||'').toLowerCase();
+    return allWords.some(w=>w.length>4&&(name.includes(w)||dist.includes(w)));
+  });
+  anyMatch.sort((a,b)=>{
+    const aScore=allWords.filter(w=>a.n.toLowerCase().includes(w)).length;
+    const bScore=allWords.filter(w=>b.n.toLowerCase().includes(w)).length;
+    return bScore-aScore||a.n.length-b.n.length;
+  });
+  return anyMatch.slice(0,5);
 }
 // ========== END PINCODE DATABASE ==========</script>
 </body>
