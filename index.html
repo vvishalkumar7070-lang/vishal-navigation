@@ -1689,7 +1689,7 @@ function renderHistory(){
     div.className='hi-item'+(item.isDuplicate?' dup':'');
     div.innerHTML=`<div class="hi-addr">${item.address}${item.district?', '+item.district:''}</div>
       <div class="hi-meta"><span class="hi-pin">${item.pincode}</span><span class="hi-time">${item.time?.split(',')[1]?.trim()||item.time}</span>${item.state?`<span class="hi-state">${item.state}</span>`:''}</div>
-      <div class="hi-btns"><button class="hi-btn" onclick="copyHi(${idx})">📋 Copy</button><button class="hi-btn" onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(item.address+(item.district?\', \'+item.district:\'\')+\', \'+item.state+\', India')}','_blank')">🗺️ Maps</button></div>`;
+      <div class="hi-btns"><button class="hi-btn" onclick="copyHi(${idx})">📋 Copy</button><button class="hi-btn" onclick="window.open('https://maps.google.com/maps?q='+encodeURIComponent(item.address+(item.district?', '+item.district:'')+', '+item.state+', India'),'_blank')">🗺️ Maps</button></div>`;
     list.appendChild(div);
   });
 }
@@ -1920,6 +1920,19 @@ document.getElementById('landing').style.display='flex';
 document.getElementById('loginPage').style.display='none';
 document.getElementById('appShell').classList.remove('active');
 console.log('✅ Vishal Navigation loaded successfully!');
+// ===== INIT =====
+window.onload = function(){
+  var btnP = document.getElementById('btnPublic');
+  var btnA = document.getElementById('btnAgent');
+  var btnAd = document.getElementById('btnAdmin');
+  if(btnP) btnP.onclick = function(){ showPublic(); };
+  if(btnA) btnA.onclick = function(){ showLogin('agent'); };
+  if(btnAd) btnAd.onclick = function(){ showLogin('admin'); };
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appShell').classList.remove('active');
+  console.log('Vishal Navigation ready!');
+};
 </script>
 </body>
 </html>
