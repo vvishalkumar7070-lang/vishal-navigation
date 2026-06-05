@@ -364,9 +364,19 @@ body::after{
 </style>
 </head>
 <body>
+<script>
+// Show landing immediately before heavy PIN_DB loads
+window.onload = function(){
+  document.getElementById('landing').style.display='flex';
+};
+// Also try immediately
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('landing').style.display='flex';
+});
+</script>
 
 <!-- ===== LANDING ===== -->
-<div class="landing" id="landing">
+<div class="landing" id="landing" style="display:none">
   <div class="landing-inner">
     <div class="landing-logo">
       <div class="landing-logo-mark">🧭</div>
@@ -378,18 +388,18 @@ body::after{
     <div class="landing-title">The smarter way to<br>capture <span>any India address</span></div>
     <div class="landing-sub">154,784 real pincodes · 20 languages · AI-powered voice capture · Built for sales teams</div>
     <div class="landing-cards">
-      <div class="lcard public" onclick="showPublic()">
+      <div class="lcard public" id="btnPublic">
         <div class="lcard-icon">🔍</div>
         <div class="lcard-title">Public Search</div>
         <div class="lcard-sub">Find any location</div>
       </div>
-      <div class="lcard agent" onclick="showLogin('agent')">
+      <div class="lcard agent" id="btnAgent">
         <div class="lcard-icon">🎙️</div>
         <div class="lcard-title">Agent Login</div>
         <div class="lcard-sub">Sales call tool</div>
         <div class="lcard-badge">PRO</div>
       </div>
-      <div class="lcard admin" onclick="showLogin('admin')">
+      <div class="lcard admin" id="btnAdmin">
         <div class="lcard-icon">👑</div>
         <div class="lcard-title">Admin</div>
         <div class="lcard-sub">Manage all</div>
@@ -1949,12 +1959,16 @@ function searchPinDB(query) {
   return anyMatch.slice(0,5);
 }
 // ========== END PINCODE DATABASE ==========
-// ===== INIT — runs after ALL functions defined =====
-window.addEventListener('DOMContentLoaded', function(){
-  document.getElementById('landing').style.display='flex';
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('appShell').classList.remove('active');
-});
+// ===== INIT — runs after ALL functions and PIN_DB defined =====
+// Attach button clicks AFTER all functions are loaded
+document.getElementById('btnPublic').addEventListener('click', function(){ showPublic(); });
+document.getElementById('btnAgent').addEventListener('click', function(){ showLogin('agent'); });
+document.getElementById('btnAdmin').addEventListener('click', function(){ showLogin('admin'); });
+// Show landing
+document.getElementById('landing').style.display='flex';
+document.getElementById('loginPage').style.display='none';
+document.getElementById('appShell').classList.remove('active');
+console.log('✅ Vishal Navigation loaded successfully!');
 </script>
 </body>
 </html>
