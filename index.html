@@ -906,11 +906,17 @@ function buildPubCard(d){
     h+=`<div class="addr-lbl">🏙️ Nearby Places <span style="font-size:9px;color:var(--text3)">(within 200m)</span></div>`;
     h+=`<div class="nearby-list">`;
     d.nearby.slice(0,10).forEach((p,i)=>{
-      // Include full address context so Google Maps opens exact location
-      const locationContext = d.full_address || (d.district+', '+d.state+', India');
-      const mapsQuery = p.name + ' near ' + locationContext;
-      const mapsUrl = 'https://www.google.com/maps/search/'+encodeURIComponent(mapsQuery);
-      h+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open exact location in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(p.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7;margin-left:4px">↗</div></a>`;
+      // Use coordinates if available for pinpoint accuracy
+      let mapsUrl;
+      if(d._lat && d._lon){
+        // Open exact coordinates — most accurate
+        mapsUrl = 'https://www.google.com/maps/search/'+encodeURIComponent(p.name)+'/@'+d._lat+','+d._lon+',17z';
+      } else {
+        // Fallback: name + full address context
+        const ctx = (d.full_address||'') + ', India';
+        mapsUrl = 'https://www.google.com/maps/search/'+encodeURIComponent(p.name+' near '+ctx);
+      }
+      h+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(p.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${p.name}</div><div class="ni-type">${p.type}</div></div>${p.distance?`<div class="ni-dist">${p.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7;margin-left:4px">↗</div></a>`;
     });
     h+=`</div>`;
   }
@@ -953,9 +959,14 @@ async function fetchNearby(lat,lon){
   }catch(e){return [];}
 }
 
-const PUB_SYS=`You are a smart India address lookup tool. ONLY answer queries about Indian addresses. Return ONLY raw JSON:
-{"is_address_query":true,"original":null,"corrected":null,"full_address":"full address with pincode","pincode":"6-digit","post_office":"name","district":"name","state":"name","nearby":[],"verify_note":"Pincode verified via India Post"}
-If not address: {"is_address_query":false,"message":"..."}`;
+const PUB_SYS=`You are a smart India address lookup tool. ONLY answer queries about Indian addresses. Return ONLY raw JSON — no markdown, no extra text.
+CRITICAL RULES:
+1. If VERIFIED PINCODE is provided in the user message — use it EXACTLY as given. Never change it.
+2. If no verified pincode provided — use your best knowledge.
+3. For villages/remote areas — always give closest available pincode, never say not found.
+4. full_address must include house/area, city, district, state, pincode.
+JSON schema: {"is_address_query":true,"original":null,"corrected":null,"full_address":"complete address","pincode":"6-digit pincode","post_office":"post office name","district":"district name","state":"state name","nearby":[],"verify_note":"source of pincode"}
+If not India address: {"is_address_query":false,"message":"friendly message"}`;
 
 async function pubSearch(){
   const q=document.getElementById('pubQ').value.trim();
@@ -976,8 +987,8 @@ async function pubSearch(){
     if(coords) microNearby=await fetchNearby(coords.lat,coords.lon);
     const nearbyHint=microNearby.length>0?`\nREAL NEARBY from OpenStreetMap: ${JSON.stringify(microNearby)}`:'';
     const geoHint=coords?.display?`\nGeocode: ${coords.display}`:'';
-    const pinHint=verifiedPin?`\nVERIFIED PINCODE: ${verifiedPin}, PO: ${verifiedPO}, District: ${verifiedDist}, State: ${verifiedState}`:'';
-    const userMsg=`Location: ${resolvedQ}.${pinHint}${geoHint}${nearbyHint}`;
+    const pinHint=verifiedPin?`\nCRITICAL: Use EXACTLY this verified pincode from India Post database — do NOT change it: Pincode=${verifiedPin}, PostOffice=${verifiedPO}, District=${verifiedDist}, State=${verifiedState}. This is 100% accurate.`:'';
+    const userMsg=`Location: ${resolvedQ}.${geoHint}${pinHint}${nearbyHint}`;
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.2,messages:[{role:'system',content:PUB_SYS},{role:'user',content:userMsg}]})});
     const data=await res.json();
     hideTyping();
@@ -988,19 +999,21 @@ async function pubSearch(){
         const p=JSON.parse(text.replace(/```json|```/g,'').trim());
         if(!p.is_address_query) addMsg('ai',`<div class="msg bot" style="color:var(--text2)">🚫 ${p.message}</div>`);
         else{
+          // Inject coordinates into result for nearby accuracy
+          if(coords){ p._lat=coords.lat; p._lon=coords.lon; }
           let cardHtml=buildPubCard(p);
           if(microNearby.length>0){
             cardHtml+=`<div class="addr-lbl" style="margin-top:10px">📍 Real Nearby <span style="font-size:9px;color:var(--text3)">(OpenStreetMap verified)</span></div><div class="nearby-list">`;
             microNearby.forEach((item,i)=>{
               // Use coordinates if available for pinpoint accuracy
               let mapsUrl;
-              if(coords&&item.distance){
-                // Search near exact coordinates
+              if(coords){
+                // Use exact GPS coordinates — opens pinpoint location
                 mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name)+'/@'+coords.lat+','+coords.lon+',17z';
               } else {
-                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name+' near '+(parsed.district||'')+' '+(parsed.state||'')+' India');
+                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name+' '+( parsed.full_address||parsed.district||'')+' India');
               }
-              cardHtml+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open exact location in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></a>`;
+              cardHtml+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></a>`;
             });
             cardHtml+=`</div>`;
           } else {
