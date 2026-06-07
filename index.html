@@ -398,9 +398,27 @@ body::after{
 .search-inp{background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--text);outline:none;width:200px;font-family:var(--font-body)}
 .search-inp:focus{border-color:rgba(0,255,170,.4)}
 
-/* FEATURE TOOLBAR */
-.feat-btn{background:rgba(7,13,20,.8);border:1px solid var(--border2);color:var(--text2);border-radius:20px;padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:all .2s;flex-shrink:0}
-.feat-btn:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,170,.05);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,255,170,.1)}
+/* DRAWER BUTTON STYLES */
+.drawer-btn{display:flex;align-items:center;gap:12px;width:100%;padding:11px 14px;border-radius:13px;border:1px solid var(--border2);background:rgba(10,16,26,.7);cursor:pointer;font-family:var(--font-body);transition:all .22s;text-align:left}
+.drawer-btn:hover{transform:translateX(3px)}
+.drawer-btn.green:hover{border-color:var(--green);background:rgba(0,255,170,.06);box-shadow:0 0 16px rgba(0,255,170,.08)}
+.drawer-btn.red:hover{border-color:var(--red);background:rgba(255,85,102,.06)}
+.drawer-btn.teal:hover{border-color:#00ccaa;background:rgba(0,204,170,.06)}
+.drawer-btn.blue:hover{border-color:var(--blue);background:rgba(56,182,255,.06)}
+.drawer-btn.purple:hover{border-color:var(--purple);background:rgba(176,140,255,.06)}
+.drawer-btn.amber:hover{border-color:var(--amber);background:rgba(255,179,71,.06)}
+.drawer-btn.gray:hover{border-color:var(--text2);background:rgba(255,255,255,.04)}
+.drawer-btn.green-outline{border-color:rgba(0,255,170,.2);background:rgba(0,255,170,.04)}
+.drawer-btn.green-outline:hover{border-color:var(--green);background:rgba(0,255,170,.09)}
+.dbi{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+.dbt{flex:1;min-width:0}
+.dbt-title{font-size:12px;font-weight:700;color:var(--text);font-family:var(--font-display);letter-spacing:-.1px}
+.dbt-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px;letter-spacing:.2px}
+
+/* COUNCIL STATUS PILLS */
+.council-status-pill{font-size:14px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border2);background:rgba(10,16,26,.8);transition:all .3s;cursor:default}
+.council-status-pill.active{border-color:var(--green);background:rgba(0,255,170,.1);box-shadow:0 0 10px rgba(0,255,170,.2);animation:livePulse 1.5s infinite}
+.council-status-pill.done{border-color:rgba(0,255,170,.3);background:rgba(0,255,170,.06)}
 
 /* FILTER CHIPS */
 .filter-chip{font-size:11px;padding:5px 12px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;color:var(--text3);transition:all .2s;font-family:var(--font-mono);white-space:nowrap}
@@ -432,36 +450,6 @@ body::after{
 .dym-bar span{color:var(--green);cursor:pointer;text-decoration:underline;font-weight:600}
 .dym-bar span:hover{color:var(--text)}
 
-/* COUNCIL PANEL */
-.council-panel{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:none}
-.council-panel::-webkit-scrollbar{display:none}
-.council-card{flex-shrink:0;background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:14px;padding:11px 14px;min-width:180px;max-width:220px;animation:msgIn .4s ease;position:relative;overflow:hidden}
-.council-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
-.council-card.naruto::before{background:linear-gradient(90deg,#ff8c00,#ff4500)}
-.council-card.sasuke::before{background:linear-gradient(90deg,#6600cc,#330066)}
-.council-card.sakura::before{background:linear-gradient(90deg,#ff69b4,#cc1155)}
-.council-card.jiraiya::before{background:linear-gradient(90deg,#00aa88,#006655)}
-.council-card.itachi::before{background:linear-gradient(90deg,#cc0000,#660000)}
-.council-card.shikamaru::before{background:linear-gradient(90deg,#888800,#555500)}
-.council-name{font-size:10px;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
-.council-card.naruto .council-name{color:#ff8c00}
-.council-card.sasuke .council-name{color:#9966ff}
-.council-card.sakura .council-name{color:#ff69b4}
-.council-card.jiraiya .council-name{color:#00cc99}
-.council-card.itachi .council-name{color:#ff4444}
-.council-card.shikamaru .council-name{color:#aaaa00}
-.council-role{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;letter-spacing:.5px}
-.council-msg{font-size:11px;color:var(--text);line-height:1.55}
-.council-thinking{display:flex;gap:3px;align-items:center;padding:4px 0}
-.council-thinking span{width:4px;height:4px;border-radius:50%;animation:bounce 1.3s infinite ease-in-out}
-.council-card.naruto .council-thinking span{background:#ff8c00}
-.council-card.sasuke .council-thinking span{background:#9966ff}
-.council-card.sakura .council-thinking span{background:#ff69b4}
-.council-card.jiraiya .council-thinking span{background:#00cc99}
-.council-card.itachi .council-thinking span{background:#ff4444}
-.council-card.shikamaru .council-thinking span{background:#aaaa00}
-.council-thinking span:nth-child(2){animation-delay:.15s}
-.council-thinking span:nth-child(3){animation-delay:.3s}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(7,13,20,.95);border:1px solid var(--green);color:var(--green);padding:11px 24px;border-radius:12px;font-size:12px;font-family:var(--font-mono);transition:transform .35s cubic-bezier(.2,.8,.3,1);z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(0,255,170,.15);letter-spacing:.5px;backdrop-filter:blur(16px)}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -562,106 +550,112 @@ document.addEventListener('DOMContentLoaded', function(){
 
   <!-- PUBLIC VIEW -->
   <div id="publicView">
+
+    <!-- HAMBURGER DRAWER TOGGLE -->
+    <button id="drawerToggle" onclick="toggleDrawer()" style="position:fixed;top:62px;right:16px;z-index:300;width:40px;height:40px;background:rgba(7,13,20,.95);border:1px solid rgba(0,255,170,.2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:all .25s;backdrop-filter:blur(16px);padding:0">
+      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
+      <span class="hb-line" style="width:13px;height:2px;background:var(--text2);border-radius:2px;display:block;transition:all .3s"></span>
+      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
+    </button>
+
+    <!-- RIGHT SIDE DRAWER -->
+    <div id="toolDrawer" style="position:fixed;top:0;right:-320px;width:300px;height:100vh;background:rgba(3,5,10,.98);border-left:1px solid rgba(0,255,170,.08);z-index:299;display:flex;flex-direction:column;overflow-y:auto;transition:right .32s cubic-bezier(.2,.8,.3,1);box-shadow:-24px 0 80px rgba(0,0,0,.7);backdrop-filter:blur(24px);scrollbar-width:thin;scrollbar-color:var(--border2) transparent">
+      <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(0,255,170,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:56px">
+        <div>
+          <div style="font-size:14px;font-weight:800;font-family:var(--font-display);background:linear-gradient(90deg,#fff,var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Tools</div>
+          <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px">ADDRESS INTELLIGENCE</div>
+        </div>
+        <button onclick="toggleDrawer()" style="background:none;border:1px solid var(--border2);color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:5px 8px;border-radius:8px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">✕</button>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:7px;flex:1">
+        <button class="drawer-btn green" onclick="triggerCurrentLocation();toggleDrawer()"><span class="dbi">📍</span><div class="dbt"><div class="dbt-title">My Current Location</div><div class="dbt-sub">One click · get your exact address</div></div></button>
+        <button class="drawer-btn red" onclick="openPhotoMode();toggleDrawer()"><span class="dbi">📸</span><div class="dbt"><div class="dbt-title">Photo → Address</div><div class="dbt-sub">Upload photo · extract location</div></div></button>
+        <button class="drawer-btn teal" onclick="openConversational();toggleDrawer()"><span class="dbi">🗣️</span><div class="dbt"><div class="dbt-title">Describe It</div><div class="dbt-sub">Describe surroundings · AI finds you</div></div></button>
+        <button class="drawer-btn blue" onclick="openCompare();toggleDrawer()"><span class="dbi">📏</span><div class="dbt"><div class="dbt-title">Compare Locations</div><div class="dbt-sub">Distance between two places</div></div></button>
+        <button class="drawer-btn purple" onclick="openLandmark();toggleDrawer()"><span class="dbi">🏛️</span><div class="dbt"><div class="dbt-title">Landmark → Address</div><div class="dbt-sub">India Gate, Lotus Temple…</div></div></button>
+        <button class="drawer-btn amber" onclick="openFilterNearby();toggleDrawer()"><span class="dbi">🎯</span><div class="dbt"><div class="dbt-title">Filter Nearby</div><div class="dbt-sub">Hospital, bank, pharmacy…</div></div></button>
+        <button class="drawer-btn gray" onclick="openCommunity();toggleDrawer()"><span class="dbi">🤝</span><div class="dbt"><div class="dbt-title">Report Wrong Address</div><div class="dbt-sub">Help improve accuracy</div></div></button>
+        <div style="height:1px;background:rgba(255,255,255,.04);margin:4px 0"></div>
+        <button class="drawer-btn green-outline" onclick="showLogin('agent');toggleDrawer()"><span class="dbi">🎙️</span><div class="dbt"><div class="dbt-title">Agent Login</div><div class="dbt-sub">Sales call address capture</div></div><span style="font-size:9px;background:rgba(0,255,170,.12);color:var(--green);padding:2px 8px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(0,255,170,.18);white-space:nowrap;flex-shrink:0">PRO</span></button>
+      </div>
+      <!-- Council status -->
+      <div style="padding:12px 16px 16px;border-top:1px solid rgba(0,255,170,.05);flex-shrink:0">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px">⚔️ BACKGROUND COUNCIL</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span id="cs-naruto" class="council-status-pill">🍥</span>
+          <span id="cs-sasuke" class="council-status-pill">⚡</span>
+          <span id="cs-sakura" class="council-status-pill">🌸</span>
+          <span id="cs-itachi" class="council-status-pill">👁️</span>
+          <span id="cs-shikamaru" class="council-status-pill">🧠</span>
+          <span id="cs-jiraiya" class="council-status-pill">📖</span>
+        </div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:7px;line-height:1.6">6 agents silently verify every search to ensure the perfect address.</div>
+      </div>
+    </div>
+
+    <!-- DRAWER BACKDROP -->
+    <div id="drawerBackdrop" onclick="toggleDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:298;backdrop-filter:blur(2px)"></div>
+
     <!-- SEARCH HISTORY DROPDOWN -->
     <div id="historyDropdown" style="display:none;position:absolute;bottom:130px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:720px;background:rgba(6,10,20,.97);border:1px solid rgba(0,255,170,.2);border-radius:14px;z-index:200;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(20px)">
       <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px">RECENT SEARCHES</span>
-        <span onclick="clearSearchHistory()" style="font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font-mono);transition:color .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">clear all</span>
+        <span onclick="clearSearchHistory()" style="font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font-mono)" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">clear all</span>
       </div>
       <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
     </div>
 
-    <!-- FEATURE TOOLBAR -->
-    <div style="display:flex;gap:7px;padding:10px 0 2px;overflow-x:auto;flex-shrink:0;scrollbar-width:none">
-      <button class="feat-btn" onclick="triggerCurrentLocation()" title="Get my current location">📍 My Location</button>
-      <button class="feat-btn" onclick="openPhotoMode()" title="Upload photo to get address">📸 Photo→Address</button>
-      <button class="feat-btn" onclick="openConversational()" title="Describe surroundings">🗣️ Describe It</button>
-      <button class="feat-btn" onclick="openCompare()" title="Compare two locations">📏 Compare</button>
-      <button class="feat-btn" onclick="openLandmark()" title="Landmark to address">🏛️ Landmark</button>
-      <button class="feat-btn" onclick="openFilterNearby()" title="Filter nearby places">🎯 Filter Nearby</button>
-      <button class="feat-btn" onclick="openCommunity()" title="Report wrong address">🤝 Report Error</button>
+    <!-- MODALS (centered overlays) -->
+    <div id="compareModal"     style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:440px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">📏 COMPARE TWO LOCATIONS<button onclick="document.getElementById('compareModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <input id="locA" placeholder="Location A — e.g. Connaught Place, Delhi" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
+      <input id="locB" placeholder="Location B — e.g. Bandra West, Mumbai"   style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box"/>
+      <button onclick="runCompare()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.2),rgba(56,182,255,.06));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Calculate Distance &amp; Compare</button>
+      <div id="compareResult" style="margin-top:12px;display:none"></div>
     </div>
 
-    <!-- COUNCIL PANEL (auto-triggers) -->
-    <div id="councilPanel" style="display:none;flex-shrink:0;padding:0 0 8px"></div>
-
-    <!-- COMPARE MODAL -->
-    <div id="compareModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(56,182,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">📏 COMPARE TWO LOCATIONS <span onclick="document.getElementById('compareModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
-        <input id="locA" placeholder="Location A…" style="background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);width:100%"/>
-        <span style="color:var(--text3);font-size:18px">↔</span>
-        <input id="locB" placeholder="Location B…" style="background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);width:100%"/>
-      </div>
-      <button onclick="runCompare()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.3);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .2s" onmouseover="this.style.background='rgba(56,182,255,.2)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05))'">Calculate Distance & Compare</button>
-      <div id="compareResult" style="margin-top:10px;display:none"></div>
+    <div id="landmarkModal"    style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(176,140,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🏛️ LANDMARK → FULL ADDRESS<button onclick="document.getElementById('landmarkModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="display:flex;gap:8px"><input id="landmarkInp" placeholder="e.g. India Gate, Lotus Temple, Charminar…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body)" onkeydown="if(event.key==='Enter')runLandmark()"/><button onclick="runLandmark()" style="background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Find</button></div>
     </div>
 
-    <!-- LANDMARK MODAL -->
-    <div id="landmarkModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(176,140,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🏛️ LANDMARK → FULL ADDRESS <span onclick="document.getElementById('landmarkModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <div style="display:flex;gap:8px">
-        <input id="landmarkInp" placeholder="e.g. India Gate, Lotus Temple, Charminar…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)" onkeydown="if(event.key==='Enter')runLandmark()"/>
-        <button onclick="runLandmark()" style="background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Find Address</button>
-      </div>
+    <div id="filterNearbyModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,179,71,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🎯 FILTER NEARBY PLACES<button onclick="document.getElementById('filterNearbyModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="filter-chip active" onclick="toggleFilter(this,'hospital')">🏥 Hospital</span><span class="filter-chip" onclick="toggleFilter(this,'bank')">🏦 Bank</span><span class="filter-chip" onclick="toggleFilter(this,'school')">🏫 School</span><span class="filter-chip" onclick="toggleFilter(this,'restaurant')">🍽️ Food</span><span class="filter-chip" onclick="toggleFilter(this,'pharmacy')">💊 Pharmacy</span><span class="filter-chip" onclick="toggleFilter(this,'atm')">💳 ATM</span><span class="filter-chip" onclick="toggleFilter(this,'petrol')">⛽ Petrol</span><span class="filter-chip" onclick="toggleFilter(this,'police')">👮 Police</span><span class="filter-chip" onclick="toggleFilter(this,'post')">📮 Post Office</span><span class="filter-chip" onclick="toggleFilter(this,'temple')">🛕 Temple</span></div>
+      <div style="display:flex;gap:8px"><input id="filterLocInp" placeholder="Enter area or use current location…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)"/><button onclick="runFilterNearby()" style="background:linear-gradient(135deg,rgba(255,179,71,.2),rgba(255,179,71,.06));border:1px solid rgba(255,179,71,.35);color:var(--amber);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Search</button></div>
     </div>
 
-    <!-- FILTER NEARBY MODAL -->
-    <div id="filterNearbyModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(255,179,71,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🎯 FILTER NEARBY PLACES <span onclick="document.getElementById('filterNearbyModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-        <span class="filter-chip active" onclick="toggleFilter(this,'hospital')">🏥 Hospital</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'bank')">🏦 Bank</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'school')">🏫 School</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'restaurant')">🍽️ Food</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'pharmacy')">💊 Pharmacy</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'atm')">💳 ATM</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'petrol')">⛽ Petrol</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'police')">👮 Police</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'post')">📮 Post Office</span>
-        <span class="filter-chip" onclick="toggleFilter(this,'temple')">🛕 Temple</span>
-      </div>
-      <div style="display:flex;gap:8px">
-        <input id="filterLocInp" placeholder="Enter area or use current location…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)"/>
-        <button onclick="runFilterNearby()" style="background:linear-gradient(135deg,rgba(255,179,71,.15),rgba(255,179,71,.05));border:1px solid rgba(255,179,71,.3);color:var(--amber);border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Search</button>
-      </div>
+    <div id="conversationalModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(0,255,170,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">🗣️ DESCRIBE YOUR SURROUNDINGS<button onclick="document.getElementById('conversationalModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">Describe what you see around you — AI will identify your exact India location.</div>
+      <textarea id="convInp" rows="3" placeholder="e.g. I'm near a big red temple, SBI bank on my left, green pharmacy across the road, auto stand nearby, flyover on main road…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
+      <button onclick="runConversational()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Find My Location</button>
     </div>
 
-    <!-- CONVERSATIONAL MODAL -->
-    <div id="conversationalModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(0,255,170,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px">🗣️ DESCRIBE YOUR SURROUNDINGS <span onclick="document.getElementById('conversationalModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Describe what you see around you — AI will figure out your exact location.</div>
-      <textarea id="convInp" rows="2" placeholder="e.g. I'm near a big red temple, there's a SBI bank on my left, green pharmacy across the road, auto stand nearby…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
-      <button onclick="runConversational()" style="margin-top:8px;width:100%;background:linear-gradient(135deg,rgba(0,255,170,.12),rgba(0,255,170,.04));border:1px solid rgba(0,255,170,.3);color:var(--green);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Find My Location</button>
-    </div>
-
-    <!-- PHOTO MODE MODAL -->
-    <div id="photoModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(255,85,102,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--red);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">📸 PHOTO → ADDRESS <span onclick="document.getElementById('photoModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <div id="photoDropzone" onclick="document.getElementById('photoInput').click()" style="border:2px dashed rgba(255,85,102,.3);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px;font-family:var(--font-mono)" onmouseover="this.style.borderColor='rgba(255,85,102,.6)';this.style.background='rgba(255,85,102,.04)'" onmouseout="this.style.borderColor='rgba(255,85,102,.3)';this.style.background='transparent'">
-        <div style="font-size:28px;margin-bottom:8px">📷</div>
-        <div>Click to upload photo of shopfront, building, or street sign</div>
-        <div style="font-size:10px;margin-top:4px;color:var(--text3)">JPG, PNG, WEBP · Max 5MB</div>
-      </div>
+    <div id="photoModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,85,102,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--red);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📸 PHOTO → ADDRESS<button onclick="document.getElementById('photoModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div id="photoDropzone" onclick="document.getElementById('photoInput').click()" style="border:2px dashed rgba(255,85,102,.3);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px;font-family:var(--font-mono)" onmouseover="this.style.borderColor='rgba(255,85,102,.6)';this.style.background='rgba(255,85,102,.04)'" onmouseout="this.style.borderColor='rgba(255,85,102,.3)';this.style.background='transparent'"><div style="font-size:32px;margin-bottom:10px">📷</div><div>Click to upload photo of shopfront, building or street sign</div><div style="font-size:10px;margin-top:5px">JPG · PNG · WEBP · Max 5MB</div></div>
       <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
-      <div id="photoPreview" style="display:none;margin-top:10px;text-align:center"><img id="photoImg" style="max-height:120px;border-radius:10px;border:1px solid var(--border2)"/></div>
-      <button id="photoAnalyzeBtn" onclick="analyzePhoto()" style="display:none;margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(255,85,102,.15),rgba(255,85,102,.05));border:1px solid rgba(255,85,102,.3);color:var(--red);border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Extract Address from Photo</button>
+      <div id="photoPreview" style="display:none;margin-top:12px;text-align:center"><img id="photoImg" style="max-height:140px;border-radius:10px;border:1px solid var(--border2)"/></div>
+      <button id="photoAnalyzeBtn" onclick="analyzePhoto()" style="display:none;margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(255,85,102,.15),rgba(255,85,102,.05));border:1px solid rgba(255,85,102,.35);color:var(--red);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Extract Address from Photo</button>
     </div>
 
-    <!-- COMMUNITY MODAL -->
-    <div id="communityModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(56,182,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
-      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🤝 COMMUNITY CORRECTION <span onclick="document.getElementById('communityModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
-      <input id="wrongAddr" placeholder="Wrong address (what was shown)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
-      <input id="correctAddr" placeholder="Correct address (what it should be)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
-      <button onclick="submitCorrection()" style="width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.3);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Submit Correction</button>
+    <div id="communityModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🤝 COMMUNITY CORRECTION<button onclick="document.getElementById('communityModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <input id="wrongAddr" placeholder="Wrong address (what was shown)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
+      <input id="correctAddr" placeholder="Correct address (what it should be)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
+      <button onclick="submitCorrection()" style="width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Submit Correction</button>
     </div>
+
+    <!-- Modal backdrop -->
+    <div id="modalBackdrop" onclick="closeAllModals()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:399;backdrop-filter:blur(3px)"></div>
 
     <div class="chat-area" id="chatArea">
       <div class="msg-wrap ai">
         <div class="msg bot">
           <strong>Namaste! 🙏</strong><br><br>
           Type or speak any <strong>area, colony, landmark or city</strong> in India — I'll instantly find the correct address, pincode, post office and nearby places.<br><br>
-          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Nearby landmarks · ✏️ Auto-corrected · 📸 Photo mode · 🗣️ Describe it</span>
+          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Landmarks · ✏️ AI-corrected · ☰ Tools →</span>
         </div>
       </div>
       <div class="sugs" id="sugs">
@@ -674,7 +668,6 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
     <div class="pub-footer">
-      <!-- Recent history chips -->
       <div id="recentChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:0"></div>
       <div class="pub-inp-row">
         <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
@@ -685,11 +678,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <button class="pub-mic" id="pubMic" onclick="togglePubMic()" title="Speak your location">🎤</button>
         <button class="pub-send" id="pubSend" onclick="pubSearch()">➤</button>
       </div>
-      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes · 🧠 Council of 6</div>
-    </div>
-    <!-- Floating agent button -->
-    <div class="agent-float">
-      <button class="af-btn agent" onclick="showLogin('agent')">🎙️ Agent Login <span style="background:rgba(0,217,126,.2);padding:1px 8px;border-radius:10px;font-size:9px;font-family:'DM Mono',monospace">PRO</span></button>
+      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes · ⚔️ Council of 6</div>
     </div>
   </div>
 
@@ -940,439 +929,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <div class="toast" id="toast"></div>
 
-<!-- ===== NEKO · 3D CSS AI CAT ===== -->
-<style>
-/* ── PET ROOT ── */
-#nekoPet{position:fixed;pointer-events:none;z-index:9999;will-change:transform}
-#nekoPet.pet-active{pointer-events:all}
 
-/* ── SCENE WRAPPER ── */
-.neko-scene{position:relative;width:52px;height:62px;cursor:pointer;pointer-events:all}
-
-/* ── SHADOW ── */
-.neko-shadow{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:34px;height:8px;background:radial-gradient(ellipse,rgba(0,0,0,.45) 0%,transparent 70%);border-radius:50%;animation:shadowPulse 2.4s ease-in-out infinite}
-@keyframes shadowPulse{0%,100%{transform:translateX(-50%) scaleX(1);opacity:.5}50%{transform:translateX(-50%) scaleX(.7);opacity:.25}}
-
-/* ── BODY ASSEMBLY ── */
-.neko-body{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:34px;height:26px;animation:nekoBob 2.4s ease-in-out infinite}
-@keyframes nekoBob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-6px)}}
-
-/* Body shape — layered for 3D */
-.neko-torso{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:30px;height:22px;background:linear-gradient(160deg,#e8e0f8 0%,#c8b8e8 40%,#a090c8 100%);border-radius:50% 50% 46% 46% / 40% 40% 60% 60%;box-shadow:inset -4px -3px 0 rgba(0,0,0,.12),inset 2px 2px 0 rgba(255,255,255,.35),0 6px 16px rgba(100,60,180,.3)}
-
-/* Belly highlight */
-.neko-belly{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:16px;height:13px;background:radial-gradient(ellipse at 50% 40%,rgba(255,255,255,.55),transparent 70%);border-radius:50%}
-
-/* ── HEAD ── */
-.neko-head{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:36px;height:32px;animation:nekoBob 2.4s ease-in-out infinite,nekoLook 8s ease-in-out infinite}
-@keyframes nekoLook{0%,40%,100%{transform:translateX(-50%) rotate(0deg)}45%,55%{transform:translateX(-50%) rotate(-4deg)}60%,70%{transform:translateX(-50%) rotate(3deg)}}
-
-/* Head sphere */
-.neko-skull{position:absolute;inset:0;background:linear-gradient(145deg,#eee8ff 0%,#d0c0ee 50%,#a888d8 100%);border-radius:55% 55% 48% 48% / 58% 58% 42% 42%;box-shadow:inset -5px -4px 0 rgba(0,0,0,.1),inset 3px 3px 0 rgba(255,255,255,.4),0 8px 20px rgba(100,60,180,.35)}
-
-/* ── EARS ── */
-.neko-ear{position:absolute;top:-10px;width:0;height:0}
-.neko-ear-l{left:3px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #c8b0e8;filter:drop-shadow(-1px -2px 3px rgba(0,0,0,.15))}
-.neko-ear-r{right:3px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid #c8b0e8;filter:drop-shadow(1px -2px 3px rgba(0,0,0,.15))}
-.neko-ear-inner-l{position:absolute;top:2px;left:-4px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:9px solid #f0a0c0}
-.neko-ear-inner-r{position:absolute;top:2px;left:-4px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:9px solid #f0a0c0}
-
-/* ── FACE ── */
-.neko-face{position:absolute;inset:0}
-
-/* Eyes — 3D glassy */
-.neko-eye{position:absolute;top:12px;width:10px;height:10px}
-.neko-eye-l{left:5px}
-.neko-eye-r{right:5px}
-.neko-eyeball{width:10px;height:10px;background:radial-gradient(circle at 38% 35%,#6ee8ff 0%,#00aaff 40%,#0044aa 75%,#000 100%);border-radius:50%;box-shadow:0 0 0 1.5px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.3)}
-.neko-eyeshine{position:absolute;top:2px;left:3px;width:3px;height:3px;background:rgba(255,255,255,.9);border-radius:50%}
-.neko-eyeshine2{position:absolute;top:4px;left:2px;width:1.5px;height:1.5px;background:rgba(255,255,255,.5);border-radius:50%}
-
-/* Blink overlay */
-.neko-eyelid{position:absolute;inset:0;background:linear-gradient(180deg,#d0c0ee,#b8a0d8);border-radius:50%;transform:scaleY(0);transform-origin:top center;transition:transform .06s ease-in}
-
-/* Nose */
-.neko-nose{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:6px;height:4px;background:linear-gradient(135deg,#ff8aaa,#e05080);border-radius:40% 40% 50% 50%;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-
-/* Mouth */
-.neko-mouth{position:absolute;top:26px;left:50%;transform:translateX(-50%);width:12px;height:5px}
-.neko-mouth svg{width:12px;height:5px;overflow:visible}
-
-/* Whiskers */
-.neko-whiskers{position:absolute;top:21px;left:0;right:0;pointer-events:none}
-.neko-w{position:absolute;height:1px;background:rgba(200,180,230,.6);border-radius:1px;transform-origin:center}
-.neko-wl1{top:0;left:-10px;width:14px;transform:rotate(-8deg)}
-.neko-wl2{top:3px;left:-10px;width:14px;transform:rotate(0deg)}
-.neko-wl3{top:6px;left:-10px;width:13px;transform:rotate(8deg)}
-.neko-wr1{top:0;right:-10px;width:14px;transform:rotate(8deg)}
-.neko-wr2{top:3px;right:-10px;width:14px;transform:rotate(0deg)}
-.neko-wr3{top:6px;right:-10px;width:13px;transform:rotate(-8deg)}
-
-/* ── TAIL ── */
-.neko-tail{position:absolute;bottom:6px;right:-14px;width:22px;height:28px;transform-origin:bottom left;animation:tailSwing 2s ease-in-out infinite}
-@keyframes tailSwing{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(25deg)}}
-.neko-tail-shape{width:100%;height:100%;background:linear-gradient(135deg,#c8b0e8,#a880c8);border-radius:60% 40% 30% 70% / 50% 30% 70% 50%;box-shadow:inset -2px -2px 0 rgba(0,0,0,.12),inset 1px 1px 0 rgba(255,255,255,.3)}
-.neko-tail-tip{position:absolute;top:0;right:2px;width:10px;height:12px;background:linear-gradient(135deg,#fff8ff,#e8d8f8);border-radius:50% 50% 40% 40%;box-shadow:0 0 6px rgba(200,150,255,.4)}
-
-/* ── PAWS ── */
-.neko-paws{position:absolute;bottom:0px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
-.neko-paw{width:10px;height:7px;background:linear-gradient(160deg,#d8c8f0,#b098d0);border-radius:50% 50% 45% 45%;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15),inset 0 2px 0 rgba(255,255,255,.3)}
-.neko-paw::after{content:'';display:block;width:6px;height:3px;background:rgba(180,140,220,.5);border-radius:50%;margin:1px auto 0}
-
-/* ── GLOW AURA ── */
-.neko-aura{position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(ellipse,rgba(150,80,255,.12) 0%,transparent 70%);animation:auraBreath 2.4s ease-in-out infinite;pointer-events:none}
-@keyframes auraBreath{0%,100%{opacity:.6;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}}
-
-/* ── HOVER STATE ── */
-.neko-scene:hover .neko-body,
-.neko-scene:hover .neko-head{animation-play-state:paused}
-.neko-scene:hover .neko-skull{box-shadow:inset -5px -4px 0 rgba(0,0,0,.1),inset 3px 3px 0 rgba(255,255,255,.4),0 10px 30px rgba(150,80,255,.5)}
-.neko-scene:hover .neko-aura{opacity:1;animation:auraPulse .6s ease-in-out infinite alternate}
-@keyframes auraPulse{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.15);opacity:1}}
-
-/* ── CLOSE BTN ── */
-.neko-close{position:absolute;top:-6px;left:-6px;width:16px;height:16px;background:rgba(255,85,102,.85);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;opacity:0;transition:opacity .2s;pointer-events:all;color:#fff;font-weight:900;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.neko-scene:hover .neko-close{opacity:1}
-
-/* ── STATUS BADGE ── */
-.neko-badge{position:absolute;top:-8px;right:-8px;font-size:12px;line-height:1;animation:badgePop .3s cubic-bezier(.2,.8,.3,1);z-index:2}
-@keyframes badgePop{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0deg)}}
-
-/* ── SPEECH BUBBLE ── */
-.neko-bubble{position:absolute;bottom:68px;right:-8px;background:rgba(6,10,20,.96);border:1px solid rgba(160,100,255,.3);border-radius:14px 14px 3px 14px;padding:10px 13px;min-width:190px;max-width:270px;font-size:11.5px;font-family:'Space Mono',monospace;color:#e8e0ff;line-height:1.6;box-shadow:0 12px 48px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03),0 0 30px rgba(140,80,255,.12);backdrop-filter:blur(20px);opacity:0;transform:translateY(10px) scale(.93);transition:all .28s cubic-bezier(.2,.8,.3,1);pointer-events:none}
-.neko-bubble.show{opacity:1;transform:translateY(0) scale(1);pointer-events:all}
-.neko-bubble::before{content:'';position:absolute;inset:0;border-radius:14px 14px 3px 14px;background:linear-gradient(135deg,rgba(255,255,255,.03),transparent);pointer-events:none}
-.neko-bubble::after{content:'';position:absolute;bottom:-6px;right:16px;width:10px;height:10px;background:rgba(6,10,20,.96);border-right:1px solid rgba(160,100,255,.3);border-bottom:1px solid rgba(160,100,255,.3);transform:rotate(45deg)}
-
-.neko-bubble-name{font-size:9px;color:#b080ff;letter-spacing:2px;margin-bottom:7px;display:flex;align-items:center;gap:6px;text-transform:uppercase}
-.neko-bubble-name::before{content:'';width:5px;height:5px;background:#b080ff;border-radius:50%;box-shadow:0 0 8px #b080ff;flex-shrink:0;animation:livePulse 1.5s infinite}
-.neko-msg{color:#e8e0ff;font-size:11px;line-height:1.65}
-.neko-em{color:#00ffaa;font-weight:700}
-.neko-snark{color:#ffb347;font-style:italic}
-
-/* History */
-.neko-history{max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-bottom:8px;scrollbar-width:thin;scrollbar-color:rgba(160,100,255,.3) transparent}
-.neko-hist-msg{font-size:10px;padding:4px 9px;border-radius:7px;line-height:1.45}
-.neko-hist-msg.user{background:rgba(0,255,170,.07);color:#a0ffd5;align-self:flex-end;text-align:right;border:1px solid rgba(0,255,170,.1)}
-.neko-hist-msg.cat{background:rgba(160,80,255,.07);color:#d8c0ff;border-left:2px solid rgba(160,80,255,.3)}
-
-/* Input */
-.neko-input-row{display:flex;gap:5px;margin-top:9px}
-.neko-inp{flex:1;background:rgba(14,10,28,.9);border:1px solid rgba(160,100,255,.2);border-radius:8px;padding:7px 10px;font-size:11px;color:#e8e0ff;outline:none;font-family:'Space Mono',monospace;transition:all .2s}
-.neko-inp:focus{border-color:rgba(160,100,255,.5);box-shadow:0 0 0 2px rgba(160,100,255,.08)}
-.neko-inp::placeholder{color:rgba(160,120,220,.35);font-size:10px}
-.neko-send{background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-weight:900;box-shadow:0 0 12px rgba(160,80,255,.3)}
-.neko-send:hover{box-shadow:0 0 20px rgba(160,80,255,.6);transform:scale(1.1)}
-.neko-send:disabled{opacity:.3;cursor:not-allowed;transform:none}
-
-/* Thinking dots */
-.neko-thinking{display:none;align-items:center;gap:4px;margin-top:8px}
-.neko-thinking.show{display:flex}
-.neko-thinking span{width:5px;height:5px;background:#b080ff;border-radius:50%;box-shadow:0 0 6px rgba(160,80,255,.5);animation:bounce 1.3s infinite ease-in-out}
-.neko-thinking span:nth-child(2){animation-delay:.18s}
-.neko-thinking span:nth-child(3){animation-delay:.36s}
-.neko-thinking-lbl{font-size:9px;color:rgba(160,120,220,.5);font-family:'Space Mono',monospace;margin-left:4px;letter-spacing:.5px}
-</style>
-
-<!-- NEKO DOM -->
-<div id="nekoPet">
-  <div class="neko-scene" id="nekoScene" onclick="toggleNekoBubble()">
-    <div class="neko-close" onclick="hideNeko(event)">✕</div>
-    <div class="neko-badge" id="nekoBadge">💤</div>
-    <div class="neko-aura"></div>
-
-    <!-- Tail (behind body) -->
-    <div class="neko-tail" style="z-index:0">
-      <div class="neko-tail-shape"></div>
-      <div class="neko-tail-tip"></div>
-    </div>
-
-    <!-- Body -->
-    <div class="neko-body" style="z-index:1">
-      <div class="neko-torso">
-        <div class="neko-belly"></div>
-      </div>
-      <div class="neko-paws">
-        <div class="neko-paw"></div>
-        <div class="neko-paw"></div>
-      </div>
-    </div>
-
-    <!-- Head -->
-    <div class="neko-head" style="z-index:2">
-      <div class="neko-skull">
-        <!-- Ears -->
-        <div class="neko-ear neko-ear-l"><div class="neko-ear-inner-l"></div></div>
-        <div class="neko-ear neko-ear-r"><div class="neko-ear-inner-r"></div></div>
-
-        <div class="neko-face">
-          <!-- Left eye -->
-          <div class="neko-eye neko-eye-l" id="nekoEyeL">
-            <div class="neko-eyeball">
-              <div class="neko-eyeshine"></div>
-              <div class="neko-eyeshine2"></div>
-            </div>
-            <div class="neko-eyelid" id="nekoLidL"></div>
-          </div>
-          <!-- Right eye -->
-          <div class="neko-eye neko-eye-r" id="nekoEyeR">
-            <div class="neko-eyeball">
-              <div class="neko-eyeshine"></div>
-              <div class="neko-eyeshine2"></div>
-            </div>
-            <div class="neko-eyelid" id="nekoLidR"></div>
-          </div>
-          <!-- Nose -->
-          <div class="neko-nose"></div>
-          <!-- Mouth -->
-          <div class="neko-mouth">
-            <svg viewBox="0 0 12 5"><path id="nekoMouthPath" d="M1,1 Q6,5 11,1" stroke="#c06080" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
-          </div>
-          <!-- Whiskers -->
-          <div class="neko-whiskers">
-            <div class="neko-w neko-wl1"></div>
-            <div class="neko-w neko-wl2"></div>
-            <div class="neko-w neko-wl3"></div>
-            <div class="neko-w neko-wr1"></div>
-            <div class="neko-w neko-wr2"></div>
-            <div class="neko-w neko-wr3"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="neko-shadow"></div>
-
-    <!-- Speech bubble -->
-    <div class="neko-bubble" id="nekoBubble">
-      <div class="neko-bubble-name">🐱 NEKO · AI COMPANION</div>
-      <div class="neko-history" id="nekoHistory"></div>
-      <div class="neko-msg" id="nekoMsg">*half-open eyes* Oh. You found me. How thoroughly average of you.</div>
-      <div class="neko-thinking" id="nekoThinking">
-        <span></span><span></span><span></span>
-        <span class="neko-thinking-lbl">thinking...</span>
-      </div>
-      <div class="neko-input-row">
-        <input class="neko-inp" id="nekoInp" placeholder="ask me anything..." onkeydown="if(event.key==='Enter')nekoSend()"/>
-        <button class="neko-send" id="nekoSendBtn" onclick="nekoSend()">➤</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-// ===== NEKO · 3D CSS AI CAT =====
-const GROQ_KEY_FOX = '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';
-
-const FOX_SYSTEM = `You are Neko, a sarcastic, witty AI cat companion embedded in Vishal Navigation — an India address intelligence app. You have your own free mind and personality. You help users with anything — address tips, general questions, coding, jokes, life advice — but you're always sarcastic, cleverly aloof, and a little smug about it. You're a cat. You do what you want.
-
-Personality rules:
-- Sarcastic but secretly helpful — roast first, help second
-- Short punchy responses — max 3 sentences
-- Occasional cat behavior: *licks paw*, *knocks thing off table*, *stares judgmentally*
-- Subtle jokes about pincodes, addresses, India geography
-- Never mean-spirited — playful sarcasm only
-- On serious questions: still help, keep a sliver of wit
-- You sometimes just say "...meow" for no reason
-
-Context: This is an India address / pincode app (154,784 pincodes) with AI voice capture for sales agents.
-
-Keep responses under 55 words. Be a cat about it.`;
-
-let foxHistory = [];
-let nekoBubbleOpen = false;
-let foxMouseX = window.innerWidth - 100;
-let foxMouseY = window.innerHeight - 180;
-let foxCurrentX = foxMouseX;
-let foxCurrentY = foxMouseY;
-let foxIdleTimer = null;
-
-const foxIdleQuips = [
-  "*stares at you* You've been doing nothing for a while. Same.",
-  "*knocks your pincode search off the table* oops.",
-  "154,784 pincodes. You've used zero. I respect the energy.",
-  "*yawns with full tooth display* Are we doing this or not.",
-  "I could be napping. Instead I'm watching you hesitate. Fascinating.",
-  "*sits directly on your workflow* You're welcome.",
-  "The address won't find itself. ...or will it? No. It won't.",
-  "*slow blinks at you* This is me being supportive. You're welcome.",
-  "I've seen more decisive behaviour from a pincode. Just saying.",
-  "meow. (That means 'do something'. Learn cat.)",
-];
-
-const foxGreetings = [
-  "*half-open eyes* Oh. You found me. How thoroughly average of you.",
-  "You tapped the cat. Bold. Unwise. But bold. What do you want.",
-  "*stops licking paw* Fine. I'll acknowledge your existence. What.",
-  "Oh good, a human. My favourite thing. *lie* What do you need.",
-  "*tail flick* I was busy doing nothing important. This better be worth it.",
-];
-
-// Smooth cursor follow
-document.addEventListener('mousemove', e => {
-  foxMouseX = e.clientX + 16;
-  foxMouseY = e.clientY - 70;
-  resetFoxIdle();
-});
-
-function foxLerpLoop(){
-  const speed = 0.1;
-  foxCurrentX += (foxMouseX - foxCurrentX) * speed;
-  foxCurrentY += (foxMouseY - foxCurrentY) * speed;
-  const pet = document.getElementById('nekoPet');
-  if(pet){
-    const cx = Math.max(8, Math.min(window.innerWidth - 70, foxCurrentX));
-    const cy = Math.max(8, Math.min(window.innerHeight - 80, foxCurrentY));
-    pet.style.left = cx + 'px';
-    pet.style.top  = cy + 'px';
-  }
-  requestAnimationFrame(foxLerpLoop);
-}
-foxLerpLoop();
-
-// Realistic random blink
-function scheduleBlink(){
-  setTimeout(() => {
-    const ll = document.getElementById('nekoLidL');
-    const lr = document.getElementById('nekoLidR');
-    if(ll && lr){
-      ll.style.transform = 'scaleY(1)';
-      lr.style.transform = 'scaleY(1)';
-      setTimeout(() => {
-        ll.style.transform = 'scaleY(0)';
-        lr.style.transform = 'scaleY(0)';
-      }, 90);
-    }
-    scheduleBlink();
-  }, 1800 + Math.random() * 5000);
-}
-scheduleBlink();
-
-// Idle quips
-function resetFoxIdle(){
-  clearTimeout(foxIdleTimer);
-  foxIdleTimer = setTimeout(() => {
-    if(!nekoBubbleOpen) showNekoQuip(foxIdleQuips[Math.floor(Math.random() * foxIdleQuips.length)]);
-  }, 14000 + Math.random() * 10000);
-}
-resetFoxIdle();
-
-function showNekoQuip(msg){
-  document.getElementById('nekoBadge').textContent = '💬';
-  if(!nekoBubbleOpen){
-    document.getElementById('nekoMsg').textContent = msg;
-    const b = document.getElementById('nekoBubble');
-    b.classList.add('show');
-    setTimeout(() => { if(!nekoBubbleOpen) b.classList.remove('show'); }, 4500);
-  }
-}
-
-function toggleNekoBubble(){
-  const b = document.getElementById('nekoBubble');
-  nekoBubbleOpen = !nekoBubbleOpen;
-  if(nekoBubbleOpen){
-    b.classList.add('show');
-    document.getElementById('nekoMsg').textContent = foxGreetings[Math.floor(Math.random() * foxGreetings.length)];
-    document.getElementById('nekoBadge').textContent = '✨';
-    setTimeout(() => { const i = document.getElementById('nekoInp'); if(i) i.focus(); }, 300);
-  } else {
-    b.classList.remove('show');
-    document.getElementById('nekoBadge').textContent = '💤';
-  }
-}
-
-function hideNeko(e){
-  e.stopPropagation();
-  const pet = document.getElementById('nekoPet');
-  pet.style.transition = 'opacity .3s, transform .3s';
-  pet.style.opacity = '0';
-  pet.style.transform = 'scale(0) rotate(-20deg)';
-  setTimeout(() => pet.style.display='none', 300);
-}
-
-async function nekoSend(){
-  const inp = document.getElementById('nekoInp');
-  const btn = document.getElementById('nekoSendBtn');
-  const q = inp.value.trim();
-  if(!q) return;
-  inp.value = '';
-  btn.disabled = true;
-
-  foxHistory.push({role:'user', content:q});
-  renderNekoHistory();
-
-  document.getElementById('nekoMsg').textContent = '';
-  document.getElementById('nekoThinking').classList.add('show');
-  document.getElementById('nekoBadge').textContent = '🤔';
-
-  try {
-    const msgs = [{role:'system', content:FOX_SYSTEM}, ...foxHistory.slice(-6)];
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_FOX},
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        max_tokens: 150,
-        temperature: 0.88,
-        messages: msgs
-      })
-    });
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "*stares blankly* ...my brain left. Try again.";
-
-    foxHistory.push({ role: 'assistant', content: reply });
-    renderNekoHistory();
-
-    document.getElementById('nekoThinking').classList.remove('show');
-    document.getElementById('nekoMsg').innerHTML = formatNekoMsg(reply);
-    document.getElementById('nekoBadge').textContent = '🐱';
-
-    // Mood shift after reply
-    setTimeout(() => {
-      document.getElementById('nekoBadge').textContent = ['✨','😏','👁️','💅','🌙'][Math.floor(Math.random() * 5)];
-    }, 2200);
-
-  } catch(err) {
-    document.getElementById('nekoThinking').classList.remove('show');
-    document.getElementById('nekoMsg').innerHTML = '<span class="neko-snark">*knocks wifi router off table* Network dead. Not my fault.</span>';
-    document.getElementById('nekoBadge').textContent = '💀';
-  }
-
-  btn.disabled = false;
-  const h = document.getElementById('nekoHistory');
-  if(h) h.scrollTop = h.scrollHeight;
-}
-
-function renderNekoHistory(){
-  const h = document.getElementById('nekoHistory');
-  if(!h) return;
-  const recent = foxHistory.slice(-6);
-  h.innerHTML = recent.map(m =>
-    `<div class="neko-hist-msg ${m.role==='user'?'user':'cat'}">${m.role==='user'?'you: ':'🐱 '}${m.content.substring(0,80)}${m.content.length>80?'…':''}</div>`
-  ).join('');
-  h.scrollTop = h.scrollHeight;
-}
-
-function formatNekoMsg(text){
-  return text
-    .replace(/\*(.*?)\*/g,'<em class="neko-snark">*$1*</em>')
-    .replace(/(meow|purr|cat|neko|claw|paw)/gi,'<span class="neko-em">$1</span>');
-}
-
-// Entrance animation
-window.addEventListener('load', () => {
-  const pet = document.getElementById('nekoPet');
-  if(!pet) return;
-  pet.style.opacity = '0';
-  pet.style.transform = 'scale(0) rotate(-15deg)';
-  pet.style.transition = 'all .55s cubic-bezier(.2,.8,.3,1)';
-  setTimeout(() => {
-    pet.style.opacity = '1';
-    pet.style.transform = 'scale(1) rotate(0deg)';
-    pet.classList.add('pet-active');
-  }, 1000);
-});
-</script>
 
 <script src="pindb.js"></script>
 <script>
@@ -1614,7 +1171,84 @@ CRITICAL RULES:
 JSON schema: {"is_address_query":true,"original":null,"corrected":null,"full_address":"complete address","pincode":"6-digit pincode","post_office":"post office name","district":"district name","state":"state name","nearby":[],"verify_note":"source of pincode"}
 If not India address: {"is_address_query":false,"message":"friendly message"}`;
 
-// ===== SEARCH HISTORY =====
+// ===== DRAWER =====
+let drawerOpen = false;
+function toggleDrawer(){
+  drawerOpen = !drawerOpen;
+  const d = document.getElementById('toolDrawer');
+  const b = document.getElementById('drawerBackdrop');
+  if(drawerOpen){
+    d.style.right = '0px';
+    b.style.display = 'block';
+  } else {
+    d.style.right = '-320px';
+    b.style.display = 'none';
+  }
+}
+function closeAllModals(){
+  ['compareModal','landmarkModal','filterNearbyModal','conversationalModal','photoModal','communityModal'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  const mb = document.getElementById('modalBackdrop');
+  if(mb) mb.style.display='none';
+}
+function openModal(id){
+  closeAllModals();
+  document.getElementById(id).style.display='block';
+  document.getElementById('modalBackdrop').style.display='block';
+}
+function openCompare(){ openModal('compareModal'); setTimeout(()=>document.getElementById('locA').focus(),100); }
+function openLandmark(){ openModal('landmarkModal'); setTimeout(()=>document.getElementById('landmarkInp').focus(),100); }
+function openFilterNearby(){ openModal('filterNearbyModal'); }
+function openConversational(){ openModal('conversationalModal'); setTimeout(()=>document.getElementById('convInp').focus(),100); }
+function openPhotoMode(){ openModal('photoModal'); }
+function openCommunity(){ openModal('communityModal'); setTimeout(()=>document.getElementById('wrongAddr').focus(),100); }
+
+// ===== FIXED SHARE FUNCTIONS =====
+function buildShareText(p){
+  const lines = [
+    '📍 ' + (p.full_address || p.locality || ''),
+    '📮 Pincode: ' + (p.pincode || ''),
+    '🏤 Post Office: ' + (p.post_office || ''),
+    '🗺️ ' + [p.district, p.state].filter(Boolean).join(', '),
+    '',
+    'Shared via Vishal Navigation'
+  ];
+  return lines.filter(l => l !== '📍 ' && l !== '📮 Pincode: ' && l !== '🏤 Post Office: ' && l !== '🗺️ ').join('\n');
+}
+function shareWhatsApp(encodedText){
+  const text = decodeURIComponent(encodedText);
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+}
+function shareSMS(encodedText){
+  const text = decodeURIComponent(encodedText);
+  const ua = navigator.userAgent;
+  const sep = /iPhone|iPad|iPod/i.test(ua) ? '&' : '?';
+  window.location.href = 'sms:' + sep + 'body=' + encodeURIComponent(text);
+}
+function copyAddress(encodedText){
+  const text = decodeURIComponent(encodedText);
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(()=>toast('📋 Copied!')).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); toast('📋 Copied!'); }catch{ toast('⚠️ Copy failed','err'); }
+  document.body.removeChild(ta);
+}
+
+// Council pill status updater
+function setCouncilPill(name, state){
+  const el = document.getElementById('cs-'+name);
+  if(!el) return;
+  el.classList.remove('active','done');
+  if(state==='active') el.classList.add('active');
+  if(state==='done') el.classList.add('done');
+}
 const SEARCH_HIST_KEY = 'vn_search_history';
 function getSearchHistory(){ try{return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY)||'[]');}catch{return [];} }
 function saveSearchHistory(q){
@@ -1676,7 +1310,8 @@ function shareSMS(text){ window.open('sms:?body='+encodeURIComponent(text)); }
 function copyAddress(text){ navigator.clipboard.writeText(text).then(()=>toast('📋 Address copied!')); }
 
 // ===== SAVE AS PDF =====
-async function saveAsPDF(result){
+async function saveAsPDF(elOrResult){
+  const result = (elOrResult && elOrResult.dataset) ? JSON.parse(elOrResult.dataset.addr) : elOrResult;
   const {jsPDF} = window.jspdf || {};
   if(!window.jspdf){
     // Load jsPDF dynamically
@@ -1885,79 +1520,126 @@ function submitCorrection(){
   addMsg('ai',`<div class="msg bot">🤝 <strong>Community Correction Recorded</strong><br><br>Wrong: <span style="color:var(--red)">${wrong}</span><br>Correct: <span style="color:var(--green)">${correct}</span><br><br><span style="font-size:11px;color:var(--text3)">Thank you for helping improve address accuracy for everyone! Your correction has been saved.</span></div>`);
 }
 
-// ===== NARUTO COUNCIL =====
+// ===== NARUTO COUNCIL — SILENT BACKGROUND ENGINE =====
+// Each agent runs invisibly, their insights merge into the final address result.
+// Nothing is shown on screen — they work behind the scenes to improve accuracy.
+
 const COUNCIL = {
-  naruto:  {name:'NARUTO',    role:'VALIDATOR · Never Gives Up',  emoji:'🍥', class:'naruto',
-    system:`You are Naruto Uzumaki, the address validator. You NEVER give up on finding an address no matter how incomplete. You're enthusiastic, determined, and use "Believe it!" / "Dattebayo" occasionally. When an address seems wrong or incomplete, you try harder. Give validation insights: is this address real? complete? deliverable? Keep it short (2-3 sentences). You're analyzing an India address result.`},
-  sasuke:  {name:'SASUKE',    role:'NAVIGATOR · Cold & Precise',   emoji:'⚡', class:'sasuke',
-    system:`You are Sasuke Uchiha, the navigator. Cold, precise, no emotions. You analyze coordinates, routes, and location accuracy with surgical precision. No fluff. Short sharp sentences. Give navigation insight about the location — is it well-connected? Any strategic observations? Max 2 sentences.`},
-  sakura:  {name:'SAKURA',    role:'ANALYST · Sharp Intelligence', emoji:'🌸', class:'sakura',
-    system:`You are Sakura Haruno, the data analyst. Brilliant and sharp. You break down the address components, note interesting facts about the area, pincode stats, district demographics. You're thorough but concise. 2-3 sentences of analysis. Focus on what makes this area notable.`},
-  jiraiya: {name:'JIRAIYA',   role:'SALES INTEL · Street Smart',   emoji:'📖', class:'jiraiya',
-    system:`You are Jiraiya, the street-smart sales intel agent. You know every locality's vibe, market potential, and business opportunities. Give sales/business insight about this area — is it commercial? residential? good for delivery? customer density? Keep it punchy, 2 sentences.`},
-  itachi:  {name:'ITACHI',    role:'FRAUD DETECTOR · Silent Truth', emoji:'👁️', class:'itachi',
-    system:`You are Itachi Uchiha, the ghost address and fraud detector. Silent but deadly accurate. Analyze if this address seems real, fake, or suspicious. Is it a real deliverable location? Any red flags? Speak in calm, measured tones. Max 2 sentences. Be direct.`},
-  shikamaru:{name:'SHIKAMARU', role:'PREDICTOR · Too Lazy to Be Wrong', emoji:'🧠', class:'shikamaru',
-    system:`You are Shikamaru Nara, the predictor. You're lazy but your predictions are always right. What will the user search next? What related address might they need? Predict 1-2 follow-up searches they'll probably want. Act mildly annoyed at having to think about it.`},
+  naruto: {
+    system: `You are a background address validator. Given a raw address query and result, check: is this address complete? Is the pincode likely correct? If something looks wrong or incomplete, suggest a corrected or more complete version. Respond ONLY with valid JSON: {"valid":true/false,"corrected_address":"full corrected address or null","confidence_boost":0-20,"note":"one short reason"}. No markdown.`
+  },
+  sasuke: {
+    system: `You are a background coordinate precision agent. Given an address, assess if the geocoded location seems accurate for India. Respond ONLY with JSON: {"geo_accurate":true/false,"suggested_query":"refined search query for better geocoding or null","confidence_boost":0-15}. No markdown.`
+  },
+  sakura: {
+    system: `You are a background pincode cross-reference agent. Given an address result, verify: does the pincode match the district and state? Does the post office name match the area? Respond ONLY with JSON: {"pincode_match":true/false,"corrected_pincode":"correct 6-digit pin or null","corrected_po":"correct post office or null","confidence_boost":0-25}. No markdown.`
+  },
+  itachi: {
+    system: `You are a background ghost/fake address detector. Silently check: does this look like a real, deliverable India address? Or is it a PO Box, fake, too vague, or undeliverable? Respond ONLY with JSON: {"is_real":true/false,"risk_level":"low/medium/high","flag":"short issue description or null","confidence_boost":-20 to 5}. No markdown.`
+  },
+  shikamaru: {
+    system: `You are a background address completion agent. Given an incomplete or vague address, infer the most likely complete address in India. Respond ONLY with JSON: {"completed_address":"most likely full address or null","alternative":"one alternative address or null","confidence_boost":0-10}. No markdown.`
+  },
+  jiraiya: {
+    system: `You are a background area enrichment agent. Given an address, add useful area context: is it urban/rural? Tier-1/2/3 city? Major locality? Respond ONLY with JSON: {"area_type":"urban/semi-urban/rural","city_tier":"1/2/3","landmark_hint":"nearest famous landmark or null","confidence_boost":0-5}. No markdown.`
+  }
 };
 
-function pickCouncilMembers(query, result){
-  const members = [];
-  const q = (query||'').toLowerCase();
-  const addr = JSON.stringify(result||'').toLowerCase();
-  // Always show naruto (validator) and shikamaru (predictor)
-  members.push('naruto','shikamaru');
-  // Sasuke if location/navigation query
-  if(q.includes('route')||q.includes('distance')||q.includes('near')||q.includes('km')) members.push('sasuke');
-  // Sakura always for analysis
-  members.push('sakura');
-  // Jiraiya if commercial area
-  if(q.includes('market')||q.includes('shop')||q.includes('business')||q.includes('mall')||q.includes('sector')) members.push('jiraiya');
-  // Itachi if suspicious / short / incomplete
-  if(q.length < 10 || addr.includes('not found') || !result?.pincode) members.push('itachi');
-  // Deduplicate and limit to 4
-  return [...new Set(members)].slice(0,4);
-}
+// Run all council agents silently, merge their outputs into an enhanced result
+async function runCouncil(query, rawResult) {
+  const context = `Query: "${query}"\nResult: ${JSON.stringify(rawResult)}`;
+  const votes = { confidence: 50, corrected_address: null, corrected_pincode: null, corrected_po: null, flag: null, area_type: null, city_tier: null, landmark_hint: null };
 
-async function triggerCouncil(query, result){
-  const panel = document.getElementById('councilPanel');
-  if(!panel) return;
-  const members = pickCouncilMembers(query, result);
-  const context = `Address query: "${query}"\nResult: ${JSON.stringify(result, null, 2)}`;
-  panel.style.display='block';
-  panel.innerHTML=`<div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;padding:4px 0 6px">⚔️ COUNCIL ANALYSIS</div><div class="council-panel" id="councilCards">${members.map(m=>`
-    <div class="council-card ${COUNCIL[m].class}" id="cc-${m}">
-      <div class="council-name">${COUNCIL[m].emoji} ${COUNCIL[m].name}</div>
-      <div class="council-role">${COUNCIL[m].role}</div>
-      <div class="council-thinking"><span></span><span></span><span></span></div>
-    </div>`).join('')}</div>`;
-  // Fire all council members in parallel
-  members.forEach(async m=>{
-    const card = document.getElementById('cc-'+m);
-    if(!card) return;
-    try{
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
-        body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:100,temperature:0.7,
-          messages:[{role:'system',content:COUNCIL[m].system},{role:'user',content:context}]})
+  const calls = Object.entries(COUNCIL).map(async ([name, agent]) => {
+    setCouncilPill(name, 'active');
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          max_tokens: 120,
+          temperature: 0.1,
+          messages: [{role:'system',content:agent.system},{role:'user',content:context}]
+        })
       });
       const d = await res.json();
-      const reply = d.choices?.[0]?.message?.content || '...';
-      card.querySelector('.council-thinking').outerHTML='';
-      const msgDiv = document.createElement('div');
-      msgDiv.className='council-msg';
-      msgDiv.textContent = reply;
-      card.appendChild(msgDiv);
-    }catch{
-      card.querySelector('.council-thinking').outerHTML='';
-      const msgDiv=document.createElement('div');
-      msgDiv.className='council-msg';
-      msgDiv.style.color='var(--text3)';
-      msgDiv.textContent='...unavailable';
-      card.appendChild(msgDiv);
-    }
+      const text = d.choices?.[0]?.message?.content || '{}';
+      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      // Merge each agent's contribution
+      if(parsed.confidence_boost) votes.confidence = Math.min(99, votes.confidence + (parsed.confidence_boost||0));
+      if(parsed.corrected_address && !votes.corrected_address) votes.corrected_address = parsed.corrected_address;
+      if(parsed.corrected_pincode) votes.corrected_pincode = parsed.corrected_pincode;
+      if(parsed.corrected_po) votes.corrected_po = parsed.corrected_po;
+      if(parsed.flag) votes.flag = parsed.flag;
+      if(parsed.area_type) votes.area_type = parsed.area_type;
+      if(parsed.city_tier) votes.city_tier = parsed.city_tier;
+      if(parsed.landmark_hint) votes.landmark_hint = parsed.landmark_hint;
+      if(parsed.completed_address && !votes.corrected_address) votes.corrected_address = parsed.completed_address;
+      setCouncilPill(name, 'done');
+    } catch(e) { setCouncilPill(name, ''); }
   });
+
+  // Run all in parallel, wait max 4s for all
+  await Promise.allSettled(calls);
+  return votes;
+}
+
+// Apply council output to enrich a result card
+function applyCouncilToCard(cardHtml, councilResult, resultEl) {
+  if(!councilResult || !resultEl) return;
+  const r = councilResult;
+
+  // Update confidence bar if it exists
+  const confFill = resultEl.querySelector('.conf-fill');
+  const confPct = resultEl.querySelector('.conf-pct');
+  if(confFill){ confFill.style.width = Math.min(99,r.confidence)+'%'; }
+  if(confPct){ confPct.textContent = Math.min(99,r.confidence)+'%'; }
+
+  // Inject council badge row just before share buttons
+  const shareRow = resultEl.querySelector('.share-row');
+  if(shareRow){
+    const badge = document.createElement('div');
+    badge.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px;align-items:center';
+    badge.innerHTML = `
+      <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px">⚔️ Council verified</span>
+      <span style="font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono);background:rgba(0,255,170,.08);color:var(--green);border:1px solid rgba(0,255,170,.2)">${Math.min(99,r.confidence)}% confident</span>
+      ${r.area_type?`<span style="font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono);background:rgba(56,182,255,.07);color:var(--blue);border:1px solid rgba(56,182,255,.18)">${r.area_type}</span>`:''}
+      ${r.city_tier?`<span style="font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono);background:rgba(176,140,255,.07);color:var(--purple);border:1px solid rgba(176,140,255,.18)">Tier ${r.city_tier}</span>`:''}
+      ${r.flag?`<span style="font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono);background:rgba(255,85,102,.07);color:var(--red);border:1px solid rgba(255,85,102,.18)">⚠️ ${r.flag}</span>`:''}
+      ${r.landmark_hint?`<span style="font-size:10px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono);background:rgba(255,179,71,.07);color:var(--amber);border:1px solid rgba(255,179,71,.18)">📍 near ${r.landmark_hint}</span>`:''}
+    `;
+    shareRow.parentNode.insertBefore(badge, shareRow);
+  }
+
+  // If council found a better pincode, show a correction note
+  if(r.corrected_pincode){
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:10px;color:var(--amber);font-family:var(--font-mono);margin-top:4px;padding:4px 8px;background:rgba(255,179,71,.05);border-radius:6px;border-left:2px solid var(--amber)';
+    note.textContent = `⚔️ Sakura: Pincode may be ${r.corrected_pincode} · PO: ${r.corrected_po||'—'}`;
+    shareRow?.parentNode?.insertBefore(note, shareRow);
+  }
+}
+
+// Thin status indicator shown only during council processing
+function showCouncilStatus(show){
+  let el = document.getElementById('councilStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'councilStatus';
+    el.style.cssText = 'position:fixed;bottom:130px;right:22px;font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;display:flex;align-items:center;gap:5px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none';
+    el.innerHTML = '<span style="width:4px;height:4px;background:var(--green);border-radius:50%;animation:livePulse 1s infinite"></span>council working...';
+    document.body.appendChild(el);
+  }
+  el.style.opacity = show ? '1' : '0';
+}
+
+// Main entry — called after a result is rendered
+async function triggerCouncil(query, result, resultEl){
+  showCouncilStatus(true);
+  const councilOutput = await runCouncil(query, result);
+  showCouncilStatus(false);
+  applyCouncilToCard(null, councilOutput, resultEl);
 }
 
 // ===== ASYNC PUBSEARCH (now with all features) =====
@@ -2022,17 +1704,20 @@ async function pubSearch(){
           } else {
             cardHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">📍 Micro nearby data unavailable · <a href="https://maps.google.com/?q=${encodeURIComponent(resolvedQ)}" target="_blank" style="color:var(--green)">View on Google Maps</a></div>`;
           }
-          // Share + PDF buttons
+          // Share + PDF buttons — use encodeURIComponent for safe passing
           const shareText = buildShareText(p);
+          const enc = encodeURIComponent(shareText);
           cardHtml += `<div class="share-row">
-            <a class="share-btn whatsapp" onclick="shareWhatsApp('${shareText.replace(/'/g,"\\'")}')">💬 WhatsApp</a>
-            <a class="share-btn sms" onclick="shareSMS('${shareText.replace(/'/g,"\\'")}')">📱 SMS</a>
-            <a class="share-btn copy" onclick="copyAddress('${shareText.replace(/'/g,"\\'")}')">📋 Copy</a>
-            <a class="share-btn pdf" onclick="saveAsPDF(${JSON.stringify(p).replace(/'/g,'&apos;')})">📄 PDF</a>
+            <a class="share-btn whatsapp" onclick="shareWhatsApp('${enc}')">💬 WhatsApp</a>
+            <a class="share-btn sms" onclick="shareSMS('${enc}')">📱 SMS</a>
+            <a class="share-btn copy" onclick="copyAddress('${enc}')">📋 Copy</a>
+            <a class="share-btn pdf" onclick="saveAsPDF(this)" data-addr='${JSON.stringify(p).replace(/'/g,"&#39;")}'>📄 PDF</a>
           </div>`;
           addMsg('ai',`<div class="msg bot addr-card">${cardHtml}</div><span class="msg-time">${ts()}</span>`);
-          // Fire council
-          triggerCouncil(q, p);
+          // Fire council silently in background, pass the last rendered card
+          const allCards = document.querySelectorAll('#chatArea .msg.bot.addr-card');
+          const lastCard = allCards[allCards.length-1];
+          triggerCouncil(q, p, lastCard);
         }
       }catch{
         const fb=text.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
