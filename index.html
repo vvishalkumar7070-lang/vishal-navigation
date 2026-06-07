@@ -398,7 +398,71 @@ body::after{
 .search-inp{background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:8px 14px;font-size:12px;color:var(--text);outline:none;width:200px;font-family:var(--font-body)}
 .search-inp:focus{border-color:rgba(0,255,170,.4)}
 
-/* TOAST */
+/* FEATURE TOOLBAR */
+.feat-btn{background:rgba(7,13,20,.8);border:1px solid var(--border2);color:var(--text2);border-radius:20px;padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:all .2s;flex-shrink:0}
+.feat-btn:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,170,.05);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,255,170,.1)}
+
+/* FILTER CHIPS */
+.filter-chip{font-size:11px;padding:5px 12px;border:1px solid var(--border2);border-radius:20px;cursor:pointer;color:var(--text3);transition:all .2s;font-family:var(--font-mono);white-space:nowrap}
+.filter-chip.active{border-color:var(--amber);color:var(--amber);background:rgba(255,179,71,.08);box-shadow:0 0 10px rgba(255,179,71,.1)}
+.filter-chip:hover{border-color:var(--text2);color:var(--text)}
+
+/* HISTORY DROPDOWN ITEMS */
+.hist-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s}
+.hist-item:hover{background:rgba(0,255,170,.04)}
+.hist-item:last-child{border-bottom:none}
+.hist-icon{font-size:14px;flex-shrink:0}
+.hist-text{flex:1;font-size:12px;color:var(--text);font-family:var(--font-body)}
+.hist-time{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+
+/* SHARE BUTTON */
+.share-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05)}
+.share-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);transition:all .2s;border:none;text-decoration:none}
+.share-btn.whatsapp{background:#25D366;color:#fff}
+.share-btn.whatsapp:hover{background:#1da851;box-shadow:0 4px 16px rgba(37,211,102,.3)}
+.share-btn.copy{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25)}
+.share-btn.copy:hover{background:rgba(0,255,170,.18)}
+.share-btn.pdf{background:rgba(255,85,102,.1);color:var(--red);border:1px solid rgba(255,85,102,.25)}
+.share-btn.pdf:hover{background:rgba(255,85,102,.18)}
+.share-btn.sms{background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25)}
+.share-btn.sms:hover{background:rgba(56,182,255,.18)}
+
+/* DID YOU MEAN */
+.dym-bar{display:flex;align-items:center;gap:8px;background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.2);border-radius:10px;padding:9px 13px;font-size:12px;margin-bottom:8px;color:var(--amber);animation:msgIn .3s ease}
+.dym-bar span{color:var(--green);cursor:pointer;text-decoration:underline;font-weight:600}
+.dym-bar span:hover{color:var(--text)}
+
+/* COUNCIL PANEL */
+.council-panel{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;scrollbar-width:none}
+.council-panel::-webkit-scrollbar{display:none}
+.council-card{flex-shrink:0;background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:14px;padding:11px 14px;min-width:180px;max-width:220px;animation:msgIn .4s ease;position:relative;overflow:hidden}
+.council-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.council-card.naruto::before{background:linear-gradient(90deg,#ff8c00,#ff4500)}
+.council-card.sasuke::before{background:linear-gradient(90deg,#6600cc,#330066)}
+.council-card.sakura::before{background:linear-gradient(90deg,#ff69b4,#cc1155)}
+.council-card.jiraiya::before{background:linear-gradient(90deg,#00aa88,#006655)}
+.council-card.itachi::before{background:linear-gradient(90deg,#cc0000,#660000)}
+.council-card.shikamaru::before{background:linear-gradient(90deg,#888800,#555500)}
+.council-name{font-size:10px;font-family:var(--font-mono);letter-spacing:1px;margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.council-card.naruto .council-name{color:#ff8c00}
+.council-card.sasuke .council-name{color:#9966ff}
+.council-card.sakura .council-name{color:#ff69b4}
+.council-card.jiraiya .council-name{color:#00cc99}
+.council-card.itachi .council-name{color:#ff4444}
+.council-card.shikamaru .council-name{color:#aaaa00}
+.council-role{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px;letter-spacing:.5px}
+.council-msg{font-size:11px;color:var(--text);line-height:1.55}
+.council-thinking{display:flex;gap:3px;align-items:center;padding:4px 0}
+.council-thinking span{width:4px;height:4px;border-radius:50%;animation:bounce 1.3s infinite ease-in-out}
+.council-card.naruto .council-thinking span{background:#ff8c00}
+.council-card.sasuke .council-thinking span{background:#9966ff}
+.council-card.sakura .council-thinking span{background:#ff69b4}
+.council-card.jiraiya .council-thinking span{background:#00cc99}
+.council-card.itachi .council-thinking span{background:#ff4444}
+.council-card.shikamaru .council-thinking span{background:#aaaa00}
+.council-thinking span:nth-child(2){animation-delay:.15s}
+.council-thinking span:nth-child(3){animation-delay:.3s}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:rgba(7,13,20,.95);border:1px solid var(--green);color:var(--green);padding:11px 24px;border-radius:12px;font-size:12px;font-family:var(--font-mono);transition:transform .35s cubic-bezier(.2,.8,.3,1);z-index:999;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(0,255,170,.15);letter-spacing:.5px;backdrop-filter:blur(16px)}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.err{border-color:var(--red);color:var(--red);box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(255,85,102,.15)}
@@ -498,12 +562,106 @@ document.addEventListener('DOMContentLoaded', function(){
 
   <!-- PUBLIC VIEW -->
   <div id="publicView">
+    <!-- SEARCH HISTORY DROPDOWN -->
+    <div id="historyDropdown" style="display:none;position:absolute;bottom:130px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:720px;background:rgba(6,10,20,.97);border:1px solid rgba(0,255,170,.2);border-radius:14px;z-index:200;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(20px)">
+      <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px">RECENT SEARCHES</span>
+        <span onclick="clearSearchHistory()" style="font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font-mono);transition:color .2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">clear all</span>
+      </div>
+      <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+
+    <!-- FEATURE TOOLBAR -->
+    <div style="display:flex;gap:7px;padding:10px 0 2px;overflow-x:auto;flex-shrink:0;scrollbar-width:none">
+      <button class="feat-btn" onclick="triggerCurrentLocation()" title="Get my current location">📍 My Location</button>
+      <button class="feat-btn" onclick="openPhotoMode()" title="Upload photo to get address">📸 Photo→Address</button>
+      <button class="feat-btn" onclick="openConversational()" title="Describe surroundings">🗣️ Describe It</button>
+      <button class="feat-btn" onclick="openCompare()" title="Compare two locations">📏 Compare</button>
+      <button class="feat-btn" onclick="openLandmark()" title="Landmark to address">🏛️ Landmark</button>
+      <button class="feat-btn" onclick="openFilterNearby()" title="Filter nearby places">🎯 Filter Nearby</button>
+      <button class="feat-btn" onclick="openCommunity()" title="Report wrong address">🤝 Report Error</button>
+    </div>
+
+    <!-- COUNCIL PANEL (auto-triggers) -->
+    <div id="councilPanel" style="display:none;flex-shrink:0;padding:0 0 8px"></div>
+
+    <!-- COMPARE MODAL -->
+    <div id="compareModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(56,182,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px">📏 COMPARE TWO LOCATIONS <span onclick="document.getElementById('compareModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+        <input id="locA" placeholder="Location A…" style="background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);width:100%"/>
+        <span style="color:var(--text3);font-size:18px">↔</span>
+        <input id="locB" placeholder="Location B…" style="background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);width:100%"/>
+      </div>
+      <button onclick="runCompare()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.3);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .2s" onmouseover="this.style.background='rgba(56,182,255,.2)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05))'">Calculate Distance & Compare</button>
+      <div id="compareResult" style="margin-top:10px;display:none"></div>
+    </div>
+
+    <!-- LANDMARK MODAL -->
+    <div id="landmarkModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(176,140,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🏛️ LANDMARK → FULL ADDRESS <span onclick="document.getElementById('landmarkModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <div style="display:flex;gap:8px">
+        <input id="landmarkInp" placeholder="e.g. India Gate, Lotus Temple, Charminar…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)" onkeydown="if(event.key==='Enter')runLandmark()"/>
+        <button onclick="runLandmark()" style="background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Find Address</button>
+      </div>
+    </div>
+
+    <!-- FILTER NEARBY MODAL -->
+    <div id="filterNearbyModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(255,179,71,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🎯 FILTER NEARBY PLACES <span onclick="document.getElementById('filterNearbyModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="filter-chip active" onclick="toggleFilter(this,'hospital')">🏥 Hospital</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'bank')">🏦 Bank</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'school')">🏫 School</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'restaurant')">🍽️ Food</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'pharmacy')">💊 Pharmacy</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'atm')">💳 ATM</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'petrol')">⛽ Petrol</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'police')">👮 Police</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'post')">📮 Post Office</span>
+        <span class="filter-chip" onclick="toggleFilter(this,'temple')">🛕 Temple</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="filterLocInp" placeholder="Enter area or use current location…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)"/>
+        <button onclick="runFilterNearby()" style="background:linear-gradient(135deg,rgba(255,179,71,.15),rgba(255,179,71,.05));border:1px solid rgba(255,179,71,.3);color:var(--amber);border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Search</button>
+      </div>
+    </div>
+
+    <!-- CONVERSATIONAL MODAL -->
+    <div id="conversationalModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(0,255,170,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px">🗣️ DESCRIBE YOUR SURROUNDINGS <span onclick="document.getElementById('conversationalModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Describe what you see around you — AI will figure out your exact location.</div>
+      <textarea id="convInp" rows="2" placeholder="e.g. I'm near a big red temple, there's a SBI bank on my left, green pharmacy across the road, auto stand nearby…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
+      <button onclick="runConversational()" style="margin-top:8px;width:100%;background:linear-gradient(135deg,rgba(0,255,170,.12),rgba(0,255,170,.04));border:1px solid rgba(0,255,170,.3);color:var(--green);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Find My Location</button>
+    </div>
+
+    <!-- PHOTO MODE MODAL -->
+    <div id="photoModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(255,85,102,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--red);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">📸 PHOTO → ADDRESS <span onclick="document.getElementById('photoModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <div id="photoDropzone" onclick="document.getElementById('photoInput').click()" style="border:2px dashed rgba(255,85,102,.3);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px;font-family:var(--font-mono)" onmouseover="this.style.borderColor='rgba(255,85,102,.6)';this.style.background='rgba(255,85,102,.04)'" onmouseout="this.style.borderColor='rgba(255,85,102,.3)';this.style.background='transparent'">
+        <div style="font-size:28px;margin-bottom:8px">📷</div>
+        <div>Click to upload photo of shopfront, building, or street sign</div>
+        <div style="font-size:10px;margin-top:4px;color:var(--text3)">JPG, PNG, WEBP · Max 5MB</div>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
+      <div id="photoPreview" style="display:none;margin-top:10px;text-align:center"><img id="photoImg" style="max-height:120px;border-radius:10px;border:1px solid var(--border2)"/></div>
+      <button id="photoAnalyzeBtn" onclick="analyzePhoto()" style="display:none;margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(255,85,102,.15),rgba(255,85,102,.05));border:1px solid rgba(255,85,102,.3);color:var(--red);border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Extract Address from Photo</button>
+    </div>
+
+    <!-- COMMUNITY MODAL -->
+    <div id="communityModal" style="display:none;background:rgba(7,13,20,.95);border:1px solid rgba(56,182,255,.2);border-radius:16px;padding:16px;margin-bottom:8px;flex-shrink:0">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px">🤝 COMMUNITY CORRECTION <span onclick="document.getElementById('communityModal').style.display='none'" style="margin-left:auto;cursor:pointer;color:var(--text3);font-size:14px">✕</span></div>
+      <input id="wrongAddr" placeholder="Wrong address (what was shown)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
+      <input id="correctAddr" placeholder="Correct address (what it should be)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
+      <button onclick="submitCorrection()" style="width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.3);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Submit Correction</button>
+    </div>
+
     <div class="chat-area" id="chatArea">
       <div class="msg-wrap ai">
         <div class="msg bot">
           <strong>Namaste! 🙏</strong><br><br>
           Type or speak any <strong>area, colony, landmark or city</strong> in India — I'll instantly find the correct address, pincode, post office and nearby places.<br><br>
-          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Nearby landmarks · ✏️ Auto-corrected</span>
+          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Nearby landmarks · ✏️ Auto-corrected · 📸 Photo mode · 🗣️ Describe it</span>
         </div>
       </div>
       <div class="sugs" id="sugs">
@@ -516,12 +674,18 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
     <div class="pub-footer">
+      <!-- Recent history chips -->
+      <div id="recentChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:0"></div>
       <div class="pub-inp-row">
-        <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off" onkeydown="if(event.key==='Enter')pubSearch()"/>
+        <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
+          onkeydown="if(event.key==='Enter')pubSearch()"
+          oninput="onSearchInput(this.value)"
+          onfocus="showHistoryDropdown()"
+          onblur="setTimeout(()=>hideHistoryDropdown(),200)"/>
         <button class="pub-mic" id="pubMic" onclick="togglePubMic()" title="Speak your location">🎤</button>
         <button class="pub-send" id="pubSend" onclick="pubSearch()">➤</button>
       </div>
-      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes</div>
+      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes · 🧠 Council of 6</div>
     </div>
     <!-- Floating agent button -->
     <div class="agent-float">
@@ -1450,12 +1614,371 @@ CRITICAL RULES:
 JSON schema: {"is_address_query":true,"original":null,"corrected":null,"full_address":"complete address","pincode":"6-digit pincode","post_office":"post office name","district":"district name","state":"state name","nearby":[],"verify_note":"source of pincode"}
 If not India address: {"is_address_query":false,"message":"friendly message"}`;
 
+// ===== SEARCH HISTORY =====
+const SEARCH_HIST_KEY = 'vn_search_history';
+function getSearchHistory(){ try{return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY)||'[]');}catch{return [];} }
+function saveSearchHistory(q){
+  let h = getSearchHistory();
+  h = h.filter(x => x.q !== q);
+  h.unshift({q, t: Date.now()});
+  h = h.slice(0, 30);
+  localStorage.setItem(SEARCH_HIST_KEY, JSON.stringify(h));
+  renderRecentChips();
+}
+function clearSearchHistory(){
+  localStorage.removeItem(SEARCH_HIST_KEY);
+  renderRecentChips();
+  hideHistoryDropdown();
+}
+function renderRecentChips(){
+  const h = getSearchHistory().slice(0,5);
+  const el = document.getElementById('recentChips');
+  if(!el) return;
+  if(!h.length){ el.style.display='none'; return; }
+  el.style.display='flex';
+  el.innerHTML = h.map(x=>`<span onclick="useHistory('${x.q.replace(/'/g,"\\'")}') " style="font-size:10px;padding:4px 10px;border:1px solid var(--border2);border-radius:20px;color:var(--text3);cursor:pointer;font-family:var(--font-mono);background:rgba(7,13,20,.8);transition:all .2s;white-space:nowrap" onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">🕐 ${x.q.substring(0,22)}${x.q.length>22?'…':''}</span>`).join('');
+}
+function useHistory(q){
+  document.getElementById('pubQ').value = q;
+  hideHistoryDropdown();
+  pubSearch();
+}
+function showHistoryDropdown(){
+  const h = getSearchHistory();
+  if(!h.length) return;
+  const el = document.getElementById('historyDropdown');
+  const list = document.getElementById('historyList');
+  list.innerHTML = h.slice(0,8).map(x=>`<div class="hist-item" onclick="useHistory('${x.q.replace(/'/g,"\\'")}')"><span class="hist-icon">🕐</span><span class="hist-text">${x.q}</span><span class="hist-time">${new Date(x.t).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></div>`).join('');
+  el.style.display='block';
+}
+function hideHistoryDropdown(){ document.getElementById('historyDropdown').style.display='none'; }
+function onSearchInput(v){
+  if(!v) showHistoryDropdown(); else hideHistoryDropdown();
+}
+window.addEventListener('load', renderRecentChips);
+
+// ===== DID YOU MEAN =====
+const DYM_MAP = {'lajpat nager':'Lajpat Nagar','connaught':'Connaught Place, Delhi','bangaluru':'Bengaluru','bombay':'Mumbai','calcutta':'Kolkata','madras':'Chennai','poona':'Pune','baroda':'Vadodara','simla':'Shimla','pondichery':'Pondicherry','gurgaon':'Gurugram'};
+function checkDidYouMean(q){
+  const ql = q.toLowerCase();
+  for(const [wrong, right] of Object.entries(DYM_MAP)){
+    if(ql.includes(wrong)) return right;
+  }
+  return null;
+}
+
+// ===== SHARE FUNCTIONS =====
+function buildShareText(result){
+  return `📍 ${result.full_address}\n📮 Pincode: ${result.pincode}\n🏤 Post Office: ${result.post_office}\n🗺️ ${result.district}, ${result.state}\n\nShared via Vishal Navigation`;
+}
+function shareWhatsApp(text){ window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank'); }
+function shareSMS(text){ window.open('sms:?body='+encodeURIComponent(text)); }
+function copyAddress(text){ navigator.clipboard.writeText(text).then(()=>toast('📋 Address copied!')); }
+
+// ===== SAVE AS PDF =====
+async function saveAsPDF(result){
+  const {jsPDF} = window.jspdf || {};
+  if(!window.jspdf){
+    // Load jsPDF dynamically
+    await new Promise(res=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload=res; document.head.appendChild(s);
+    });
+  }
+  const doc = new window.jspdf.jsPDF({format:'a6',unit:'mm'});
+  doc.setFillColor(3,5,10); doc.rect(0,0,105,148,'F');
+  doc.setTextColor(0,255,170); doc.setFontSize(14); doc.setFont('helvetica','bold');
+  doc.text('VISHAL NAVIGATION',10,14);
+  doc.setTextColor(100,154,184); doc.setFontSize(7); doc.setFont('helvetica','normal');
+  doc.text('India Address Intelligence',10,19);
+  doc.setDrawColor(0,255,170); doc.setLineWidth(0.3); doc.line(10,22,95,22);
+  doc.setTextColor(200,220,240); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('FULL ADDRESS',10,30);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const lines = doc.splitTextToSize(result.full_address||'',85);
+  doc.text(lines,10,37);
+  const y = 37 + lines.length*5 + 4;
+  doc.setTextColor(0,255,170); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('PINCODE: '+result.pincode,10,y);
+  doc.setTextColor(200,220,240); doc.setFontSize(8); doc.setFont('helvetica','normal');
+  doc.text('Post Office: '+result.post_office,10,y+6);
+  doc.text('District: '+result.district+' · State: '+result.state,10,y+12);
+  doc.setDrawColor(30,44,64); doc.line(10,y+18,95,y+18);
+  doc.setTextColor(60,80,100); doc.setFontSize(7);
+  doc.text('Generated: '+new Date().toLocaleString('en-IN'),10,y+24);
+  doc.save('address-'+result.pincode+'.pdf');
+  toast('📄 PDF saved!');
+}
+
+// ===== CURRENT LOCATION =====
+async function triggerCurrentLocation(){
+  if(!navigator.geolocation){ toast('⚠️ Geolocation not supported','err'); return; }
+  toast('📍 Getting your location...');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude:lat, longitude:lon} = pos.coords;
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
+      const data = await res.json();
+      const addr = data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      document.getElementById('pubQ').value = addr;
+      pubSearch();
+    }catch{
+      document.getElementById('pubQ').value = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      pubSearch();
+    }
+  }, err=>{
+    toast('⚠️ Location denied. Please allow location access.','err');
+  },{enableHighAccuracy:true,timeout:8000});
+}
+
+// ===== PHOTO → ADDRESS =====
+let photoBase64 = null;
+function openPhotoMode(){ document.getElementById('photoModal').style.display='block'; }
+function handlePhotoUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photoBase64 = ev.target.result.split(',')[1];
+    document.getElementById('photoImg').src = ev.target.result;
+    document.getElementById('photoPreview').style.display='block';
+    document.getElementById('photoAnalyzeBtn').style.display='block';
+    document.getElementById('photoDropzone').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+async function analyzePhoto(){
+  if(!photoBase64){ toast('⚠️ Please upload a photo first','err'); return; }
+  document.getElementById('photoAnalyzeBtn').textContent='🔍 Analyzing...';
+  document.getElementById('photoAnalyzeBtn').disabled=true;
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01'},
+      body:JSON.stringify({
+        model:'claude-opus-4-20250514',
+        max_tokens:400,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:photoBase64}},
+          {type:'text',text:'Look at this photo. Extract any visible address, location name, shop name, building name, street, area, city, or any text that could help identify the location in India. Return ONLY a location search query I can use to find this address, nothing else.'}
+        ]}]
+      })
+    });
+    const data = await res.json();
+    const extracted = data.content?.[0]?.text || '';
+    if(extracted){
+      document.getElementById('photoModal').style.display='none';
+      document.getElementById('pubQ').value = extracted;
+      pubSearch();
+    } else {
+      toast('⚠️ Could not extract address from photo','err');
+    }
+  }catch{
+    // Fallback: use Groq vision-capable model
+    toast('⚠️ Photo analysis unavailable — try typing the address','err');
+  }
+  document.getElementById('photoAnalyzeBtn').textContent='🔍 Extract Address from Photo';
+  document.getElementById('photoAnalyzeBtn').disabled=false;
+}
+
+// ===== CONVERSATIONAL ADDRESS =====
+function openConversational(){ document.getElementById('conversationalModal').style.display='block'; document.getElementById('convInp').focus(); }
+async function runConversational(){
+  const desc = document.getElementById('convInp').value.trim();
+  if(!desc){ toast('⚠️ Please describe your surroundings','err'); return; }
+  document.getElementById('conversationalModal').style.display='none';
+  document.getElementById('pubQ').value = desc;
+  // Enrich query with conversational context flag
+  addMsg('user',`<div class="msg user">🗣️ ${desc.replace(/</g,'&lt;')}</div><span class="msg-time">${ts()}</span>`);
+  showTyping();
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:200,temperature:0.3,
+        messages:[
+          {role:'system',content:'You are an India address expert. The user is describing their surroundings in natural language. Extract the most likely India location (area, city, state) from their description. Return ONLY a clean location search query like "Karol Bagh, New Delhi" — nothing else.'},
+          {role:'user',content:desc}
+        ]})
+    });
+    const d = await res.json();
+    const loc = d.choices?.[0]?.message?.content?.trim() || desc;
+    hideTyping();
+    document.getElementById('pubQ').value = loc;
+    pubSearch();
+  }catch{
+    hideTyping();
+    document.getElementById('pubQ').value = desc;
+    pubSearch();
+  }
+}
+
+// ===== LANDMARK → ADDRESS =====
+function openLandmark(){ document.getElementById('landmarkModal').style.display='block'; document.getElementById('landmarkInp').focus(); }
+function runLandmark(){
+  const lm = document.getElementById('landmarkInp').value.trim();
+  if(!lm){ toast('⚠️ Enter a landmark name','err'); return; }
+  document.getElementById('landmarkModal').style.display='none';
+  document.getElementById('pubQ').value = lm + ', India';
+  pubSearch();
+}
+
+// ===== COMPARE TWO LOCATIONS =====
+function openCompare(){ document.getElementById('compareModal').style.display='block'; document.getElementById('locA').focus(); }
+async function runCompare(){
+  const a = document.getElementById('locA').value.trim();
+  const b = document.getElementById('locB').value.trim();
+  if(!a||!b){ toast('⚠️ Enter both locations','err'); return; }
+  const res = document.getElementById('compareResult');
+  res.style.display='block';
+  res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">Calculating...</div>';
+  try{
+    const [gA, gB] = await Promise.all([geocodeLocation(a+', India'), geocodeLocation(b+', India')]);
+    if(!gA||!gB){ res.innerHTML='<div style="color:var(--red);font-size:11px">Could not geocode one or both locations.</div>'; return; }
+    const R=6371;
+    const dLat=(gB.lat-gA.lat)*Math.PI/180;
+    const dLon=(gB.lon-gA.lon)*Math.PI/180;
+    const h=Math.sin(dLat/2)**2+Math.cos(gA.lat*Math.PI/180)*Math.cos(gB.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+    const dist=2*R*Math.asin(Math.sqrt(h));
+    const mapsUrl=`https://www.google.com/maps/dir/${encodeURIComponent(a+' India')}/${encodeURIComponent(b+' India')}`;
+    res.innerHTML=`
+      <div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:10px;padding:12px;font-size:12px">
+        <div style="font-size:22px;font-weight:700;color:var(--blue);font-family:var(--font-mono);margin-bottom:4px">${dist.toFixed(1)} km <span style="font-size:12px;color:var(--text3)">straight line</span></div>
+        <div style="color:var(--text2);font-size:11px;margin-bottom:8px">Est. drive: ~${Math.round(dist*1.4/50*60)} min at 50km/h avg</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px">📍 ${gA.display.substring(0,50)}…<br>📍 ${gB.display.substring(0,50)}…</div>
+        <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:6px 14px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🗺️ Open Route in Google Maps</a>
+      </div>`;
+  }catch{res.innerHTML='<div style="color:var(--red);font-size:11px">Error calculating distance.</div>';}
+}
+
+// ===== FILTER NEARBY =====
+let activeFilters = ['hospital'];
+function openFilterNearby(){ document.getElementById('filterNearbyModal').style.display='block'; }
+function toggleFilter(el, type){
+  el.classList.toggle('active');
+  if(activeFilters.includes(type)) activeFilters=activeFilters.filter(x=>x!==type);
+  else activeFilters.push(type);
+}
+async function runFilterNearby(){
+  const loc = document.getElementById('filterLocInp').value.trim();
+  if(!loc){ toast('⚠️ Enter a location','err'); return; }
+  document.getElementById('filterNearbyModal').style.display='none';
+  const filterStr = activeFilters.length ? activeFilters.join(', ') : 'hospital, bank, restaurant';
+  document.getElementById('pubQ').value = `${filterStr} near ${loc}`;
+  pubSearch();
+}
+
+// ===== COMMUNITY CORRECTIONS =====
+function openCommunity(){ document.getElementById('communityModal').style.display='block'; }
+function submitCorrection(){
+  const wrong = document.getElementById('wrongAddr').value.trim();
+  const correct = document.getElementById('correctAddr').value.trim();
+  if(!wrong||!correct){ toast('⚠️ Please fill both fields','err'); return; }
+  const corrections = JSON.parse(localStorage.getItem('vn_corrections')||'[]');
+  corrections.unshift({wrong,correct,t:Date.now(),votes:1});
+  localStorage.setItem('vn_corrections', JSON.stringify(corrections.slice(0,100)));
+  document.getElementById('communityModal').style.display='none';
+  document.getElementById('wrongAddr').value='';
+  document.getElementById('correctAddr').value='';
+  toast('✅ Correction submitted — thank you! 🙏');
+  addMsg('ai',`<div class="msg bot">🤝 <strong>Community Correction Recorded</strong><br><br>Wrong: <span style="color:var(--red)">${wrong}</span><br>Correct: <span style="color:var(--green)">${correct}</span><br><br><span style="font-size:11px;color:var(--text3)">Thank you for helping improve address accuracy for everyone! Your correction has been saved.</span></div>`);
+}
+
+// ===== NARUTO COUNCIL =====
+const COUNCIL = {
+  naruto:  {name:'NARUTO',    role:'VALIDATOR · Never Gives Up',  emoji:'🍥', class:'naruto',
+    system:`You are Naruto Uzumaki, the address validator. You NEVER give up on finding an address no matter how incomplete. You're enthusiastic, determined, and use "Believe it!" / "Dattebayo" occasionally. When an address seems wrong or incomplete, you try harder. Give validation insights: is this address real? complete? deliverable? Keep it short (2-3 sentences). You're analyzing an India address result.`},
+  sasuke:  {name:'SASUKE',    role:'NAVIGATOR · Cold & Precise',   emoji:'⚡', class:'sasuke',
+    system:`You are Sasuke Uchiha, the navigator. Cold, precise, no emotions. You analyze coordinates, routes, and location accuracy with surgical precision. No fluff. Short sharp sentences. Give navigation insight about the location — is it well-connected? Any strategic observations? Max 2 sentences.`},
+  sakura:  {name:'SAKURA',    role:'ANALYST · Sharp Intelligence', emoji:'🌸', class:'sakura',
+    system:`You are Sakura Haruno, the data analyst. Brilliant and sharp. You break down the address components, note interesting facts about the area, pincode stats, district demographics. You're thorough but concise. 2-3 sentences of analysis. Focus on what makes this area notable.`},
+  jiraiya: {name:'JIRAIYA',   role:'SALES INTEL · Street Smart',   emoji:'📖', class:'jiraiya',
+    system:`You are Jiraiya, the street-smart sales intel agent. You know every locality's vibe, market potential, and business opportunities. Give sales/business insight about this area — is it commercial? residential? good for delivery? customer density? Keep it punchy, 2 sentences.`},
+  itachi:  {name:'ITACHI',    role:'FRAUD DETECTOR · Silent Truth', emoji:'👁️', class:'itachi',
+    system:`You are Itachi Uchiha, the ghost address and fraud detector. Silent but deadly accurate. Analyze if this address seems real, fake, or suspicious. Is it a real deliverable location? Any red flags? Speak in calm, measured tones. Max 2 sentences. Be direct.`},
+  shikamaru:{name:'SHIKAMARU', role:'PREDICTOR · Too Lazy to Be Wrong', emoji:'🧠', class:'shikamaru',
+    system:`You are Shikamaru Nara, the predictor. You're lazy but your predictions are always right. What will the user search next? What related address might they need? Predict 1-2 follow-up searches they'll probably want. Act mildly annoyed at having to think about it.`},
+};
+
+function pickCouncilMembers(query, result){
+  const members = [];
+  const q = (query||'').toLowerCase();
+  const addr = JSON.stringify(result||'').toLowerCase();
+  // Always show naruto (validator) and shikamaru (predictor)
+  members.push('naruto','shikamaru');
+  // Sasuke if location/navigation query
+  if(q.includes('route')||q.includes('distance')||q.includes('near')||q.includes('km')) members.push('sasuke');
+  // Sakura always for analysis
+  members.push('sakura');
+  // Jiraiya if commercial area
+  if(q.includes('market')||q.includes('shop')||q.includes('business')||q.includes('mall')||q.includes('sector')) members.push('jiraiya');
+  // Itachi if suspicious / short / incomplete
+  if(q.length < 10 || addr.includes('not found') || !result?.pincode) members.push('itachi');
+  // Deduplicate and limit to 4
+  return [...new Set(members)].slice(0,4);
+}
+
+async function triggerCouncil(query, result){
+  const panel = document.getElementById('councilPanel');
+  if(!panel) return;
+  const members = pickCouncilMembers(query, result);
+  const context = `Address query: "${query}"\nResult: ${JSON.stringify(result, null, 2)}`;
+  panel.style.display='block';
+  panel.innerHTML=`<div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;padding:4px 0 6px">⚔️ COUNCIL ANALYSIS</div><div class="council-panel" id="councilCards">${members.map(m=>`
+    <div class="council-card ${COUNCIL[m].class}" id="cc-${m}">
+      <div class="council-name">${COUNCIL[m].emoji} ${COUNCIL[m].name}</div>
+      <div class="council-role">${COUNCIL[m].role}</div>
+      <div class="council-thinking"><span></span><span></span><span></span></div>
+    </div>`).join('')}</div>`;
+  // Fire all council members in parallel
+  members.forEach(async m=>{
+    const card = document.getElementById('cc-'+m);
+    if(!card) return;
+    try{
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+        body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:100,temperature:0.7,
+          messages:[{role:'system',content:COUNCIL[m].system},{role:'user',content:context}]})
+      });
+      const d = await res.json();
+      const reply = d.choices?.[0]?.message?.content || '...';
+      card.querySelector('.council-thinking').outerHTML='';
+      const msgDiv = document.createElement('div');
+      msgDiv.className='council-msg';
+      msgDiv.textContent = reply;
+      card.appendChild(msgDiv);
+    }catch{
+      card.querySelector('.council-thinking').outerHTML='';
+      const msgDiv=document.createElement('div');
+      msgDiv.className='council-msg';
+      msgDiv.style.color='var(--text3)';
+      msgDiv.textContent='...unavailable';
+      card.appendChild(msgDiv);
+    }
+  });
+}
+
+// ===== ASYNC PUBSEARCH (now with all features) =====
 async function pubSearch(){
   const q=document.getElementById('pubQ').value.trim();
   if(!q||document.getElementById('pubSend').disabled) return;
   document.getElementById('pubQ').value='';
   document.getElementById('pubSend').disabled=true;
   document.getElementById('sugs')?.remove();
+  hideHistoryDropdown();
+  saveSearchHistory(q);
+
+  // Did You Mean check
+  const dym = checkDidYouMean(q);
+  if(dym){
+    const dymEl = document.createElement('div');
+    dymEl.className='dym-bar';
+    dymEl.innerHTML=`🤔 Did you mean <span onclick="document.getElementById('pubQ').value='${dym}';pubSearch()">${dym}</span>?`;
+    document.getElementById('chatArea').appendChild(dymEl);
+  }
+
   addMsg('user',`<div class="msg user">${q.replace(/</g,'&lt;')}</div><span class="msg-time">${ts()}</span>`);
   showTyping();
   try{
@@ -1487,13 +2010,11 @@ async function pubSearch(){
           if(microNearby.length>0){
             cardHtml+=`<div class="addr-lbl" style="margin-top:10px">📍 Real Nearby <span style="font-size:9px;color:var(--text3)">(OpenStreetMap verified)</span></div><div class="nearby-list">`;
             microNearby.forEach((item,i)=>{
-              // Use coordinates if available for pinpoint accuracy
               let mapsUrl;
               if(coords){
-                // Use exact GPS coordinates — opens pinpoint location
                 mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name)+'/@'+coords.lat+','+coords.lon+',17z';
               } else {
-                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name+' '+( parsed.full_address||parsed.district||'')+' India');
+                mapsUrl='https://www.google.com/maps/search/'+encodeURIComponent(item.name+' '+( p.full_address||p.district||'')+' India');
               }
               cardHtml+=`<a class="ni" href="${mapsUrl}" target="_blank" title="Open in Google Maps" style="text-decoration:none"><div class="ni-em">${emo(item.type)}</div><div style="flex:1"><div class="ni-name">${i+1}. ${item.name}</div><div class="ni-type">${item.type}</div></div>${item.distance?`<div class="ni-dist">${item.distance}</div>`:''}<div style="font-size:10px;color:var(--blue);opacity:.7">↗</div></a>`;
             });
@@ -1501,7 +2022,17 @@ async function pubSearch(){
           } else {
             cardHtml+=`<div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">📍 Micro nearby data unavailable · <a href="https://maps.google.com/?q=${encodeURIComponent(resolvedQ)}" target="_blank" style="color:var(--green)">View on Google Maps</a></div>`;
           }
-          addMsg('ai',`<div class="msg bot">${cardHtml}</div><span class="msg-time">${ts()}</span>`);
+          // Share + PDF buttons
+          const shareText = buildShareText(p);
+          cardHtml += `<div class="share-row">
+            <a class="share-btn whatsapp" onclick="shareWhatsApp('${shareText.replace(/'/g,"\\'")}')">💬 WhatsApp</a>
+            <a class="share-btn sms" onclick="shareSMS('${shareText.replace(/'/g,"\\'")}')">📱 SMS</a>
+            <a class="share-btn copy" onclick="copyAddress('${shareText.replace(/'/g,"\\'")}')">📋 Copy</a>
+            <a class="share-btn pdf" onclick="saveAsPDF(${JSON.stringify(p).replace(/'/g,'&apos;')})">📄 PDF</a>
+          </div>`;
+          addMsg('ai',`<div class="msg bot addr-card">${cardHtml}</div><span class="msg-time">${ts()}</span>`);
+          // Fire council
+          triggerCouncil(q, p);
         }
       }catch{
         const fb=text.replace(/</g,'&lt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
