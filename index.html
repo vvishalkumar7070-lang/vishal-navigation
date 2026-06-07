@@ -1146,64 +1146,67 @@ async function nekoSend(){
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY_FOX},
-      body:JSON.stringify({
-        model:'llama-3.3-70b-versatile',
-        max_tokens:150,
-        temperature:0.85,
-        messages
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 150,
+        temperature: 0.88,
+        messages: msgs
       })
     });
     const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || "*glitches* My brain broke. Try again.";
+    const reply = data.choices?.[0]?.message?.content || "*stares blankly* ...my brain left. Try again.";
 
-    foxHistory.push({role:'assistant', content:reply});
-    renderFoxHistory();
+    foxHistory.push({ role: 'assistant', content: reply });
+    renderNekoHistory();
 
-    document.getElementById('foxThinking').classList.remove('show');
-    document.getElementById('foxMsg').innerHTML = formatFoxMsg(reply);
-    document.getElementById('foxStatus').textContent = '🦊';
+    document.getElementById('nekoThinking').classList.remove('show');
+    document.getElementById('nekoMsg').innerHTML = formatNekoMsg(reply);
+    document.getElementById('nekoBadge').textContent = '🐱';
 
-    // Random mood after reply
-    setTimeout(()=>{ document.getElementById('foxStatus').textContent = ['✨','🔥','😏','👀','💅'][Math.floor(Math.random()*5)]; }, 2000);
+    // Mood shift after reply
+    setTimeout(() => {
+      document.getElementById('nekoBadge').textContent = ['✨','😏','👁️','💅','🌙'][Math.floor(Math.random() * 5)];
+    }, 2200);
 
-  } catch(e) {
-    document.getElementById('foxThinking').classList.remove('show');
-    document.getElementById('foxMsg').innerHTML = '<span class="fox-snark">*dramatically dies* Network error. The universe hates us both.</span>';
-    document.getElementById('foxStatus').textContent = '💀';
+  } catch(err) {
+    document.getElementById('nekoThinking').classList.remove('show');
+    document.getElementById('nekoMsg').innerHTML = '<span class="neko-snark">*knocks wifi router off table* Network dead. Not my fault.</span>';
+    document.getElementById('nekoBadge').textContent = '💀';
   }
+
   btn.disabled = false;
-  // Scroll history
-  const h = document.getElementById('foxHistory');
+  const h = document.getElementById('nekoHistory');
   if(h) h.scrollTop = h.scrollHeight;
 }
 
-function renderFoxHistory(){
-  const h = document.getElementById('foxHistory');
+function renderNekoHistory(){
+  const h = document.getElementById('nekoHistory');
   if(!h) return;
   const recent = foxHistory.slice(-6);
   h.innerHTML = recent.map(m =>
-    `<div class="fox-hist-msg ${m.role==='user'?'user':'fox'}">${m.role==='user'?'you: ':'🦊 '}${m.content.substring(0,80)}${m.content.length>80?'…':''}</div>`
+    `<div class="neko-hist-msg ${m.role==='user'?'user':'cat'}">${m.role==='user'?'you: ':'🐱 '}${m.content.substring(0,80)}${m.content.length>80?'…':''}</div>`
   ).join('');
   h.scrollTop = h.scrollHeight;
 }
 
-function formatFoxMsg(text){
+function formatNekoMsg(text){
   return text
-    .replace(/\*(.*?)\*/g, '<em style="color:var(--amber)">*$1*</em>')
-    .replace(/(foxy|tail|kit|fox|kitsune)/gi, '<span class="fox-em">$1</span>');
+    .replace(/\*(.*?)\*/g,'<em class="neko-snark">*$1*</em>')
+    .replace(/(meow|purr|cat|neko|claw|paw)/gi,'<span class="neko-em">$1</span>');
 }
 
-// Make fox appear with entrance animation
+// Entrance animation
 window.addEventListener('load', () => {
-  const pet = document.getElementById('foxPet');
+  const pet = document.getElementById('nekoPet');
+  if(!pet) return;
   pet.style.opacity = '0';
-  pet.style.transform = 'scale(0) rotate(-10deg)';
-  pet.style.transition = 'all .5s cubic-bezier(.2,.8,.3,1)';
+  pet.style.transform = 'scale(0) rotate(-15deg)';
+  pet.style.transition = 'all .55s cubic-bezier(.2,.8,.3,1)';
   setTimeout(() => {
     pet.style.opacity = '1';
     pet.style.transform = 'scale(1) rotate(0deg)';
     pet.classList.add('pet-active');
-  }, 1200);
+  }, 1000);
 });
 </script>
 
