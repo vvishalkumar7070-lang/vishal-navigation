@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script src="pindb.js"></script>
 <script>
-const GROQ_KEY = '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';
+const GROQ_KEY = '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';
 const ADMIN_USER = 'vishal_admin';
 const ADMIN_PASS_KEY = 'vn_admin_pass';
 function getAdminPass(){ return localStorage.getItem(ADMIN_PASS_KEY)||'admin@1234'; }
@@ -1132,33 +1132,42 @@ const ALIASES={'cp':'Connaught Place, New Delhi','aiims':'AIIMS, Ansari Nagar, N
 function resolveAlias(q){ return ALIASES[q.toLowerCase().trim()]||q; }
 
 async function geocodeLocation(query){
-  const parts=query.split(',').map(p=>p.trim()).filter(Boolean);
-  const queries=[query+', India'];
-  for(let i=1;i<parts.length;i++) queries.push(parts.slice(i).join(', ')+', India');
-  if(parts.length>2) queries.push(parts.slice(-2).join(', ')+', India');
-  for(const q of queries){
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=in&addressdetails=1`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
-      const data=await res.json();
-      if(data.length>0) return {lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon),display:data[0].display_name};
-    }catch(e){}
-  }
+  const q=query.replace(/, India$/i,'').trim();
+  const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+  try{
+    const r=await fetch(`https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(q)}&api_key=${MMI_KEY}`);
+    const d=await r.json();
+    const loc=d?.copResults||d?.results?.[0];
+    if(loc?.latitude) return {lat:parseFloat(loc.latitude),lon:parseFloat(loc.longitude),display:loc.formattedAddress||q};
+  }catch(e){}
+  try{
+    const r=await fetch(`https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND&api_key=${MMI_KEY}`);
+    const d=await r.json();
+    const res=d?.suggestedLocations?.[0];
+    if(res?.latitude) return {lat:parseFloat(res.latitude),lon:parseFloat(res.longitude),display:res.formattedAddress||res.placeName||q};
+  }catch(e){}
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' India')}&format=json&limit=1&countrycodes=in`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
+    const d=await r.json();
+    if(d?.length) return {lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),display:d[0].display_name};
+  }catch(e){}
   return null;
 }
 
-async function fetchNearby(lat,lon){
-  const q=`[out:json][timeout:10];(node["amenity"](around:200,${lat},${lon});node["shop"](around:200,${lat},${lon});node["tourism"](around:200,${lat},${lon});way["amenity"](around:200,${lat},${lon}););out center 20;`;
+async function fetchNearby(lat,lon,keywords){
+  const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+  const kw=keywords||'hospital,bank,atm,pharmacy,restaurant,school,petrol,police,post office,temple';
   try{
-    const res=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:q});
-    const data=await res.json();
-    return data.elements.filter(e=>e.tags&&(e.tags.name||e.tags['name:en'])).map(e=>{
-      const name=e.tags['name:en']||e.tags.name;
-      const type=e.tags.amenity||e.tags.shop||e.tags.tourism||'Place';
-      const elat=e.lat||e.center?.lat,elon=e.lon||e.center?.lon;
-      let dist='';
-      if(elat&&elon){const dx=(lon-elon)*111320*Math.cos(lat*Math.PI/180),dy=(lat-elat)*110540;dist=`~${Math.round(Math.sqrt(dx*dx+dy*dy))}m`;}
-      return {name,type:type.replace(/_/g,' '),distance:dist};
-    }).slice(0,12);
+    const r=await fetch(`https://atlas.mappls.com/api/places/nearby/json?keywords=${encodeURIComponent(kw)}&refLocation=${lat},${lon}&radius=1000&sortBy=dist&api_key=${MMI_KEY}`);
+    const d=await r.json();
+    const places=d?.suggestedLocations||d?.results||[];
+    if(places.length) return places.slice(0,12).map(p=>({name:p.placeName||p.name||'Unknown',type:(p.type||'place').toString().replace(/_/g,' ').toLowerCase(),distance:p.distance?`~${Math.round(p.distance)}m`:'',address:p.placeAddress||''}));
+  }catch(e){}
+  try{
+    const oq=`[out:json][timeout:15];(node["amenity"](around:500,${lat},${lon});node["shop"](around:500,${lat},${lon}););out 20;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:oq});
+    const d=await r.json();
+    return d.elements.filter(e=>e.tags?.name).map(e=>({name:e.tags.name,type:(e.tags.amenity||e.tags.shop||'place').replace(/_/g,' '),distance:'',address:''})).slice(0,12);
   }catch(e){return [];}
 }
 
@@ -1249,6 +1258,36 @@ function setCouncilPill(name, state){
   if(state==='active') el.classList.add('active');
   if(state==='done') el.classList.add('done');
 }
+// ===== GROQ SELF-TEST =====
+window.addEventListener('load',async()=>{
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{'Authorization':'Bearer '+GROQ_KEY}});
+    const d=await r.json();
+    if(d.error) console.error('❌ Groq:',d.error.message);
+    else console.log('✅ Groq key valid');
+  }catch(e){console.warn('Groq test:',e.message);}
+});
+
+// ===== MAPMYINDIA REVERSE GEOCODE =====
+const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+async function reverseGeocode(lat,lon){
+  try{
+    const r=await fetch(`https://apis.mappls.com/advancedmaps/v1/${MMI_KEY}/rev_geocode?lat=${lat}&lng=${lon}&lang=en`);
+    const d=await r.json();
+    const res=d?.results?.[0];
+    if(res&&(res.city||res.district)){
+      const parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
+      return {full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||'',poi:res.poi||''};
+    }
+  }catch(e){}
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=en`,{headers:{'User-Agent':'VishalNavigation/1.0'}});
+    const d=await r.json();
+    if(d?.address){const a=d.address;return {full:[a.road,a.neighbourhood,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||a.neighbourhood||'',city:a.city||a.town||a.village||'',state:a.state||'',poi:a.amenity||''};}
+  }catch(e){}
+  return null;
+}
+
 const SEARCH_HIST_KEY = 'vn_search_history';
 function getSearchHistory(){ try{return JSON.parse(localStorage.getItem(SEARCH_HIST_KEY)||'[]');}catch{return [];} }
 function saveSearchHistory(q){
@@ -1352,16 +1391,30 @@ async function triggerCurrentLocation(){
   toast('📍 Getting your location...');
   navigator.geolocation.getCurrentPosition(async pos=>{
     const {latitude:lat, longitude:lon} = pos.coords;
+    const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+    let mmi=null;
     try{
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
-      const data = await res.json();
-      const addr = data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      document.getElementById('pubQ').value = addr;
-      pubSearch();
-    }catch{
-      document.getElementById('pubQ').value = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-      pubSearch();
+      const r=await fetch(`https://apis.mappls.com/advancedmaps/v1/${MMI_KEY}/rev_geocode?lat=${lat}&lng=${lon}&lang=en`);
+      const d=await r.json();
+      const res=d?.results?.[0];
+      if(res&&(res.city||res.district)){
+        const parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
+        mmi={full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||''};
+      }
+    }catch(e){}
+    if(!mmi){
+      try{
+        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,{headers:{'User-Agent':'VishalNavigation/1.0'}});
+        const d=await r.json();
+        if(d?.address){
+          const a=d.address;
+          mmi={full:[a.road,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||'',city:a.city||a.town||a.village||'',state:a.state||''};
+        }
+      }catch(e){}
     }
+    const addr=mmi?.full||`${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    document.getElementById('pubQ').value=addr;
+    pubSearch();
   }, err=>{
     toast('⚠️ Location denied. Please allow location access.','err');
   },{enableHighAccuracy:true,timeout:8000});
@@ -1679,7 +1732,7 @@ async function pubSearch(){
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.2,messages:[{role:'system',content:PUB_SYS},{role:'user',content:userMsg}]})});
     const data=await res.json();
     hideTyping();
-    if(data.error){addMsg('ai',`<div class="msg error">⚠️ ${data.error.message}</div>`);}
+    if(data.error){ console.error('Groq API error:',JSON.stringify(data.error)); addMsg('ai',`<div class="msg error">⚠️ Groq [${data.error.code||data.error.type||'error'}]: ${data.error.message}</div>`); }
     else{
       const text=data.choices?.[0]?.message?.content||'';
       try{
@@ -1726,7 +1779,8 @@ async function pubSearch(){
     }
   }catch(e){
     hideTyping();
-    addMsg('ai',`<div class="msg error">⚠️ Network error. <a href="https://maps.google.com/?q=${encodeURIComponent(document.getElementById('pubQ').value||q)}" target="_blank" style="color:var(--blue)">Search on Google Maps instead →</a></div>`);
+    console.error('pubSearch error:',e.message,e.stack);
+    addMsg('ai',`<div class="msg error">⚠️ Error: ${e.message}. <a href="https://maps.google.com/?q=${encodeURIComponent(document.getElementById('pubQ').value||q)}" target="_blank" style="color:var(--blue)">Search on Google Maps →</a></div>`);
   }
   document.getElementById('pubSend').disabled=false;
   document.getElementById('pubQ').focus();
