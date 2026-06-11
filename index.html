@@ -1344,8 +1344,8 @@ function checkDidYouMean(q){
 function buildShareText(result){
   return `📍 ${result.full_address}\n📮 Pincode: ${result.pincode}\n🏤 Post Office: ${result.post_office}\n🗺️ ${result.district}, ${result.state}\n\nShared via Vishal Navigation`;
 }
-function shareWhatsApp(text){ window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank'); }
-function shareSMS(text){ window.open('sms:?body='+encodeURIComponent(text)); }
+function shareWhatsApp(text){ try{text=decodeURIComponent(text);}catch(e){} window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank'); }
+function shareSMS(text){ try{text=decodeURIComponent(text);}catch(e){} var sep=/iPhone|iPad|iPod/i.test(navigator.userAgent)?'&':'?'; window.location.href='sms:'+sep+'body='+encodeURIComponent(text); }
 function copyAddress(text){ navigator.clipboard.writeText(text).then(()=>toast('📋 Address copied!')); }
 
 // ===== SAVE AS PDF =====
@@ -1387,37 +1387,36 @@ async function saveAsPDF(elOrResult){
 
 // ===== CURRENT LOCATION =====
 async function triggerCurrentLocation(){
-  if(!navigator.geolocation){ toast('⚠️ Geolocation not supported','err'); return; }
-  toast('📍 Getting your location...');
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    const {latitude:lat, longitude:lon} = pos.coords;
-    const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
-    let mmi=null;
+  if(!navigator.geolocation){ toast('\u26a0\ufe0f Geolocation not supported','err'); return; }
+  toast('\ud83d\udccd Getting your location...');
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    var lat=pos.coords.latitude, lon=pos.coords.longitude;
+    var mmi=null;
     try{
-      const r=await fetch(`https://apis.mappls.com/advancedmaps/v1/${MMI_KEY}/rev_geocode?lat=${lat}&lng=${lon}&lang=en`);
-      const d=await r.json();
-      const res=d?.results?.[0];
+      var r=await fetch('https://apis.mappls.com/advancedmaps/v1/'+MMI_KEY+'/rev_geocode?lat='+lat+'&lng='+lon+'&lang=en');
+      var d=await r.json();
+      var res=d&&d.results&&d.results[0];
       if(res&&(res.city||res.district)){
-        const parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
+        var parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
         mmi={full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||''};
       }
-    }catch(e){}
+    }catch(e1){}
     if(!mmi){
       try{
-        const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,{headers:{'User-Agent':'VishalNavigation/1.0'}});
-        const d=await r.json();
-        if(d?.address){
-          const a=d.address;
+        var r2=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&addressdetails=1',{headers:{'User-Agent':'VishalNavigation/1.0'}});
+        var d2=await r2.json();
+        if(d2&&d2.address){
+          var a=d2.address;
           mmi={full:[a.road,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||'',city:a.city||a.town||a.village||'',state:a.state||''};
         }
-      }catch(e){}
+      }catch(e2){}
     }
-    const addr=mmi?.full||`${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+    var addr=mmi&&mmi.full?mmi.full:(lat.toFixed(5)+', '+lon.toFixed(5));
     document.getElementById('pubQ').value=addr;
     pubSearch();
-  }, err=>{
-    toast('⚠️ Location denied. Please allow location access.','err');
-  },{enableHighAccuracy:true,timeout:8000});
+  }, function(err){
+    toast('\u26a0\ufe0f Location denied. Please allow location access.','err');
+  }, {enableHighAccuracy:true,timeout:8000});
 }
 
 // ===== PHOTO → ADDRESS =====
@@ -1732,7 +1731,7 @@ async function pubSearch(){
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.2,messages:[{role:'system',content:PUB_SYS},{role:'user',content:userMsg}]})});
     const data=await res.json();
     hideTyping();
-    if(data.error){ console.error('Groq API error:',JSON.stringify(data.error)); addMsg('ai',`<div class="msg error">⚠️ Groq [${data.error.code||data.error.type||'error'}]: ${data.error.message}</div>`); }
+    if(data.error){addMsg('ai',`<div class="msg error">⚠️ ${data.error.message}</div>`);}
     else{
       const text=data.choices?.[0]?.message?.content||'';
       try{
@@ -1779,8 +1778,7 @@ async function pubSearch(){
     }
   }catch(e){
     hideTyping();
-    console.error('pubSearch error:',e.message,e.stack);
-    addMsg('ai',`<div class="msg error">⚠️ Error: ${e.message}. <a href="https://maps.google.com/?q=${encodeURIComponent(document.getElementById('pubQ').value||q)}" target="_blank" style="color:var(--blue)">Search on Google Maps →</a></div>`);
+    addMsg('ai',`<div class="msg error">⚠️ Network error. <a href="https://maps.google.com/?q=${encodeURIComponent(document.getElementById('pubQ').value||q)}" target="_blank" style="color:var(--blue)">Search on Google Maps instead →</a></div>`);
   }
   document.getElementById('pubSend').disabled=false;
   document.getElementById('pubQ').focus();
@@ -2698,6 +2696,20 @@ window.onload = function(){
   document.getElementById('appShell').classList.remove('active');
   console.log('Vishal Navigation ready!');
 };
+
+// Landing card click wiring
+(function(){
+  function wire(){
+    var bp=document.getElementById('btnPublic');
+    var ba=document.getElementById('btnAgent');
+    var bx=document.getElementById('btnAdmin');
+    if(bp) bp.onclick=function(){ showPublic(); };
+    if(ba) ba.onclick=function(){ showLogin('agent'); };
+    if(bx) bx.onclick=function(){ showLogin('admin'); };
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire);
+  else wire();
+})();
 </script>
 </body>
 </html>
