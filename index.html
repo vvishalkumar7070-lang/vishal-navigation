@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script src="pindb.js"></script>
 <script>
-const GROQ_KEY = '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';
+const GROQ_KEY = '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';
 const ADMIN_USER = 'vishal_admin';
 const ADMIN_PASS_KEY = 'vn_admin_pass';
 function getAdminPass(){ return localStorage.getItem(ADMIN_PASS_KEY)||'admin@1234'; }
@@ -1161,7 +1161,11 @@ async function fetchNearby(lat,lon,keywords){
     const r=await fetch(`https://atlas.mappls.com/api/places/nearby/json?keywords=${encodeURIComponent(kw)}&refLocation=${lat},${lon}&radius=1000&sortBy=dist&api_key=${MMI_KEY}`);
     const d=await r.json();
     const places=d?.suggestedLocations||d?.results||[];
-    if(places.length) return places.slice(0,12).map(p=>({name:p.placeName||p.name||'Unknown',type:(p.type||'place').toString().replace(/_/g,' ').toLowerCase(),distance:p.distance?`~${Math.round(p.distance)}m`:'',address:p.placeAddress||''}));
+    if(places.length) return places.slice(0,12).map(p=>{
+      const dm=p.distance?Math.round(p.distance):0;
+      const distStr=dm>0?(dm>=1000?`~${(dm/1000).toFixed(1)} km`:`~${dm} m`):'';
+      return {name:p.placeName||p.name||'Unknown',type:(p.type||'place').toString().replace(/_/g,' ').toLowerCase(),distance:distStr,address:p.placeAddress||''};
+    });
   }catch(e){}
   try{
     const oq=`[out:json][timeout:15];(node["amenity"](around:500,${lat},${lon});node["shop"](around:500,${lat},${lon}););out 20;`;
@@ -1387,114 +1391,36 @@ async function saveAsPDF(elOrResult){
 
 // ===== CURRENT LOCATION =====
 async function triggerCurrentLocation(){
-  if(!navigator.geolocation){ toast('⚠️ Geolocation not supported','err'); return; }
-  toast('📍 Getting your exact location...');
-
+  if(!navigator.geolocation){ toast('\u26a0\ufe0f Geolocation not supported','err'); return; }
+  toast('\ud83d\udccd Getting your location...');
   navigator.geolocation.getCurrentPosition(async function(pos){
-    var lat=pos.coords.latitude, lon=pos.coords.longitude, acc=Math.round(pos.coords.accuracy||0);
-    toast('📍 GPS locked · ±'+acc+'m');
-
-    var result=null;
-
-    // Method 1: MapMyIndia reverse geocode
+    var lat=pos.coords.latitude, lon=pos.coords.longitude;
+    var mmi=null;
     try{
       var r=await fetch('https://apis.mappls.com/advancedmaps/v1/'+MMI_KEY+'/rev_geocode?lat='+lat+'&lng='+lon+'&lang=en');
       var d=await r.json();
       var res=d&&d.results&&d.results[0];
-      if(res&&(res.city||res.district||res.locality)){
-        var parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,
-                   res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
-        result={full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',
-                city:res.city||res.district||'',state:res.state||'',poi:res.poi||'',source:'MapMyIndia'};
+      if(res&&(res.city||res.district)){
+        var parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
+        mmi={full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||''};
       }
     }catch(e1){}
-
-    // Method 2: Nominatim fallback
-    if(!result){
+    if(!mmi){
       try{
-        var r2=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&addressdetails=1&zoom=18',
-          {headers:{'User-Agent':'VishalNavigation/1.0','Accept-Language':'en'}});
+        var r2=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&addressdetails=1',{headers:{'User-Agent':'VishalNavigation/1.0'}});
         var d2=await r2.json();
         if(d2&&d2.address){
           var a=d2.address;
-          var full=d2.display_name||[a.house_number,a.road,a.neighbourhood,a.suburb,
-            a.city_district,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', ');
-          result={full:full,pincode:a.postcode||'',locality:a.suburb||a.neighbourhood||a.city_district||'',
-                  city:a.city||a.town||a.village||'',state:a.state||'',poi:a.amenity||a.shop||'',source:'OpenStreetMap'};
+          mmi={full:[a.road,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||'',city:a.city||a.town||a.village||'',state:a.state||''};
         }
       }catch(e2){}
     }
-
-    // Method 3: BigDataCloud (very accurate, no key needed)
-    if(!result){
-      try{
-        var r3=await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude='+lat+'&longitude='+lon+'&localityLanguage=en');
-        var d3=await r3.json();
-        if(d3&&d3.city){
-          result={full:[d3.locality,d3.city,d3.principalSubdivision,d3.countryCode].filter(Boolean).join(', '),
-                  pincode:d3.postcode||'',locality:d3.locality||'',city:d3.city||'',state:d3.principalSubdivision||'',
-                  poi:'',source:'BigDataCloud'};
-        }
-      }catch(e3){}
-    }
-
-    if(!result){
-      result={full:lat.toFixed(6)+', '+lon.toFixed(6),pincode:'',locality:'',city:'',state:'',poi:'',source:'GPS'};
-    }
-
-    // Show result directly as a card (don't re-run through pubSearch)
-    addMsg('user','<div class="msg user">📍 My Current Location</div><span class="msg-time">'+ts()+'</span>');
-    showTyping();
-
-    // Fetch nearby places
-    var nearby=[];
-    try{ nearby=await fetchNearby(lat,lon); }catch(e){}
-
-    hideTyping();
-
-    var shareText='📍 My Location\n📍 '+result.full+(result.pincode?'\n📮 Pincode: '+result.pincode:'')+(result.city?'\n🏙️ '+result.city+', '+result.state:'')+'\n\nShared via Vishal Navigation';
-    var enc=encodeURIComponent(shareText);
-
-    var html='<div style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px">'
-      +'<span style="width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);display:inline-block"></span>'
-      +'GPS LOCATION · ±'+acc+'m · '+result.source+'</div>';
-    html+='<div class="addr-full" style="margin-bottom:10px">'+result.full+'</div>';
-    html+='<div class="addr-pills">';
-    if(result.pincode) html+='<span class="pill pin">📮 '+result.pincode+'</span>';
-    if(result.locality) html+='<span class="pill">🏘 '+result.locality+'</span>';
-    if(result.city) html+='<span class="pill">🏙️ '+result.city+'</span>';
-    if(result.state) html+='<span class="pill">📍 '+result.state+'</span>';
-    html+='</div>';
-
-    if(nearby.length){
-      html+='<div class="addr-lbl" style="margin-top:10px">📍 Nearby Places</div><div class="nearby-list">';
-      nearby.slice(0,8).forEach(function(p,i){
-        var url='https://www.google.com/maps/search/'+encodeURIComponent(p.name)+'/@'+lat+','+lon+',17z';
-        html+='<a class="ni" href="'+url+'" target="_blank" style="text-decoration:none">'
-          +'<div class="ni-em">'+emo(p.type)+'</div>'
-          +'<div style="flex:1"><div class="ni-name">'+(i+1)+'. '+p.name+'</div>'
-          +'<div class="ni-type">'+p.type+'</div></div>'
-          +(p.distance?'<div class="ni-dist">'+p.distance+'</div>':'')+'</a>';
-      });
-      html+='</div>';
-    }
-
-    html+='<a href="https://maps.google.com/?q='+lat+','+lon+'" target="_blank" class="maps-link">🗺️ Open in Google Maps</a>';
-    html+='<a href="https://maps.mappls.com/?lat='+lat+'&lng='+lon+'" target="_blank" class="maps-link" style="margin-left:8px;border-color:rgba(0,255,170,.2);color:var(--green)">🇮🇳 Mappls</a>';
-    html+='<div class="share-row">'
-      +'<a class="share-btn whatsapp" onclick="shareWhatsApp(\''+enc+'\')">💬 WhatsApp</a>'
-      +'<a class="share-btn sms" onclick="shareSMS(\''+enc+'\')">📱 SMS</a>'
-      +'<a class="share-btn copy" onclick="copyAddress(\''+enc+'\')">📋 Copy</a>'
-      +'</div>';
-
-    addMsg('ai','<div class="msg bot addr-card">'+html+'</div><span class="msg-time">'+ts()+'</span>');
-    saveSearchHistory('📍 '+(result.locality||result.city||'Current Location'));
-
+    var addr=mmi&&mmi.full?mmi.full:(lat.toFixed(5)+', '+lon.toFixed(5));
+    document.getElementById('pubQ').value=addr;
+    pubSearch();
   }, function(err){
-    var msgs={1:'Location access denied — please allow in browser settings.',
-              2:'Location unavailable. Try again.',3:'Location timed out. Try again.'};
-    toast('⚠️ '+(msgs[err.code]||'Location error'),'err');
-  }, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    toast('\u26a0\ufe0f Location denied. Please allow location access.','err');
+  }, {enableHighAccuracy:true,timeout:8000});
 }
 
 // ===== PHOTO → ADDRESS =====
@@ -1597,73 +1523,49 @@ async function runCompare(){
   if(!a||!b){ toast('⚠️ Enter both locations','err'); return; }
   const res = document.getElementById('compareResult');
   res.style.display='block';
-  res.innerHTML='<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono);padding:8px 0">📡 Locating both places...</div>';
-
-  async function getCoords(query){
-    const q = query.trim();
-    // Try Nominatim — most reliable for India from browser
-    try{
-      const r=await fetch('https://nominatim.openstreetmap.org/search?q='+encodeURIComponent(q+' India')+'&format=json&limit=1&countrycodes=in&addressdetails=1',
-        {headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
-      const d=await r.json();
-      if(d&&d.length>0) return {lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),display:d[0].display_name};
-    }catch(e){}
-    // Try MapMyIndia
-    try{
-      const r=await fetch('https://atlas.mappls.com/api/places/geocode?address='+encodeURIComponent(q)+'&api_key='+MMI_KEY);
-      const d=await r.json();
-      const loc=d&&(d.copResults||d.results&&d.results[0]);
-      if(loc&&loc.latitude) return {lat:parseFloat(loc.latitude),lon:parseFloat(loc.longitude),display:loc.formattedAddress||q};
-    }catch(e){}
-    return null;
-  }
-
+  res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">Calculating...</div>';
   try{
-    const [gA, gB] = await Promise.all([getCoords(a), getCoords(b)]);
-
-    if(!gA && !gB){
-      res.innerHTML='<div style="color:var(--red);font-size:12px;padding:10px 0">⚠️ Could not find either location. Try adding city name (e.g. "Koramangala, Bangalore")</div>';
-      return;
-    }
-    if(!gA){
-      res.innerHTML='<div style="color:var(--red);font-size:12px;padding:10px 0">⚠️ Could not find: <b>'+a+'</b>. Try being more specific.</div>';
-      return;
-    }
-    if(!gB){
-      res.innerHTML='<div style="color:var(--red);font-size:12px;padding:10px 0">⚠️ Could not find: <b>'+b+'</b>. Try being more specific.</div>';
-      return;
-    }
-
-    // Haversine formula
+    const [gA, gB] = await Promise.all([geocodeLocation(a+', India'), geocodeLocation(b+', India')]);
+    if(!gA||!gB){ res.innerHTML='<div style="color:var(--red);font-size:11px">Could not geocode one or both locations.</div>'; return; }
     const R=6371;
     const dLat=(gB.lat-gA.lat)*Math.PI/180;
     const dLon=(gB.lon-gA.lon)*Math.PI/180;
-    const h=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(gA.lat*Math.PI/180)*Math.cos(gB.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    const dist=2*R*Math.asin(Math.sqrt(h));
-    const distKm=dist.toFixed(1);
-    const driveMin=Math.round(dist*1.4/50*60);
-    const driveHr=driveMin>=60?Math.floor(driveMin/60)+'h '+(driveMin%60)+'min':driveMin+' min';
-
-    const mapsUrl='https://www.google.com/maps/dir/'+encodeURIComponent(a+' India')+'/'+encodeURIComponent(b+' India');
-
-    res.innerHTML='<div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:12px;padding:16px">'
-      +'<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">'
-      +'<span style="font-size:28px;font-weight:700;color:var(--blue);font-family:var(--font-mono)">'+distKm+' km</span>'
-      +'<span style="font-size:11px;color:var(--text3)">straight line distance</span></div>'
-      +'<div style="display:flex;gap:16px;margin-bottom:12px">'
-      +'<div><div style="font-size:16px;font-weight:700;color:var(--amber);font-family:var(--font-mono)">~'+driveHr+'</div><div style="font-size:10px;color:var(--text3)">estimated drive</div></div>'
-      +'<div><div style="font-size:16px;font-weight:700;color:var(--green);font-family:var(--font-mono)">~'+Math.round(dist*1.3)+' km</div><div style="font-size:10px;color:var(--text3)">road distance est.</div></div>'
-      +'</div>'
-      +'<div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);line-height:1.7;margin-bottom:10px">'
-      +'📍 A: '+(gA.display||a).substring(0,60)+'<br>'
-      +'📍 B: '+(gB.display||b).substring(0,60)
-      +'</div>'
-      +'<a href="'+mapsUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:8px 16px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Get Directions in Google Maps</a>'
-      +'</div>';
-
-  }catch(e){
-    res.innerHTML='<div style="color:var(--red);font-size:12px;padding:10px 0">⚠️ Error: '+e.message+'</div>';
-  }
+    const h=Math.sin(dLat/2)**2+Math.cos(gA.lat*Math.PI/180)*Math.cos(gB.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+    const distKm=2*R*Math.asin(Math.sqrt(h));
+    // ── Smart distance formatter ──────────────────────────────────────────
+    // Detects unit preference from user input; otherwise auto-picks best unit
+    const combinedQuery=(a+' '+b).toLowerCase();
+    const wantsMiles=/\bmile|\bmi\b/.test(combinedQuery);
+    const wantsMeters=/\bmeter|\bmetre|\bmt\b/.test(combinedQuery);
+    let primaryDisplay, secondaryKm, secondaryMi;
+    secondaryKm = distKm<1 ? `${Math.round(distKm*1000)} m` : `${distKm.toFixed(2)} km`;
+    secondaryMi = `${(distKm*0.621371).toFixed(2)} mi`;
+    if(wantsMiles){
+      const mi=(distKm*0.621371);
+      primaryDisplay = mi<0.1 ? `${Math.round(mi*1760)} yards` : `${mi.toFixed(2)} miles`;
+    } else if(wantsMeters || distKm<1){
+      primaryDisplay = `${Math.round(distKm*1000)} m`;
+    } else {
+      primaryDisplay = `${distKm.toFixed(distKm<10?2:1)} km`;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+    const driveMin=Math.round(distKm*1.4/50*60);
+    const driveStr=driveMin>=60?`${Math.floor(driveMin/60)}h ${driveMin%60}min`:`${driveMin} min`;
+    const mapsUrl=`https://www.google.com/maps/dir/${encodeURIComponent(a+' India')}/${encodeURIComponent(b+' India')}`;
+    res.innerHTML=`
+      <div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:10px;padding:14px;font-size:12px">
+        <div style="font-size:26px;font-weight:700;color:var(--blue);font-family:var(--font-mono);margin-bottom:4px">${primaryDisplay} <span style="font-size:12px;color:var(--text3)">straight line</span></div>
+        <div style="display:flex;gap:12px;font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px">
+          <span>📏 ${secondaryKm}</span><span>🌍 ${secondaryMi}</span>
+        </div>
+        <div style="display:flex;gap:14px;margin-bottom:10px">
+          <div><div style="font-size:15px;font-weight:700;color:var(--amber);font-family:var(--font-mono)">~${driveStr}</div><div style="font-size:9px;color:var(--text3)">estimated drive</div></div>
+          <div><div style="font-size:15px;font-weight:700;color:var(--green);font-family:var(--font-mono)">~${distKm<1?Math.round(distKm*1300)+' m':(distKm*1.3).toFixed(1)+' km'}</div><div style="font-size:9px;color:var(--text3)">road distance est.</div></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;line-height:1.7">📍 ${gA.display.substring(0,60)}…<br>📍 ${gB.display.substring(0,60)}…</div>
+        <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 16px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Get Directions in Google Maps</a>
+      </div>`;
+  }catch{res.innerHTML='<div style="color:var(--red);font-size:11px">Error calculating distance.</div>';}
 }
 
 // ===== FILTER NEARBY =====
