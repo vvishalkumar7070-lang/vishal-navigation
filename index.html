@@ -460,6 +460,52 @@ body::after{
 .af-btn{display:flex;align-items:center;gap:9px;padding:11px 20px;border-radius:50px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s;border:none;white-space:nowrap;letter-spacing:.3px}
 .af-btn.agent{background:linear-gradient(135deg,rgba(0,255,170,.1),rgba(0,255,170,.04));color:var(--green);border:1px solid rgba(0,255,170,.25);box-shadow:0 4px 24px rgba(0,255,170,.15)}
 .af-btn.agent:hover{box-shadow:0 8px 40px rgba(0,255,170,.3),var(--glow-green);transform:translateY(-3px)}
+
+/* ── Autocomplete dropdown ── */
+.ac-wrap{position:relative;flex:1}
+.ac-drop{position:absolute;bottom:110%;left:0;right:0;background:rgba(6,10,20,.98);border:1px solid rgba(0,255,170,.25);border-radius:14px;z-index:500;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);backdrop-filter:blur(20px);display:none}
+.ac-drop.show{display:block;animation:msgIn .2s ease}
+.ac-item{padding:10px 16px;font-size:12px;color:var(--text2);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--font-body);transition:background .15s;display:flex;align-items:center;gap:8px}
+.ac-item:hover{background:rgba(0,255,170,.06);color:var(--text)}
+.ac-item:last-child{border-bottom:none}
+.ac-icon{font-size:13px;flex-shrink:0;opacity:.6}
+
+/* ── QR modal ── */
+#qrModal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:320px;background:rgba(3,5,10,.98);border:1px solid rgba(176,140,255,.3);border-radius:20px;padding:24px;z-index:600;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)}
+#qrCanvas{margin:16px auto;display:block;border-radius:12px;border:3px solid rgba(255,255,255,.1)}
+
+/* ── Bookmarks panel ── */
+#bookmarksPanel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;max-height:70vh;background:rgba(3,5,10,.98);border:1px solid rgba(255,179,71,.25);border-radius:20px;padding:0;z-index:600;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px);overflow:hidden;flex-direction:column}
+#bookmarksPanel.show{display:flex}
+.bm-item{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;transition:background .15s}
+.bm-item:hover{background:rgba(255,179,71,.05)}
+.bm-name{font-size:13px;font-weight:600;color:var(--text);font-family:var(--font-display)}
+.bm-addr{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+
+/* ── Multi-stop planner ── */
+#multiStopModal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;max-width:460px;background:rgba(3,5,10,.98);border:1px solid rgba(0,255,170,.2);border-radius:20px;padding:22px;z-index:600;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)}
+.stop-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.stop-inp{flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)}
+.stop-inp:focus{border-color:rgba(0,255,170,.4)}
+.stop-num{width:22px;height:22px;background:rgba(0,255,170,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--green);font-family:var(--font-mono);flex-shrink:0}
+
+/* ── Batch processor ── */
+#batchModal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:92%;max-width:480px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:600;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)}
+
+/* ── Dark/light toggle ── */
+body.light-mode{--bg:#f0f4f8;--surface:#fff;--surface2:#f8fafc;--surface3:#eef2f7;--border:#dde3ea;--border2:#c8d0db;--border3:#b0bac8;--text:#1a2535;--text2:#4a5568;--text3:#8a9ab0;--card:#fff;--glass:rgba(255,255,255,.8)}
+body.light-mode .msg.bot{background:#fff;color:#1a2535;border-color:#dde3ea}
+body.light-mode .msg.user{background:linear-gradient(135deg,rgba(0,180,120,.15),rgba(0,150,100,.08));color:#0a5c3a}
+body.light-mode::before{background-image:linear-gradient(rgba(0,150,100,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,150,100,.03) 1px,transparent 1px)}
+body.light-mode::after{background:radial-gradient(ellipse at 15% 15%,rgba(0,200,130,.05) 0%,transparent 45%),radial-gradient(ellipse at 85% 85%,rgba(56,182,255,.04) 0%,transparent 45%)}
+body.light-mode .topbar{background:rgba(240,244,248,.92)}
+body.light-mode .lcard{background:#fff}
+
+/* ── Feedback thumbs ── */
+.fb-row{display:flex;gap:6px;margin-top:8px;align-items:center}
+.fb-btn{background:none;border:1px solid var(--border2);color:var(--text3);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;transition:all .2s}
+.fb-btn:hover{border-color:var(--green);color:var(--green)}
+.fb-btn.voted{background:rgba(0,255,170,.1);border-color:var(--green);color:var(--green)}
 </style>
 </head>
 <body>
@@ -575,6 +621,10 @@ document.addEventListener('DOMContentLoaded', function(){
         <button class="drawer-btn purple" onclick="openLandmark();toggleDrawer()"><span class="dbi">🏛️</span><div class="dbt"><div class="dbt-title">Landmark → Address</div><div class="dbt-sub">India Gate, Lotus Temple…</div></div></button>
         <button class="drawer-btn amber" onclick="openFilterNearby();toggleDrawer()"><span class="dbi">🎯</span><div class="dbt"><div class="dbt-title">Filter Nearby</div><div class="dbt-sub">Hospital, bank, pharmacy…</div></div></button>
         <button class="drawer-btn gray" onclick="openCommunity();toggleDrawer()"><span class="dbi">🤝</span><div class="dbt"><div class="dbt-title">Report Wrong Address</div><div class="dbt-sub">Help improve accuracy</div></div></button>
+        <button class="drawer-btn purple" onclick="openMultiStop();toggleDrawer()"><span class="dbi">🗺️</span><div class="dbt"><div class="dbt-title">Multi-Stop Route</div><div class="dbt-sub">Plan route through 3+ locations</div></div></button>
+        <button class="drawer-btn blue" onclick="openBatch();toggleDrawer()"><span class="dbi">📋</span><div class="dbt"><div class="dbt-title">Batch Addresses</div><div class="dbt-sub">Validate 20 addresses at once</div></div></button>
+        <button class="drawer-btn amber" onclick="openBookmarks();toggleDrawer()"><span class="dbi">⭐</span><div class="dbt"><div class="dbt-title">Saved Addresses</div><div class="dbt-sub">Your bookmarked locations</div></div></button>
+        <button class="drawer-btn gray" onclick="toggleTheme();toggleDrawer()"><span class="dbi" id="themeIcon">☀️</span><div class="dbt"><div class="dbt-title">Toggle Light Mode</div><div class="dbt-sub">Switch display theme</div></div></button>
         <div style="height:1px;background:rgba(255,255,255,.04);margin:4px 0"></div>
         <button class="drawer-btn green-outline" onclick="showLogin('agent');toggleDrawer()"><span class="dbi">🎙️</span><div class="dbt"><div class="dbt-title">Agent Login</div><div class="dbt-sub">Sales call address capture</div></div><span style="font-size:9px;background:rgba(0,255,170,.12);color:var(--green);padding:2px 8px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(0,255,170,.18);white-space:nowrap;flex-shrink:0">PRO</span></button>
       </div>
@@ -670,11 +720,14 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="pub-footer">
       <div id="recentChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:0"></div>
       <div class="pub-inp-row">
-        <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
-          onkeydown="if(event.key==='Enter')pubSearch()"
-          oninput="onSearchInput(this.value)"
-          onfocus="showHistoryDropdown()"
-          onblur="setTimeout(()=>hideHistoryDropdown(),200)"/>
+        <div class="ac-wrap">
+          <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
+            onkeydown="handlePubKey(event)"
+            oninput="onSearchInput(this.value);triggerAutocomplete(this.value)"
+            onfocus="showHistoryDropdown()"
+            onblur="setTimeout(()=>{hideHistoryDropdown();hideAutocomplete()},220)"/>
+          <div class="ac-drop" id="acDrop"></div>
+        </div>
         <button class="pub-mic" id="pubMic" onclick="togglePubMic()" title="Speak your location">🎤</button>
         <button class="pub-send" id="pubSend" onclick="pubSearch()">➤</button>
       </div>
@@ -927,13 +980,63 @@ document.addEventListener('DOMContentLoaded', function(){
 
 </div>
 
+<!-- ── QR Code Modal ── -->
+<div id="qrModal">
+  <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">📱 QR CODE
+    <button onclick="document.getElementById('qrModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <canvas id="qrCanvas" width="220" height="220"></canvas>
+  <div id="qrText" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:8px;word-break:break-all"></div>
+  <button onclick="downloadQR()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(176,140,255,.15),rgba(176,140,255,.05));border:1px solid rgba(176,140,255,.3);color:var(--purple);border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⬇️ Download QR</button>
+</div>
+
+<!-- ── Bookmarks Panel ── -->
+<div id="bookmarksPanel">
+  <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(255,179,71,.1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="font-size:13px;font-weight:700;font-family:var(--font-display);color:var(--amber)">⭐ Saved Addresses</div>
+    <button onclick="document.getElementById('bookmarksPanel').classList.remove('show');document.getElementById('modalBackdrop').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div id="bookmarksList" style="overflow-y:auto;flex:1;padding:8px 0"></div>
+  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04)">
+    <button onclick="clearBookmarks()" style="width:100%;background:none;border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:8px;padding:8px;font-size:11px;cursor:pointer;font-family:var(--font-mono)">🗑️ Clear All Saved</button>
+  </div>
+</div>
+
+<!-- ── Multi-Stop Route Planner ── -->
+<div id="multiStopModal">
+  <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">🗺️ MULTI-STOP ROUTE PLANNER
+    <button onclick="document.getElementById('multiStopModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div id="stopsList">
+    <div class="stop-row"><span class="stop-num">1</span><input class="stop-inp" placeholder="Starting point…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+    <div class="stop-row"><span class="stop-num">2</span><input class="stop-inp" placeholder="Stop 2…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+    <div class="stop-row"><span class="stop-num">3</span><input class="stop-inp" placeholder="Destination…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button onclick="addStop()" style="flex:1;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);color:var(--green);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--font-display)">+ Add Stop</button>
+    <button onclick="planRoute()" style="flex:2;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:10px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🗺️ Plan Route</button>
+  </div>
+  <div id="routeResult" style="margin-top:12px"></div>
+</div>
+
+<!-- ── Batch Address Upload ── -->
+<div id="batchModal">
+  <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📋 BATCH ADDRESS PROCESSOR
+    <button onclick="document.getElementById('batchModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Paste up to 20 addresses (one per line) — AI will validate and enrich all at once.</div>
+  <textarea id="batchInp" rows="6" placeholder="Lajpat Nagar, Delhi&#10;Koramangala, Bangalore&#10;Bandra West, Mumbai&#10;..." style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
+  <button onclick="runBatch()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⚡ Process All Addresses</button>
+  <div id="batchResult" style="margin-top:12px"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 
 
 <script src="pindb.js"></script>
 <script>
-const GROQ_KEY = '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';
+const GROQ_KEY = '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';
 const ADMIN_USER = 'vishal_admin';
 const ADMIN_PASS_KEY = 'vn_admin_pass';
 function getAdminPass(){ return localStorage.getItem(ADMIN_PASS_KEY)||'admin@1234'; }
@@ -1131,48 +1234,119 @@ function buildPubCard(d){
 const ALIASES={'cp':'Connaught Place, New Delhi','aiims':'AIIMS, Ansari Nagar, New Delhi','iit d':'IIT Delhi','du':'Delhi University, Delhi','jnu':'Jawaharlal Nehru University, New Delhi','bandra':'Bandra West, Mumbai','juhu':'Juhu, Mumbai','iit b':'IIT Bombay, Powai, Mumbai','bkc':'Bandra Kurla Complex, Mumbai','koramangala':'Koramangala, Bangalore','hsr':'HSR Layout, Bangalore','iisc':'Indian Institute of Science, Bangalore','park street':'Park Street, Kolkata','salt lake':'Salt Lake City, Kolkata','iit kgp':'IIT Kharagpur','hitec':'HITEC City, Hyderabad','hazratganj':'Hazratganj, Lucknow','iima':'IIM Ahmedabad','bhu':'Banaras Hindu University, Varanasi','amu':'Aligarh Muslim University, Aligarh','taj':'Taj Mahal, Agra','india gate':'India Gate, New Delhi','golden temple':'Golden Temple, Amritsar','charminar':'Charminar, Hyderabad','red fort':'Red Fort, Delhi','leh':'Leh, Ladakh','shimla':'Shimla, Himachal Pradesh','manali':'Manali, Himachal Pradesh','darjeeling':'Darjeeling, West Bengal','rishikesh':'Rishikesh, Uttarakhand'};
 function resolveAlias(q){ return ALIASES[q.toLowerCase().trim()]||q; }
 
+// ══════════════════════════════════════════════════════════
+// UNIVERSAL GEOCODER — 8 free APIs + AI cleaning
+// ══════════════════════════════════════════════════════════
+const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+
+function normaliseQ(raw){
+  return raw.trim()
+    .replace(/\bsec\b/gi,'sector').replace(/\bnr\b|\bnear\b/gi,'')
+    .replace(/\bst\b(?=\s)/gi,'street').replace(/\brd\b/gi,'road')
+    .replace(/\bextn\b/gi,'extension').replace(/\bpkt\b/gi,'pocket')
+    .replace(/\bmkt\b/gi,'market').replace(/\bcol\b(?=\s)/gi,'colony')
+    .replace(/\s{2,}/g,' ').trim();
+}
+async function aiCleanQ(raw){
+  try{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},
+      body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:60,temperature:0,
+        messages:[{role:'system',content:'Extract ONLY the geocodable India location. Remove POI words (police station,hospital,haldiram,near,shop,restaurant,etc). Keep area/sector/colony/city. Return ONLY the location string.'},
+        {role:'user',content:raw}]})});
+    const d=await r.json();
+    const cl=(d.choices?.[0]?.message?.content||'').trim();
+    return(cl&&cl.length>2&&cl.length<100)?cl:raw;
+  }catch(e){return raw;}
+}
+async function _mmiGeo(q){
+  try{const r=await fetch(`https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(q+' India')}&api_key=${MMI_KEY}`);const d=await r.json();const l=d?.copResults||d?.results?.[0];if(l?.latitude)return{lat:parseFloat(l.latitude),lon:parseFloat(l.longitude),display:l.formattedAddress||q,src:'MapMyIndia'};}catch(e){}return null;
+}
+async function _mmiSearch(q){
+  try{const r=await fetch(`https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND&api_key=${MMI_KEY}`);const d=await r.json();const l=d?.suggestedLocations?.[0];if(l?.latitude)return{lat:parseFloat(l.latitude),lon:parseFloat(l.longitude),display:l.formattedAddress||l.placeName||q,src:'MapMyIndia Places'};}catch(e){}return null;
+}
+async function _nominatim(q){
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' India')}&format=json&limit=3&countrycodes=in&addressdetails=1`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});const d=await r.json();if(d?.length)return{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),display:d[0].display_name,src:'OpenStreetMap'};}catch(e){}return null;
+}
+async function _photon(q){
+  try{const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q+' India')}&limit=3&lang=en`);const d=await r.json();const f=d?.features?.find(f=>f?.geometry?.coordinates);if(f){const[lon,lat]=f.geometry.coordinates;const p=f.properties;return{lat,lon,display:[p.name,p.street,p.city,p.state].filter(Boolean).join(', '),src:'Photon'};}}catch(e){}return null;
+}
+async function _opencage(q){
+  try{const r=await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(q+' India')}&key=6d0e711d72d74daeb2b0bfd2a5cdfdba&limit=1&countrycode=in&language=en&no_annotations=1`);const d=await r.json();const res=d?.results?.[0];if(res?.geometry)return{lat:res.geometry.lat,lon:res.geometry.lng,display:res.formatted,src:'OpenCage'};}catch(e){}return null;
+}
+async function _locationiq(q){
+  try{const r=await fetch(`https://us1.locationiq.com/v1/search?key=pk.a2fb95c83ea1c1aec5a76ad52b47ef71&q=${encodeURIComponent(q+' India')}&format=json&limit=1&countrycodes=in`,{headers:{'Accept-Language':'en'}});const d=await r.json();if(d?.length)return{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),display:d[0].display_name,src:'LocationIQ'};}catch(e){}return null;
+}
+async function _overpassSearch(q){
+  try{const safe=q.replace(/['"\\]/g,'').substring(0,60);const oq=`[out:json][timeout:10];(node["name"~"${safe}",i](area["ISO3166-1"="IN"]);way["name"~"${safe}",i](area["ISO3166-1"="IN"]););out center 3;`;const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:oq});const d=await r.json();const el=d?.elements?.[0];if(el){const lat=el.lat??el.center?.lat,lon=el.lon??el.center?.lon;if(lat&&lon)return{lat,lon,display:el.tags?.name||q,src:'Overpass'};}}catch(e){}return null;
+}
+async function _indiaPostPin(q){
+  const pin=q.match(/\b\d{6}\b/)?.[0];if(!pin)return null;
+  try{const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`);const d=await r.json();const po=d?.[0]?.PostOffice?.[0];if(po){const nr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(po.District+' '+po.State+' India')}&format=json&limit=1&countrycodes=in`,{headers:{'User-Agent':'VishalNavigation/1.0'}});const nd=await nr.json();if(nd?.length)return{lat:parseFloat(nd[0].lat),lon:parseFloat(nd[0].lon),display:`${po.Name}, ${po.District}, ${po.State} - ${pin}`,src:'India Post'};}}catch(e){}return null;
+}
 async function geocodeLocation(query){
-  const q=query.replace(/, India$/i,'').trim();
-  const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
-  try{
-    const r=await fetch(`https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(q)}&api_key=${MMI_KEY}`);
-    const d=await r.json();
-    const loc=d?.copResults||d?.results?.[0];
-    if(loc?.latitude) return {lat:parseFloat(loc.latitude),lon:parseFloat(loc.longitude),display:loc.formattedAddress||q};
-  }catch(e){}
-  try{
-    const r=await fetch(`https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND&api_key=${MMI_KEY}`);
-    const d=await r.json();
-    const res=d?.suggestedLocations?.[0];
-    if(res?.latitude) return {lat:parseFloat(res.latitude),lon:parseFloat(res.longitude),display:res.formattedAddress||res.placeName||q};
-  }catch(e){}
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' India')}&format=json&limit=1&countrycodes=in`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
-    const d=await r.json();
-    if(d?.length) return {lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon),display:d[0].display_name};
-  }catch(e){}
+  const raw=query.replace(/, India$/i,'').trim();
+  const norm=normaliseQ(raw);
+  const fast=await Promise.all([_mmiGeo(norm),_mmiSearch(norm),_nominatim(norm),_photon(norm)]);
+  for(const r of fast)if(r)return r;
+  if(/\b\d{6}\b/.test(raw)){const pr=await _indiaPostPin(raw);if(pr)return pr;}
+  const cleaned=await aiCleanQ(raw);
+  if(cleaned!==raw){const retry=await Promise.all([_mmiSearch(cleaned),_nominatim(cleaned),_photon(cleaned)]);for(const r of retry)if(r)return r;}
+  const slow=await Promise.all([_opencage(norm),_locationiq(norm),_overpassSearch(norm)]);
+  for(const r of slow)if(r)return r;
+  if(cleaned!==raw){const last=await Promise.all([_opencage(cleaned),_locationiq(cleaned),_overpassSearch(cleaned)]);for(const r of last)if(r)return r;}
   return null;
 }
 
-async function fetchNearby(lat,lon,keywords){
-  const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
-  const kw=keywords||'hospital,bank,atm,pharmacy,restaurant,school,petrol,police,post office,temple';
+async function getAutocompleteSuggestions(q){
+  if(!q||q.length<3)return[];
   try{
-    const r=await fetch(`https://atlas.mappls.com/api/places/nearby/json?keywords=${encodeURIComponent(kw)}&refLocation=${lat},${lon}&radius=1000&sortBy=dist&api_key=${MMI_KEY}`);
+    const r=await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q+' India')}&limit=5&lang=en`);
     const d=await r.json();
-    const places=d?.suggestedLocations||d?.results||[];
-    if(places.length) return places.slice(0,12).map(p=>{
-      const dm=p.distance?Math.round(p.distance):0;
-      const distStr=dm>0?(dm>=1000?`~${(dm/1000).toFixed(1)} km`:`~${dm} m`):'';
-      return {name:p.placeName||p.name||'Unknown',type:(p.type||'place').toString().replace(/_/g,' ').toLowerCase(),distance:distStr,address:p.placeAddress||''};
-    });
+    return(d?.features||[]).filter(f=>f.properties?.name).map(f=>{const p=f.properties;return[p.name,p.street,p.city,p.state].filter(Boolean).join(', ');});
   }catch(e){}
   try{
-    const oq=`[out:json][timeout:15];(node["amenity"](around:500,${lat},${lon});node["shop"](around:500,${lat},${lon}););out 20;`;
-    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:oq});
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+' India')}&format=json&limit=5&countrycodes=in`,{headers:{'User-Agent':'VishalNavigation/1.0','Accept-Language':'en'}});
     const d=await r.json();
-    return d.elements.filter(e=>e.tags?.name).map(e=>({name:e.tags.name,type:(e.tags.amenity||e.tags.shop||'place').replace(/_/g,' '),distance:'',address:''})).slice(0,12);
-  }catch(e){return [];}
+    return(d||[]).map(x=>x.display_name.split(',').slice(0,3).join(',').trim());
+  }catch(e){}
+  return[];
+}
+
+function formatDist(km,query){
+  const q=(query||'').toLowerCase();
+  if(/\bmile|\bmi\b/.test(q)){const mi=km*0.621371;return mi<0.1?`${Math.round(mi*1760)} yds`:`${mi.toFixed(2)} mi`;}
+  if(/\bmeter|\bmetre|\bmt\b/.test(q)||km<1)return`${Math.round(km*1000)} m`;
+  return`${km.toFixed(km<10?2:1)} km`;
+}
+
+async function fetchNearby(lat,lon,keywords){
+  const kw=keywords||'hospital,bank,atm,pharmacy,restaurant,school,petrol,police,post office,temple';
+  let places=[];
+  const distStr=dm=>dm<=0?'':(dm>=1000?`~${(dm/1000).toFixed(1)} km`:`~${dm} m`);
+  const haverDist=(la,lo)=>{const R=6371000,dL=(la-lat)*Math.PI/180,dN=(lo-lon)*Math.PI/180;return Math.round(2*R*Math.asin(Math.sqrt(Math.sin(dL/2)**2+Math.cos(lat*Math.PI/180)*Math.cos(la*Math.PI/180)*Math.sin(dN/2)**2)));};
+  try{
+    const r=await fetch(`https://atlas.mappls.com/api/places/nearby/json?keywords=${encodeURIComponent(kw)}&refLocation=${lat},${lon}&radius=1500&sortBy=dist&api_key=${MMI_KEY}`);
+    const d=await r.json();const ps=d?.suggestedLocations||d?.results||[];
+    if(ps.length){places=ps.slice(0,12).map(p=>({name:p.placeName||p.name||'Unknown',type:(p.type||'place').toString().replace(/_/g,' ').toLowerCase(),distance:distStr(p.distance?Math.round(p.distance):0),address:p.placeAddress||''}));if(places.length>=6)return places;}
+  }catch(e){}
+  try{
+    const oq=`[out:json][timeout:15];(node["amenity"](around:800,${lat},${lon});node["shop"](around:800,${lat},${lon});way["amenity"](around:800,${lat},${lon}););out center 20;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:oq});const d=await r.json();
+    (d.elements||[]).filter(e=>e.tags?.name).forEach(e=>{
+      const la=e.lat??e.center?.lat??lat,lo=e.lon??e.center?.lon??lon;const nm=e.tags.name;
+      if(!places.find(p=>p.name.toLowerCase()===nm.toLowerCase()))places.push({name:nm,type:(e.tags.amenity||e.tags.shop||'place').replace(/_/g,' '),distance:distStr(haverDist(la,lo)),address:e.tags['addr:street']||''});
+    });
+    if(places.length)return places.slice(0,12);
+  }catch(e){}
+  try{
+    const r=await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=10&lang=en`);const d=await r.json();
+    (d?.features||[]).filter(f=>f.properties?.name).forEach(f=>{
+      const p=f.properties;const[flo,fla]=f.geometry?.coordinates||[lon,lat];const nm=p.name;
+      if(!places.find(x=>x.name.toLowerCase()===nm.toLowerCase()))places.push({name:nm,type:(p.type||p.osm_value||'place').replace(/_/g,' '),distance:distStr(haverDist(fla,flo)),address:[p.street,p.city].filter(Boolean).join(', ')});
+    });
+  }catch(e){}
+  return places.slice(0,12);
 }
 
 const PUB_SYS=`You are a smart India address lookup tool. ONLY answer queries about Indian addresses. Return ONLY raw JSON — no markdown, no extra text.
@@ -1262,33 +1436,17 @@ function setCouncilPill(name, state){
   if(state==='active') el.classList.add('active');
   if(state==='done') el.classList.add('done');
 }
-// ===== GROQ SELF-TEST =====
-window.addEventListener('load',async()=>{
-  try{
-    const r=await fetch('https://api.groq.com/openai/v1/models',{headers:{'Authorization':'Bearer '+GROQ_KEY}});
-    const d=await r.json();
-    if(d.error) console.error('❌ Groq:',d.error.message);
-    else console.log('✅ Groq key valid');
-  }catch(e){console.warn('Groq test:',e.message);}
-});
+// ===== GROQ SELF-TEST REMOVED (caused false "Failed to fetch" CORS warnings on load) =====
 
-// ===== MAPMYINDIA REVERSE GEOCODE =====
-const MMI_KEY='ymtuajsnqbgkddnooteddqswuyeiupieitbc';
+// ══════════════════════════════════════════════════════════
+// UNIVERSAL REVERSE GEOCODER — 5 APIs in sequence
+// ══════════════════════════════════════════════════════════
 async function reverseGeocode(lat,lon){
-  try{
-    const r=await fetch(`https://apis.mappls.com/advancedmaps/v1/${MMI_KEY}/rev_geocode?lat=${lat}&lng=${lon}&lang=en`);
-    const d=await r.json();
-    const res=d?.results?.[0];
-    if(res&&(res.city||res.district)){
-      const parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
-      return {full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||'',poi:res.poi||''};
-    }
-  }catch(e){}
-  try{
-    const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&accept-language=en`,{headers:{'User-Agent':'VishalNavigation/1.0'}});
-    const d=await r.json();
-    if(d?.address){const a=d.address;return {full:[a.road,a.neighbourhood,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||a.neighbourhood||'',city:a.city||a.town||a.village||'',state:a.state||'',poi:a.amenity||''};}
-  }catch(e){}
+  try{const r=await fetch(`https://apis.mappls.com/advancedmaps/v1/${MMI_KEY}/rev_geocode?lat=${lat}&lng=${lon}&lang=en`);const d=await r.json();const res=d?.results?.[0];if(res&&(res.city||res.district)){const parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);return{full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||'',poi:res.poi||'',src:'MapMyIndia'};}}catch(e){}
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1&zoom=18&accept-language=en`,{headers:{'User-Agent':'VishalNavigation/1.0'}});const d=await r.json();if(d?.address){const a=d.address;return{full:[a.house_number,a.road,a.neighbourhood,a.suburb,a.city_district,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||a.neighbourhood||'',city:a.city||a.town||a.village||'',state:a.state||'',poi:a.amenity||'',src:'OpenStreetMap'};}}catch(e){}
+  try{const r=await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=1&lang=en`);const d=await r.json();const f=d?.features?.[0];if(f){const p=f.properties;return{full:[p.name,p.street,p.city,p.state,p.postcode].filter(Boolean).join(', '),pincode:p.postcode||'',locality:p.suburb||p.name||'',city:p.city||'',state:p.state||'',poi:p.osm_value||'',src:'Photon'};}}catch(e){}
+  try{const r=await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lon}&key=6d0e711d72d74daeb2b0bfd2a5cdfdba&limit=1&language=en&no_annotations=1`);const d=await r.json();const res=d?.results?.[0];if(res){const cc=res.components;return{full:res.formatted,pincode:cc.postcode||'',locality:cc.suburb||cc.neighbourhood||'',city:cc.city||cc.town||cc.village||'',state:cc.state||'',poi:'',src:'OpenCage'};}}catch(e){}
+  try{const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);const d=await r.json();if(d?.city)return{full:[d.locality,d.city,d.principalSubdivision].filter(Boolean).join(', '),pincode:d.postcode||'',locality:d.locality||'',city:d.city||'',state:d.principalSubdivision||'',poi:'',src:'BigDataCloud'};}catch(e){}
   return null;
 }
 
@@ -1391,38 +1549,59 @@ async function saveAsPDF(elOrResult){
 
 // ===== CURRENT LOCATION =====
 async function triggerCurrentLocation(){
-  if(!navigator.geolocation){ toast('\u26a0\ufe0f Geolocation not supported','err'); return; }
-  toast('\ud83d\udccd Getting your location...');
+  if(!navigator.geolocation){toast('\u26a0\ufe0f Geolocation not supported','err');return;}
+  toast('\ud83d\udccd Getting your exact location\u2026');
   navigator.geolocation.getCurrentPosition(async function(pos){
-    var lat=pos.coords.latitude, lon=pos.coords.longitude;
-    var mmi=null;
-    try{
-      var r=await fetch('https://apis.mappls.com/advancedmaps/v1/'+MMI_KEY+'/rev_geocode?lat='+lat+'&lng='+lon+'&lang=en');
-      var d=await r.json();
-      var res=d&&d.results&&d.results[0];
-      if(res&&(res.city||res.district)){
-        var parts=[res.houseNumber,res.houseName,res.poi,res.street,res.subSubLocality,res.subLocality,res.locality,res.village,res.city||res.district,res.state,res.pincode].filter(Boolean);
-        mmi={full:parts.join(', '),pincode:res.pincode||'',locality:res.locality||res.subLocality||'',city:res.city||res.district||'',state:res.state||''};
-      }
-    }catch(e1){}
-    if(!mmi){
-      try{
-        var r2=await fetch('https://nominatim.openstreetmap.org/reverse?lat='+lat+'&lon='+lon+'&format=json&addressdetails=1',{headers:{'User-Agent':'VishalNavigation/1.0'}});
-        var d2=await r2.json();
-        if(d2&&d2.address){
-          var a=d2.address;
-          mmi={full:[a.road,a.suburb,a.city||a.town||a.village,a.state,a.postcode].filter(Boolean).join(', '),pincode:a.postcode||'',locality:a.suburb||'',city:a.city||a.town||a.village||'',state:a.state||''};
-        }
-      }catch(e2){}
+    var lat=pos.coords.latitude, lon=pos.coords.longitude, acc=Math.round(pos.coords.accuracy||0);
+    toast('\ud83d\udccd GPS locked \u00b7 \u00b1'+acc+'m \u00b7 querying 5 APIs\u2026');
+    addMsg('user','<div class="msg user">\ud83d\udccd My Current Location</div><span class="msg-time">'+ts()+'</span>');
+    showTyping();
+    var result=await reverseGeocode(lat,lon);
+    var nearby=[];
+    try{nearby=await fetchNearby(lat,lon);}catch(e){}
+    hideTyping();
+    var full=(result&&result.full)?result.full:(lat.toFixed(6)+', '+lon.toFixed(6));
+    var shareText='\ud83d\udccd My Location\n'+full+((result&&result.pincode)?'\n\ud83d\udcee Pincode: '+result.pincode:'')+((result&&result.city)?'\n\ud83c\udfd9\ufe0f '+result.city+', '+result.state:'')+'\n\nShared via Vishal Navigation';
+    var enc=encodeURIComponent(shareText);
+    var html='<div style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px">'
+      +'<span style="width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);display:inline-block"></span>'
+      +'GPS \u00b7 \u00b1'+acc+'m \u00b7 '+((result&&result.src)?result.src:'GPS')+'</div>';
+    html+='<div class="addr-full" style="margin-bottom:10px">'+full+'</div>';
+    html+='<div class="addr-pills">';
+    if(result&&result.pincode) html+='<span class="pill pin">\ud83d\udcee '+result.pincode+'</span>';
+    if(result&&result.locality) html+='<span class="pill">\ud83c\udfd8 '+result.locality+'</span>';
+    if(result&&result.city) html+='<span class="pill">\ud83c\udfd9\ufe0f '+result.city+'</span>';
+    if(result&&result.state) html+='<span class="pill">\ud83d\udccd '+result.state+'</span>';
+    html+='</div>';
+    html+='<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button onclick="showQR(\'' + '+encodeURIComponent(full)+' + '\')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:6px 12px;background:rgba(176,140,255,.1);color:var(--purple);border:1px solid rgba(176,140,255,.25);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">\ud83d\udcf1 QR Code</button>'
+      +'<button onclick="bookmarkAddress(\'' + '+encodeURIComponent(full)+' + '\',\'' + '+encodeURIComponent((result&&result.pincode)||\'\')+' + '\',\'' + '+encodeURIComponent((result&&result.city)||\'\')+' + '\',\'' + '+encodeURIComponent((result&&result.state)||\'\')+' + '\')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:6px 12px;background:rgba(255,179,71,.1);color:var(--amber);border:1px solid rgba(255,179,71,.25);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">\u2b50 Save</button>'
+      +'</div>';
+    if(nearby.length){
+      html+='<div class="addr-lbl" style="margin-top:10px">\ud83d\udccd Nearby ('+nearby.length+' found \u00b7 3 sources)</div><div class="nearby-list">';
+      nearby.slice(0,8).forEach(function(p,i){
+        var url='https://www.google.com/maps/search/'+encodeURIComponent(p.name)+'/@'+lat+','+lon+',17z';
+        html+='<a class="ni" href="'+url+'" target="_blank" style="text-decoration:none">'
+          +'<div class="ni-em">'+emo(p.type)+'</div>'
+          +'<div style="flex:1"><div class="ni-name">'+(i+1)+'. '+p.name+'</div><div class="ni-type">'+p.type+'</div></div>'
+          +(p.distance?'<div class="ni-dist">'+p.distance+'</div>':'')+'</a>';
+      });
+      html+='</div>';
     }
-    var addr=mmi&&mmi.full?mmi.full:(lat.toFixed(5)+', '+lon.toFixed(5));
-    document.getElementById('pubQ').value=addr;
-    pubSearch();
+    html+='<a href="https://maps.google.com/?q='+lat+','+lon+'" target="_blank" class="maps-link">\ud83d\uddfa\ufe0f Google Maps</a>';
+    html+='<a href="https://www.google.com/maps?cbll='+lat+','+lon+'&cbp=0,0,,0,0&layer=c" target="_blank" class="maps-link" style="margin-left:8px;border-color:rgba(56,182,255,.2);color:var(--blue)">\ud83d\udeb6 Street View</a>';
+    html+='<div class="share-row">'
+      +'<a class="share-btn whatsapp" onclick="shareWhatsApp(\'' + '+enc+' + '\')">\ud83d\udcac WhatsApp</a>'
+      +'<a class="share-btn sms" onclick="shareSMS(\'' + '+enc+' + '\')">\ud83d\udcf1 SMS</a>'
+      +'<a class="share-btn copy" onclick="copyAddress(\'' + '+enc+' + '\')">\ud83d\udccb Copy</a>'
+      +'</div>';
+    addMsg('ai','<div class="msg bot addr-card">'+html+'</div><span class="msg-time">'+ts()+'</span>');
+    saveSearchHistory('\ud83d\udccd '+((result&&result.locality)||(result&&result.city)||'Current Location'));
   }, function(err){
-    toast('\u26a0\ufe0f Location denied. Please allow location access.','err');
-  }, {enableHighAccuracy:true,timeout:8000});
+    var msgs={1:'Location access denied \u2014 allow in browser settings.',2:'Location unavailable.',3:'Timed out \u2014 try again.'};
+    toast('\u26a0\ufe0f '+(msgs[err.code]||'Location error'),'err');
+  }, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
 }
-
 // ===== PHOTO → ADDRESS =====
 let photoBase64 = null;
 function openPhotoMode(){ document.getElementById('photoModal').style.display='block'; }
@@ -1518,54 +1697,47 @@ function runLandmark(){
 // ===== COMPARE TWO LOCATIONS =====
 function openCompare(){ document.getElementById('compareModal').style.display='block'; document.getElementById('locA').focus(); }
 async function runCompare(){
-  const a = document.getElementById('locA').value.trim();
-  const b = document.getElementById('locB').value.trim();
-  if(!a||!b){ toast('⚠️ Enter both locations','err'); return; }
-  const res = document.getElementById('compareResult');
+  const a=document.getElementById('locA').value.trim();
+  const b=document.getElementById('locB').value.trim();
+  if(!a||!b){toast('⚠️ Enter both locations','err');return;}
+  const res=document.getElementById('compareResult');
   res.style.display='block';
-  res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">Calculating...</div>';
+  res.innerHTML='<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono);padding:6px 0">🧠 Querying 8 APIs…</div>';
   try{
-    const [gA, gB] = await Promise.all([geocodeLocation(a+', India'), geocodeLocation(b+', India')]);
-    if(!gA||!gB){ res.innerHTML='<div style="color:var(--red);font-size:11px">Could not geocode one or both locations.</div>'; return; }
-    const R=6371;
-    const dLat=(gB.lat-gA.lat)*Math.PI/180;
-    const dLon=(gB.lon-gA.lon)*Math.PI/180;
-    const h=Math.sin(dLat/2)**2+Math.cos(gA.lat*Math.PI/180)*Math.cos(gB.lat*Math.PI/180)*Math.sin(dLon/2)**2;
-    const distKm=2*R*Math.asin(Math.sqrt(h));
-    // ── Smart distance formatter ──────────────────────────────────────────
-    // Detects unit preference from user input; otherwise auto-picks best unit
-    const combinedQuery=(a+' '+b).toLowerCase();
-    const wantsMiles=/\bmile|\bmi\b/.test(combinedQuery);
-    const wantsMeters=/\bmeter|\bmetre|\bmt\b/.test(combinedQuery);
-    let primaryDisplay, secondaryKm, secondaryMi;
-    secondaryKm = distKm<1 ? `${Math.round(distKm*1000)} m` : `${distKm.toFixed(2)} km`;
-    secondaryMi = `${(distKm*0.621371).toFixed(2)} mi`;
-    if(wantsMiles){
-      const mi=(distKm*0.621371);
-      primaryDisplay = mi<0.1 ? `${Math.round(mi*1760)} yards` : `${mi.toFixed(2)} miles`;
-    } else if(wantsMeters || distKm<1){
-      primaryDisplay = `${Math.round(distKm*1000)} m`;
-    } else {
-      primaryDisplay = `${distKm.toFixed(distKm<10?2:1)} km`;
-    }
-    // ─────────────────────────────────────────────────────────────────────
+    const [gA,gB]=await Promise.all([geocodeLocation(a),geocodeLocation(b)]);
+    if(!gA&&!gB){res.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ Could not find either location. Add city name — e.g. "Sector 63, Noida"</div>';return;}
+    if(!gA){res.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ Could not find <b>'+a+'</b></div>';return;}
+    if(!gB){res.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ Could not find <b>'+b+'</b></div>';return;}
+    const R=6371,dLat=(gB.lat-gA.lat)*Math.PI/180,dLon=(gB.lon-gA.lon)*Math.PI/180;
+    const hv=Math.sin(dLat/2)**2+Math.cos(gA.lat*Math.PI/180)*Math.cos(gB.lat*Math.PI/180)*Math.sin(dLon/2)**2;
+    const distKm=2*R*Math.asin(Math.sqrt(hv));
+    const primary=formatDist(distKm,a+' '+b);
+    const secKm=distKm<1?`${Math.round(distKm*1000)} m`:`${distKm.toFixed(2)} km`;
+    const secMi=`${(distKm*0.621371).toFixed(2)} mi`;
     const driveMin=Math.round(distKm*1.4/50*60);
     const driveStr=driveMin>=60?`${Math.floor(driveMin/60)}h ${driveMin%60}min`:`${driveMin} min`;
     const mapsUrl=`https://www.google.com/maps/dir/${encodeURIComponent(a+' India')}/${encodeURIComponent(b+' India')}`;
+    const svUrl=`https://www.google.com/maps?cbll=${gA.lat},${gA.lon}&layer=c`;
+    const shareText=`📍 Distance: ${primary}\nFrom: ${a}\nTo: ${b}\n📏 ${secKm} · 🌍 ${secMi}\n🚗 ~${driveStr}\n\nShared via Vishal Navigation`;
+    const enc=encodeURIComponent(shareText);
     res.innerHTML=`
-      <div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:10px;padding:14px;font-size:12px">
-        <div style="font-size:26px;font-weight:700;color:var(--blue);font-family:var(--font-mono);margin-bottom:4px">${primaryDisplay} <span style="font-size:12px;color:var(--text3)">straight line</span></div>
-        <div style="display:flex;gap:12px;font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px">
-          <span>📏 ${secondaryKm}</span><span>🌍 ${secondaryMi}</span>
-        </div>
-        <div style="display:flex;gap:14px;margin-bottom:10px">
+      <div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:12px;padding:16px;font-size:12px">
+        <div style="font-size:28px;font-weight:700;color:var(--blue);font-family:var(--font-mono);margin-bottom:4px">${primary} <span style="font-size:12px;color:var(--text3)">straight line</span></div>
+        <div style="display:flex;gap:14px;font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px"><span>📏 ${secKm}</span><span>🌍 ${secMi}</span></div>
+        <div style="display:flex;gap:18px;margin-bottom:12px">
           <div><div style="font-size:15px;font-weight:700;color:var(--amber);font-family:var(--font-mono)">~${driveStr}</div><div style="font-size:9px;color:var(--text3)">estimated drive</div></div>
-          <div><div style="font-size:15px;font-weight:700;color:var(--green);font-family:var(--font-mono)">~${distKm<1?Math.round(distKm*1300)+' m':(distKm*1.3).toFixed(1)+' km'}</div><div style="font-size:9px;color:var(--text3)">road distance est.</div></div>
+          <div><div style="font-size:15px;font-weight:700;color:var(--green);font-family:var(--font-mono)">~${distKm<1?Math.round(distKm*1300)+' m':(distKm*1.3).toFixed(1)+' km'}</div><div style="font-size:9px;color:var(--text3)">road est.</div></div>
         </div>
-        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;line-height:1.7">📍 ${gA.display.substring(0,60)}…<br>📍 ${gB.display.substring(0,60)}…</div>
-        <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 16px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Get Directions in Google Maps</a>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;line-height:1.8">📍 A: ${(gA.display||a).substring(0,65)}<br>📍 B: ${(gB.display||b).substring(0,65)}</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;opacity:.7">Source A: ${gA.src||'geocoder'} · Source B: ${gB.src||'geocoder'}</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Directions</a>
+          <a href="${svUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(0,255,170,.06);color:var(--green);border:1px solid rgba(0,255,170,.2);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🚶 Street View A</a>
+          <button onclick="showQR('${encodeURIComponent(primary+' from '+a+' to '+b)}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(176,140,255,.08);color:var(--purple);border:1px solid rgba(176,140,255,.2);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">📱 QR</button>
+        </div>
+        <div class="share-row" style="margin-top:10px"><a class="share-btn whatsapp" onclick="shareWhatsApp('${enc}')">💬 WhatsApp</a><a class="share-btn sms" onclick="shareSMS('${enc}')">📱 SMS</a><a class="share-btn copy" onclick="copyAddress('${enc}')">📋 Copy</a></div>
       </div>`;
-  }catch{res.innerHTML='<div style="color:var(--red);font-size:11px">Error calculating distance.</div>';}
+  }catch(e){res.innerHTML=`<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ ${e.message}</div>`;}
 }
 
 // ===== FILTER NEARBY =====
@@ -1750,12 +1922,24 @@ async function pubSearch(){
     let verifiedPin='',verifiedPO='',verifiedDist='',verifiedState='';
     const dbRes=searchPinDB(resolvedQ);
     if(dbRes.length>0){verifiedPin=dbRes[0].p;verifiedPO=dbRes[0].po;verifiedDist=dbRes[0].d;verifiedState=dbRes[0].s;}
+    // India Post live API for 6-digit pincode queries
+    if(!verifiedPin){
+      const pinMatch=resolvedQ.match(/\b(\d{6})\b/);
+      if(pinMatch){
+        try{
+          const pr=await fetch('https://api.postalpincode.in/pincode/'+pinMatch[1]);
+          const pd=await pr.json();
+          const po=pd?.[0]?.PostOffice?.[0];
+          if(po){verifiedPin=pinMatch[1];verifiedPO=po.Name;verifiedDist=po.District;verifiedState=po.State;}
+        }catch(e){}
+      }
+    }
     const coords=await geocodeLocation(resolvedQ);
     let microNearby=[];
     if(coords) microNearby=await fetchNearby(coords.lat,coords.lon);
-    const nearbyHint=microNearby.length>0?`\nREAL NEARBY from OpenStreetMap: ${JSON.stringify(microNearby)}`:'';
-    const geoHint=coords?.display?`\nGeocode: ${coords.display}`:'';
-    const pinHint=verifiedPin?`\nCRITICAL: Use EXACTLY this verified pincode from India Post database — do NOT change it: Pincode=${verifiedPin}, PostOffice=${verifiedPO}, District=${verifiedDist}, State=${verifiedState}. This is 100% accurate.`:'';
+    const nearbyHint=microNearby.length>0?`\nREAL NEARBY (3 sources): ${JSON.stringify(microNearby.map(p=>({name:p.name,type:p.type,distance:p.distance})))}`:'';
+    const geoHint=coords?.display?`\nGeocode (${coords.src||'geocoder'}): ${coords.display}`:'';
+    const pinHint=verifiedPin?`\nCRITICAL: Use EXACTLY this verified pincode — do NOT change it: Pincode=${verifiedPin}, PostOffice=${verifiedPO}, District=${verifiedDist}, State=${verifiedState}. 100% accurate from India Post.`:'';
     const userMsg=`Location: ${resolvedQ}.${geoHint}${pinHint}${nearbyHint}`;
     const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1200,temperature:0.2,messages:[{role:'system',content:PUB_SYS},{role:'user',content:userMsg}]})});
     const data=await res.json();
@@ -2251,9 +2435,9 @@ async function extractAndVerify(transcript){
       return;
     }
 
-    // Layer 7: Pincode verification (3 sources)
+    // Layer 7: Pincode verification (5 sources)
     updateLayerUI(7);
-    setStatus('🔍 Verifying pincode...','processing','Cross-checking 3 sources...');
+    setStatus('🔍 Verifying pincode...','processing','Cross-checking 5 sources...');
 
     // Source 1: Our offline DB
     const fullAddr=`${parsed.colony||''} ${parsed.city||''} ${parsed.state||''}`.trim();
@@ -2261,7 +2445,7 @@ async function extractAndVerify(transcript){
     let pincode=parsed.pincode||'',postOffice='',district=parsed.district||'',state=parsed.state||'';
     if(dbResults.length>0){pincode=pincode||dbResults[0].p;postOffice=dbResults[0].po;district=district||dbResults[0].d;state=state||dbResults[0].s;}
 
-    // Source 2: India Post API
+    // Source 2: India Post by post office name
     try{
       const pinRes=await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(parsed.city||fullAddr)}`);
       const pinData=await pinRes.json();
@@ -2273,9 +2457,38 @@ async function extractAndVerify(transcript){
       }
     }catch(e){}
 
-    // Source 3: OpenStreetMap geocode
+    // Source 3: India Post by 6-digit pincode in transcript
+    if(!pincode){
+      const pm=(parsed.address||currentTranscript||'').match(/\b(\d{6})\b/);
+      if(pm){
+        try{
+          const pr=await fetch('https://api.postalpincode.in/pincode/'+pm[1]);
+          const pd=await pr.json();
+          const po=pd?.[0]?.PostOffice?.[0];
+          if(po){pincode=pm[1];postOffice=postOffice||po.Name;district=district||po.District;state=state||po.State;}
+        }catch(e){}
+      }
+    }
+
+    // Source 4: OpenCage geocode for pincode
+    if(!pincode){
+      try{
+        const ocr=await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent((parsed.address||fullAddr)+' India')}&key=6d0e711d72d74daeb2b0bfd2a5cdfdba&limit=1&countrycode=in&no_annotations=1`);
+        const ocd=await ocr.json();
+        const occ=ocd?.results?.[0]?.components;
+        if(occ?.postcode){pincode=pincode||occ.postcode;district=district||occ.county||occ.state_district||'';state=state||occ.state||'';}
+      }catch(e){}
+    }
+
+    // Source 5: 8-API master geocoder + reverse for pincode
     updateLayerUI(8);
     const coords=await geocodeForAgent(parsed.address||fullAddr);
+    if(coords&&!pincode){
+      try{
+        const rv=await reverseGeocode(coords.lat,coords.lon);
+        if(rv){pincode=pincode||rv.pincode;postOffice=postOffice||rv.poi;district=district||rv.city;state=state||rv.state;}
+      }catch(e){}
+    }
 
     // Layer 8-9: Confidence scoring
     updateLayerUI(9);
@@ -2330,11 +2543,8 @@ async function extractAndVerify(transcript){
 }
 
 async function geocodeForAgent(q){
-  try{
-    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+', India')}&format=json&limit=1&countrycodes=in`,{headers:{'Accept-Language':'en','User-Agent':'VishalNavigation/1.0'}});
-    const data=await res.json();
-    if(data.length>0) return {lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon)};
-  }catch(e){}
+  const r=await geocodeLocation(q);
+  if(r)return{lat:r.lat,lon:r.lon};
   return null;
 }
 
@@ -2739,6 +2949,378 @@ window.onload = function(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire);
   else wire();
 })();
+
+// ══════════════════════════════════════════════════════════
+// NEW FEATURES — autocomplete, QR, bookmarks, multi-stop,
+// batch processor, PWA, theme toggle, shortcuts, street view,
+// feedback voting, agent GPS tracking, address diff
+// ══════════════════════════════════════════════════════════
+
+// ── Autocomplete ──────────────────────────────────────────
+let acTimer=null;
+async function triggerAutocomplete(val){
+  clearTimeout(acTimer);
+  if(!val||val.length<3){hideAutocomplete();return;}
+  acTimer=setTimeout(async()=>{
+    const sugs=await getAutocompleteSuggestions(val);
+    const drop=document.getElementById('acDrop');
+    if(!sugs.length||!drop){hideAutocomplete();return;}
+    drop.innerHTML=sugs.map(s=>`<div class="ac-item" onmousedown="pickAC('${s.replace(/'/g,"\\'")}')"><span class="ac-icon">📍</span>${s.substring(0,60)}${s.length>60?'…':''}</div>`).join('');
+    drop.classList.add('show');
+  },350);
+}
+function pickAC(val){
+  document.getElementById('pubQ').value=val;
+  hideAutocomplete();
+  pubSearch();
+}
+function hideAutocomplete(){
+  const d=document.getElementById('acDrop');
+  if(d)d.classList.remove('show');
+}
+function handlePubKey(e){
+  if(e.key==='Enter'){hideAutocomplete();pubSearch();}
+  if(e.key==='Escape'){hideAutocomplete();hideHistoryDropdown();}
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────
+document.addEventListener('keydown',function(e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='/'&&currentMode==='public'){e.preventDefault();document.getElementById('pubQ')?.focus();}
+  if(e.ctrlKey&&e.key==='l'){e.preventDefault();triggerCurrentLocation();}
+  if(e.ctrlKey&&e.key==='k'){e.preventDefault();openCompare();}
+  if(e.ctrlKey&&e.key==='b'){e.preventDefault();openBookmarks();}
+  if(e.ctrlKey&&e.key==='m'){e.preventDefault();openMultiStop();}
+  if(e.key==='Escape'){closeAllModals();document.getElementById('bookmarksPanel')?.classList.remove('show');}
+});
+
+// ── QR Code generator ──────────────────────────────────────
+function showQR(encodedText){
+  const text=decodeURIComponent(encodedText);
+  document.getElementById('qrText').textContent=text.substring(0,80)+(text.length>80?'…':'');
+  if(!window.QRCode){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload=()=>renderQR(text);
+    document.head.appendChild(s);
+  } else renderQR(text);
+  document.getElementById('qrModal').style.display='block';
+  document.getElementById('modalBackdrop').style.display='block';
+}
+function renderQR(text){
+  const canvas=document.getElementById('qrCanvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,220,220);
+  if(window.QRCode){
+    const div=document.createElement('div');
+    new QRCode(div,{text,width:200,height:200,colorDark:'#00ffaa',colorLight:'#030810'});
+    setTimeout(()=>{
+      const img=div.querySelector('img')||div.querySelector('canvas');
+      if(img){const i=new Image();i.onload=()=>ctx.drawImage(i,10,10,200,200);i.src=img.src||img.toDataURL();}
+    },100);
+  } else {
+    const img=new Image();
+    img.onload=()=>ctx.drawImage(img,10,10,200,200);
+    img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}&bgcolor=030810&color=00ffaa`;
+  }
+}
+function downloadQR(){
+  const canvas=document.getElementById('qrCanvas');
+  const link=document.createElement('a');
+  link.download='address-qr.png';
+  link.href=canvas.toDataURL();
+  link.click();
+  toast('📱 QR downloaded!');
+}
+
+// ── Bookmarks ─────────────────────────────────────────────
+const BM_KEY='vn_bookmarks';
+function getBookmarks(){try{return JSON.parse(localStorage.getItem(BM_KEY)||'[]');}catch(e){return[];}}
+function bookmarkAddress(addr,pin,city,state){
+  addr=decodeURIComponent(addr);pin=decodeURIComponent(pin);city=decodeURIComponent(city);state=decodeURIComponent(state);
+  const name=prompt('Name this address (e.g. Home, Office, Client):','');
+  if(!name)return;
+  const bms=getBookmarks();
+  bms.unshift({name,addr,pin,city,state,t:Date.now()});
+  localStorage.setItem(BM_KEY,JSON.stringify(bms.slice(0,50)));
+  toast('⭐ Saved: '+name);
+}
+function openBookmarks(){
+  const bms=getBookmarks();
+  const list=document.getElementById('bookmarksList');
+  if(!bms.length){
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px;font-family:var(--font-mono)">No saved addresses yet.<br>Click ⭐ on any address to save.</div>';
+  } else {
+    list.innerHTML=bms.map((b,i)=>`
+      <div class="bm-item" onclick="useBM(${i})">
+        <div style="font-size:20px">📍</div>
+        <div style="flex:1">
+          <div class="bm-name">${b.name}</div>
+          <div class="bm-addr">${b.addr.substring(0,45)}${b.addr.length>45?'…':''}</div>
+          ${b.pin?`<div class="bm-addr">📮 ${b.pin}${b.city?' · '+b.city:''}</div>`:''}
+        </div>
+        <button onclick="event.stopPropagation();deleteBM(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px">🗑️</button>
+      </div>`).join('');
+  }
+  document.getElementById('bookmarksPanel').classList.add('show');
+  document.getElementById('modalBackdrop').style.display='block';
+}
+function useBM(i){
+  const b=getBookmarks()[i];
+  document.getElementById('bookmarksPanel').classList.remove('show');
+  document.getElementById('modalBackdrop').style.display='none';
+  document.getElementById('pubQ').value=b.addr;
+  pubSearch();
+}
+function deleteBM(i){
+  const bms=getBookmarks();bms.splice(i,1);
+  localStorage.setItem(BM_KEY,JSON.stringify(bms));
+  openBookmarks();
+  toast('🗑️ Removed');
+}
+function clearBookmarks(){
+  if(!confirm('Clear all saved addresses?'))return;
+  localStorage.removeItem(BM_KEY);
+  openBookmarks();
+}
+
+// ── Multi-Stop Route Planner ──────────────────────────────
+function openMultiStop(){openModal('multiStopModal');}
+function addStop(){
+  const list=document.getElementById('stopsList');
+  const num=list.children.length+1;
+  const div=document.createElement('div');
+  div.className='stop-row';
+  div.innerHTML=`<span class="stop-num">${num}</span><input class="stop-inp" placeholder="Stop ${num}…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button>`;
+  list.appendChild(div);
+}
+function removeStop(btn){
+  const row=btn.closest('.stop-row');
+  const list=document.getElementById('stopsList');
+  if(list.children.length<=2){toast('⚠️ Need at least 2 stops','err');return;}
+  row.remove();
+  Array.from(list.querySelectorAll('.stop-num')).forEach((el,i)=>el.textContent=i+1);
+}
+async function planRoute(){
+  const inputs=Array.from(document.querySelectorAll('.stop-inp')).map(i=>i.value.trim()).filter(Boolean);
+  if(inputs.length<2){toast('⚠️ Enter at least 2 stops','err');return;}
+  const res=document.getElementById('routeResult');
+  res.innerHTML='<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">🧠 Geocoding all stops…</div>';
+  try{
+    const coords=await Promise.all(inputs.map(q=>geocodeLocation(q)));
+    const failed=inputs.filter((_,i)=>!coords[i]);
+    if(failed.length){res.innerHTML=`<div style="color:var(--red);font-size:11px">⚠️ Could not find: ${failed.join(', ')}</div>`;return;}
+    let total=0;
+    const legs=[];
+    for(let i=0;i<coords.length-1;i++){
+      const R=6371,dL=(coords[i+1].lat-coords[i].lat)*Math.PI/180,dN=(coords[i+1].lon-coords[i].lon)*Math.PI/180;
+      const d=2*R*Math.asin(Math.sqrt(Math.sin(dL/2)**2+Math.cos(coords[i].lat*Math.PI/180)*Math.cos(coords[i+1].lat*Math.PI/180)*Math.sin(dN/2)**2));
+      total+=d;legs.push(d);
+    }
+    const mapsUrl='https://www.google.com/maps/dir/'+coords.map((_,i)=>encodeURIComponent(inputs[i]+' India')).join('/');
+    res.innerHTML=`<div style="background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);border-radius:10px;padding:12px;font-size:12px">
+      <div style="font-size:18px;font-weight:700;color:var(--green);font-family:var(--font-mono);margin-bottom:8px">Total: ${formatDist(total,'')} · ~${Math.round(total*1.4/50*60)} min</div>
+      ${legs.map((d,i)=>`<div style="font-size:11px;color:var(--text2);margin-bottom:4px;font-family:var(--font-mono)">Leg ${i+1}: ${inputs[i]} → ${inputs[i+1]} · <span style="color:var(--green)">${formatDist(d,'')}</span></div>`).join('')}
+      <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700;margin-top:10px">🗺️ Open Full Route in Google Maps</a>
+    </div>`;
+  }catch(e){res.innerHTML=`<div style="color:var(--red);font-size:11px">⚠️ ${e.message}</div>`;}
+}
+
+// ── Batch Address Processor ───────────────────────────────
+function openBatch(){openModal('batchModal');}
+async function runBatch(){
+  const raw=document.getElementById('batchInp').value.trim();
+  if(!raw){toast('⚠️ Paste some addresses first','err');return;}
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,20);
+  const res=document.getElementById('batchResult');
+  res.innerHTML=`<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">⚡ Processing ${lines.length} addresses…</div>`;
+  const results=[];
+  for(let i=0;i<lines.length;i++){
+    res.innerHTML=`<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">⚡ ${i+1}/${lines.length}: ${lines[i].substring(0,40)}…</div>`;
+    try{
+      const dbRes2=searchPinDB(lines[i]);
+      const pin=dbRes2.length>0?dbRes2[0].p:'';
+      const po=dbRes2.length>0?dbRes2[0].po:'';
+      const dist=dbRes2.length>0?dbRes2[0].d:'';
+      const state=dbRes2.length>0?dbRes2[0].s:'';
+      const geo=await geocodeLocation(lines[i]);
+      results.push({addr:lines[i],pin,po,dist,state,lat:geo?.lat||'',lon:geo?.lon||'',src:geo?.src||'',ok:!!(pin||geo)});
+    }catch(e){results.push({addr:lines[i],pin:'',po:'',dist:'',state:'',lat:'',lon:'',ok:false});}
+    await new Promise(r=>setTimeout(r,300));
+  }
+  const ok=results.filter(r=>r.ok).length;
+  let html=`<div style="font-size:12px;color:var(--green);font-family:var(--font-mono);margin-bottom:8px">✅ ${ok}/${results.length} addresses found</div>`;
+  html+=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:10px">
+    <thead><tr style="color:var(--text3);font-family:var(--font-mono)"><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">#</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--border)">Address</th><th style="padding:4px 6px;border-bottom:1px solid var(--border)">Pin</th><th style="padding:4px 6px;border-bottom:1px solid var(--border)">District</th><th style="padding:4px 6px;border-bottom:1px solid var(--border)">State</th><th style="padding:4px 6px;border-bottom:1px solid var(--border)">✓</th></tr></thead>
+    <tbody>${results.map((r,i)=>`<tr style="color:var(--text2);border-bottom:1px solid rgba(255,255,255,.03)"><td style="padding:4px 6px;color:var(--text3)">${i+1}</td><td style="padding:4px 6px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.addr}</td><td style="padding:4px 6px;color:var(--green);font-family:var(--font-mono);text-align:center">${r.pin||'-'}</td><td style="padding:4px 6px;text-align:center">${r.dist||'-'}</td><td style="padding:4px 6px;text-align:center">${r.state||'-'}</td><td style="padding:4px 6px;text-align:center">${r.ok?'✅':'❌'}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+  window._batchResults=results;
+  html+=`<button onclick="exportBatch()" style="margin-top:10px;width:100%;background:rgba(56,182,255,.1);border:1px solid rgba(56,182,255,.25);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">📥 Export as CSV</button>`;
+  res.innerHTML=html;
+}
+function exportBatch(){
+  const results=window._batchResults||[];
+  const hdr='Address,Pincode,Post Office,District,State,Lat,Lon,Source\n';
+  const rows=results.map(r=>`"${r.addr}","${r.pin}","${r.po}","${r.dist}","${r.state}","${r.lat}","${r.lon}","${r.src}"`).join('\n');
+  const blob=new Blob([hdr+rows],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='batch_addresses.csv';a.click();
+  toast('📥 CSV exported!');
+}
+
+// ── Light / Dark theme toggle ─────────────────────────────
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const icon=document.getElementById('themeIcon');
+  const isLight=document.body.classList.contains('light-mode');
+  if(icon)icon.textContent=isLight?'🌙':'☀️';
+  localStorage.setItem('vn_theme',isLight?'light':'dark');
+  toast(isLight?'☀️ Light mode on':'🌙 Dark mode on');
+}
+(function(){
+  if(localStorage.getItem('vn_theme')==='light'){
+    document.body.classList.add('light-mode');
+    const i=document.getElementById('themeIcon');
+    if(i)i.textContent='🌙';
+  }
+})();
+
+// ── Street View helper ────────────────────────────────────
+function openStreetView(lat,lon){
+  window.open(`https://www.google.com/maps?cbll=${lat},${lon}&cbp=0,0,,0,0&layer=c`,'_blank');
+}
+
+// ── Feedback / rating on address cards ───────────────────
+function voteAddr(btn,type){
+  btn.classList.add('voted');
+  const row=btn.closest('.fb-row');
+  if(row)row.querySelectorAll('.fb-btn').forEach(b=>{if(b!==btn)b.disabled=true;});
+  const votes=JSON.parse(localStorage.getItem('vn_votes')||'{}');
+  const key=btn.dataset.addr||'unknown';
+  votes[key]=(votes[key]||0)+(type==='up'?1:-1);
+  localStorage.setItem('vn_votes',JSON.stringify(votes));
+  toast(type==='up'?'👍 Thanks for the feedback!':'👎 Noted — we will improve');
+}
+
+// ── Real-time agent location tracking ─────────────────────
+let agentWatchId=null;
+let _lastTrackLat=null,_lastTrackLon=null;
+function haversineM(la1,lo1,la2,lo2){
+  const R=6371000,dL=(la2-la1)*Math.PI/180,dN=(lo2-lo1)*Math.PI/180;
+  return 2*R*Math.asin(Math.sqrt(Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2));
+}
+function startAgentTracking(){
+  if(!navigator.geolocation)return;
+  agentWatchId=navigator.geolocation.watchPosition(async function(pos){
+    const lat=pos.coords.latitude,lon=pos.coords.longitude,acc=pos.coords.accuracy;
+    const el=document.getElementById('agentLivePos');
+    if(el)el.textContent='📍 '+lat.toFixed(4)+','+lon.toFixed(4)+' ±'+Math.round(acc)+'m';
+    if(_lastTrackLat===null||haversineM(lat,lon,_lastTrackLat,_lastTrackLon)>50){
+      _lastTrackLat=lat;_lastTrackLon=lon;
+      try{const r=await reverseGeocode(lat,lon);if(r&&el)el.title=r.full;}catch(e){}
+    }
+  },function(err){},{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
+}
+function stopAgentTracking(){
+  if(agentWatchId!=null){navigator.geolocation.clearWatch(agentWatchId);agentWatchId=null;}
+  _lastTrackLat=null;_lastTrackLon=null;
+}
+
+// ── PWA Service Worker (inline, no separate file needed) ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    const swCode="const CACHE='vn-v1';self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE)));self.addEventListener('fetch',e=>{if(e.request.url.includes('api.groq.com')||e.request.url.includes('overpass-api')||e.request.url.includes('nominatim')||e.request.url.includes('mappls')||e.request.url.includes('opencagedata')||e.request.url.includes('locationiq')||e.request.url.includes('photon')||e.request.url.includes('postalpincode')||e.request.url.includes('bigdatacloud'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{if(res.ok){const clone=res.clone();caches.open(CACHE).then(c=>c.put(e.request,clone));}return res;}).catch(()=>caches.match(e.request))));});";
+    try{
+      const blob=new Blob([swCode],{type:'application/javascript'});
+      const url=URL.createObjectURL(blob);
+      navigator.serviceWorker.register(url).then(function(){console.log('✅ Service worker registered');}).catch(function(e){console.log('SW registration skipped:',e.message);});
+    }catch(e){console.log('SW setup skipped:',e.message);}
+  });
+}
+
+// ── Address diff tool ─────────────────────────────────────
+function diffAddresses(a,b){
+  const wa=a.toLowerCase().split(/[\s,]+/);
+  const wb=b.toLowerCase().split(/[\s,]+/);
+  const onlyA=wa.filter(w=>!wb.includes(w)&&w.length>2);
+  const onlyB=wb.filter(w=>!wa.includes(w)&&w.length>2);
+  const common=wa.filter(w=>wb.includes(w)&&w.length>2);
+  return{onlyA,onlyB,common,similar:common.length/(Math.max(wa.length,wb.length)||1)};
+}
+
+// ── Wrap buildPubCard to inject QR/bookmark/street-view/feedback buttons ──
+(function(){
+  const _origBuildPubCard=buildPubCard;
+  window.buildPubCard=function(d){
+    let html=_origBuildPubCard(d);
+    const qrText=encodeURIComponent(d.full_address||'');
+    const bmAddr=encodeURIComponent(d.full_address||'');
+    const bmPin=encodeURIComponent(d.pincode||'');
+    const bmCity=encodeURIComponent(d.district||'');
+    const bmState=encodeURIComponent(d.state||'');
+    const addrKey=(d.full_address||'').replace(/[^a-z0-9]/gi,'').substring(0,20);
+    const extraBtns=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      <button onclick="showQR('${qrText}')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 11px;background:rgba(176,140,255,.08);color:var(--purple);border:1px solid rgba(176,140,255,.2);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">📱 QR</button>
+      <button onclick="bookmarkAddress('${bmAddr}','${bmPin}','${bmCity}','${bmState}')" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 11px;background:rgba(255,179,71,.08);color:var(--amber);border:1px solid rgba(255,179,71,.2);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">⭐ Save</button>
+      ${d._lat&&d._lon?`<button onclick="openStreetView(${d._lat},${d._lon})" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:5px 11px;background:rgba(56,182,255,.08);color:var(--blue);border:1px solid rgba(56,182,255,.2);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">🚶 Street View</button>`:''}
+    </div>
+    <div class="fb-row">
+      <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">Was this accurate?</span>
+      <button class="fb-btn" data-addr="${addrKey}" onclick="voteAddr(this,'up')">👍</button>
+      <button class="fb-btn" data-addr="${addrKey}" onclick="voteAddr(this,'down')">👎</button>
+    </div>`;
+    if(html.indexOf('<div class="share-row">')>-1){
+      html=html.replace('<div class="share-row">',extraBtns+'<div class="share-row">');
+    } else {
+      html+=extraBtns;
+    }
+    return html;
+  };
+})();
+
+// ── Extend closeAllModals for new modals ──────────────────
+(function(){
+  const _origCloseAllModals=closeAllModals;
+  window.closeAllModals=function(){
+    _origCloseAllModals();
+    ['batchModal','multiStopModal','qrModal'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el)el.style.display='none';
+    });
+    const bp=document.getElementById('bookmarksPanel');
+    if(bp)bp.classList.remove('show');
+    const mb=document.getElementById('modalBackdrop');
+    if(mb)mb.style.display='none';
+  };
+})();
+
+// ── Extend showAgentView to start live GPS tracking ───────
+(function(){
+  const _origShowAgentView=showAgentView;
+  window.showAgentView=function(){
+    _origShowAgentView();
+    setTimeout(function(){
+      const tr=document.getElementById('tbRight');
+      if(tr&&!document.getElementById('agentLivePos')){
+        const span=document.createElement('span');
+        span.id='agentLivePos';
+        span.style.cssText='font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.3px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        span.textContent='📍 Locating…';
+        tr.insertBefore(span,tr.firstChild);
+      }
+      startAgentTracking();
+    },500);
+  };
+})();
+(function(){
+  const _origAgentLogout=agentLogout;
+  window.agentLogout=function(){
+    stopAgentTracking();
+    _origAgentLogout();
+  };
+})();
+
+console.log('✅ New features loaded: autocomplete, QR codes, bookmarks, multi-stop routing, batch processor, PWA offline support, keyboard shortcuts, light/dark theme, street view, feedback voting, live agent GPS tracking');
 </script>
 </body>
 </html>
