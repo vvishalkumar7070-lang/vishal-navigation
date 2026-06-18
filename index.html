@@ -3321,6 +3321,234 @@ function diffAddresses(a,b){
 })();
 
 console.log('✅ New features loaded: autocomplete, QR codes, bookmarks, multi-stop routing, batch processor, PWA offline support, keyboard shortcuts, light/dark theme, street view, feedback voting, live agent GPS tracking');
+</script> 
+<!-- ═══════════════════════════════════════════════════════
+     REAL ROAD DISTANCE FIX — injected patch
+     Overrides runCompare() and planRoute() with OSRM routing
+     ═══════════════════════════════════════════════════════ -->
+<script>
+// ══════════════════════════════════════════════════════════
+// REAL ROAD DISTANCE via OSRM (free, no key needed)
+// Profiles: driving, walking, cycling (train = fallback haversine)
+// ══════════════════════════════════════════════════════════
+
+async function getRoadDistance(latA, lonA, latB, lonB, profile) {
+  // profile: 'driving', 'walking', 'cycling'
+  try {
+    const url = `https://router.project-osrm.org/route/v1/${profile}/${lonA},${latA};${lonB},${latB}?overview=false&annotations=false`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.code === 'Ok' && d.routes && d.routes[0]) {
+      return {
+        distanceM: d.routes[0].distance,   // metres
+        durationS: d.routes[0].duration,   // seconds
+        ok: true
+      };
+    }
+  } catch(e) {}
+  return { ok: false };
+}
+
+function fmtDist(metres) {
+  if (metres < 1000) return Math.round(metres) + ' m';
+  return (metres / 1000).toFixed(1) + ' km';
+}
+function fmtDur(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h > 0) return h + 'h ' + m + 'min';
+  return m + ' min';
+}
+
+// Haversine fallback (straight-line)
+function haversineDist(la1, lo1, la2, lo2) {
+  const R = 6371000;
+  const dL = (la2 - la1) * Math.PI / 180;
+  const dN = (lo2 - lo1) * Math.PI / 180;
+  return 2 * R * Math.asin(Math.sqrt(Math.sin(dL/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2));
+}
+
+async function runCompare() {
+  const a = document.getElementById('locA').value.trim();
+  const b = document.getElementById('locB').value.trim();
+  if (!a || !b) { toast('⚠️ Enter both locations', 'err'); return; }
+
+  const res = document.getElementById('compareResult');
+  res.style.display = 'block';
+  res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono);padding:6px 0">🧠 Geocoding locations…</div>';
+
+  try {
+    const [gA, gB] = await Promise.all([geocodeLocation(a), geocodeLocation(b)]);
+    if (!gA || !gB) {
+      res.innerHTML = `<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ Could not find one or both locations. Add city name — e.g. "Sector 63, Noida"</div>`;
+      return;
+    }
+
+    res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono);padding:6px 0">🛣️ Calculating real road distances (driving, walking, cycling)…</div>';
+
+    // Fetch all modes in parallel
+    const [driveRes, walkRes, cycleRes] = await Promise.all([
+      getRoadDistance(gA.lat, gA.lon, gB.lat, gB.lon, 'driving'),
+      getRoadDistance(gA.lat, gA.lon, gB.lat, gB.lon, 'walking'),
+      getRoadDistance(gA.lat, gA.lon, gB.lat, gB.lon, 'cycling')
+    ]);
+
+    // Straight-line (as the crow flies)
+    const straightM = haversineDist(gA.lat, gA.lon, gB.lat, gB.lon);
+
+    // Estimate train: ~1.3x straight line at ~80km/h
+    const trainM = straightM * 1.25;
+    const trainDurS = (trainM / 80000) * 3600;
+
+    const mapsUrl = `https://www.google.com/maps/dir/${encodeURIComponent(a + ' India')}/${encodeURIComponent(b + ' India')}`;
+    const mapsWalk = `https://www.google.com/maps/dir/${encodeURIComponent(a + ' India')}/${encodeURIComponent(b + ' India')}/@${(gA.lat+gB.lat)/2},${(gA.lon+gB.lon)/2},12z/data=!4m2!4m1!3e2`;
+    const mapsDrive = `https://www.google.com/maps/dir/${encodeURIComponent(a + ' India')}/${encodeURIComponent(b + ' India')}/@${(gA.lat+gB.lat)/2},${(gA.lon+gB.lon)/2},12z/data=!4m2!4m1!3e0`;
+    const mapsTrain = `https://www.google.com/maps/dir/${encodeURIComponent(a + ' India')}/${encodeURIComponent(b + ' India')}/@${(gA.lat+gB.lat)/2},${(gA.lon+gB.lon)/2},12z/data=!4m2!4m1!3e3`;
+
+    const shareText = `📍 Distance: ${driveRes.ok ? fmtDist(driveRes.distanceM) : fmtDist(straightM)}\nFrom: ${a}\nTo: ${b}\n🚗 Drive: ${driveRes.ok ? fmtDist(driveRes.distanceM)+' · '+fmtDur(driveRes.durationS) : 'N/A'}\n🚶 Walk: ${walkRes.ok ? fmtDist(walkRes.distanceM)+' · '+fmtDur(walkRes.durationS) : 'N/A'}\n📏 Straight line: ${fmtDist(straightM)}\n\nShared via Vishal Navigation`;
+    const enc = encodeURIComponent(shareText);
+
+    res.innerHTML = `
+      <div style="background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:14px;padding:18px;font-size:12px">
+        
+        <!-- MAIN DISTANCE HEADER -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.5px;margin-bottom:4px">ROAD DISTANCE</div>
+          <div style="font-size:30px;font-weight:700;color:var(--blue);font-family:var(--font-mono);line-height:1">${driveRes.ok ? fmtDist(driveRes.distanceM) : fmtDist(straightM)}</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">${driveRes.ok ? 'via OSRM real road routing' : 'straight line (road routing unavailable)'}</div>
+        </div>
+
+        <!-- TRAVEL MODE CARDS -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          
+          <!-- DRIVING -->
+          <a href="${mapsDrive}" target="_blank" style="text-decoration:none;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px;transition:all .2s" onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='rgba(0,255,170,.2)'">
+            <div style="font-size:18px">🚗</div>
+            <div style="font-size:11px;font-weight:700;color:var(--green);font-family:var(--font-display)">Car / Drive</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);font-family:var(--font-mono)">${driveRes.ok ? fmtDist(driveRes.distanceM) : '~' + fmtDist(straightM * 1.3)}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${driveRes.ok ? fmtDur(driveRes.durationS) : '~' + fmtDur((straightM*1.3)/13.9)}</div>
+            <div style="font-size:9px;color:var(--green);font-family:var(--font-mono);margin-top:3px">↗ Open in Maps</div>
+          </a>
+
+          <!-- WALKING -->
+          <a href="${mapsWalk}" target="_blank" style="text-decoration:none;background:rgba(56,182,255,.06);border:1px solid rgba(56,182,255,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='rgba(56,182,255,.2)'">
+            <div style="font-size:18px">🚶</div>
+            <div style="font-size:11px;font-weight:700;color:var(--blue);font-family:var(--font-display)">Walking</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);font-family:var(--font-mono)">${walkRes.ok ? fmtDist(walkRes.distanceM) : '~' + fmtDist(straightM * 1.15)}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${walkRes.ok ? fmtDur(walkRes.durationS) : '~' + fmtDur((straightM*1.15)/1.4)}</div>
+            <div style="font-size:9px;color:var(--blue);font-family:var(--font-mono);margin-top:3px">↗ Open in Maps</div>
+          </a>
+
+          <!-- CYCLING -->
+          <a href="${mapsUrl}" target="_blank" style="text-decoration:none;background:rgba(176,140,255,.06);border:1px solid rgba(176,140,255,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px;transition:all .2s" onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='rgba(176,140,255,.2)'">
+            <div style="font-size:18px">🚲</div>
+            <div style="font-size:11px;font-weight:700;color:var(--purple);font-family:var(--font-display)">Cycling</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);font-family:var(--font-mono)">${cycleRes.ok ? fmtDist(cycleRes.distanceM) : '~' + fmtDist(straightM * 1.2)}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">${cycleRes.ok ? fmtDur(cycleRes.durationS) : '~' + fmtDur((straightM*1.2)/4.2)}</div>
+            <div style="font-size:9px;color:var(--purple);font-family:var(--font-mono);margin-top:3px">↗ Open in Maps</div>
+          </a>
+
+          <!-- TRAIN/TRANSIT -->
+          <a href="${mapsTrain}" target="_blank" style="text-decoration:none;background:rgba(255,179,71,.06);border:1px solid rgba(255,179,71,.2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:3px;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)'" onmouseout="this.style.borderColor='rgba(255,179,71,.2)'">
+            <div style="font-size:18px">🚆</div>
+            <div style="font-size:11px;font-weight:700;color:var(--amber);font-family:var(--font-display)">Train / Transit</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text);font-family:var(--font-mono)">~${fmtDist(trainM)}</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">~${fmtDur(trainDurS)}</div>
+            <div style="font-size:9px;color:var(--amber);font-family:var(--font-mono);margin-top:3px">↗ Open in Maps</div>
+          </a>
+        </div>
+
+        <!-- STRAIGHT LINE -->
+        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:9px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">📏</span>
+          <div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">AS THE CROW FLIES</div>
+            <div style="font-size:13px;color:var(--text2);font-family:var(--font-mono)">${fmtDist(straightM)} &nbsp;·&nbsp; ${(straightM/1000*0.621371).toFixed(2)} miles</div>
+          </div>
+        </div>
+
+        <!-- LOCATIONS -->
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;line-height:1.8;background:rgba(255,255,255,.02);border-radius:8px;padding:9px 12px">
+          <div>📍 <strong>From:</strong> ${(gA.display || a).substring(0, 65)}</div>
+          <div>📍 <strong>To:</strong> ${(gB.display || b).substring(0, 65)}</div>
+          <div style="margin-top:4px;opacity:.6">Source A: ${gA.src || 'geocoder'} · Source B: ${gB.src || 'geocoder'} · Road: OSRM</div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <a href="${mapsDrive}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Directions</a>
+          <a href="https://www.google.com/maps?cbll=${gA.lat},${gA.lon}&layer=c" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(56,182,255,.08);color:var(--blue);border:1px solid rgba(56,182,255,.2);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🚶 Street View A</a>
+          <button onclick="showQR('${encodeURIComponent((driveRes.ok?fmtDist(driveRes.distanceM):fmtDist(straightM))+' from '+a+' to '+b)}')" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 14px;background:rgba(176,140,255,.08);color:var(--purple);border:1px solid rgba(176,140,255,.2);border-radius:20px;cursor:pointer;font-family:var(--font-mono)">📱 QR</button>
+        </div>
+        <div class="share-row" style="margin-top:10px">
+          <a class="share-btn whatsapp" onclick="shareWhatsApp('${enc}')">💬 WhatsApp</a>
+          <a class="share-btn sms" onclick="shareSMS('${enc}')">📱 SMS</a>
+          <a class="share-btn copy" onclick="copyAddress('${enc}')">📋 Copy</a>
+        </div>
+      </div>`;
+
+  } catch(e) {
+    res.innerHTML = `<div style="color:var(--red);font-size:12px;padding:8px 0">⚠️ ${e.message}</div>`;
+  }
+}
+
+// ── Fix planRoute() to also use OSRM real road distances ──
+async function planRoute() {
+  const inputs = Array.from(document.querySelectorAll('.stop-inp')).map(i => i.value.trim()).filter(Boolean);
+  if (inputs.length < 2) { toast('⚠️ Enter at least 2 stops', 'err'); return; }
+  const res = document.getElementById('routeResult');
+  res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">🧠 Geocoding all stops…</div>';
+  try {
+    const coords = await Promise.all(inputs.map(q => geocodeLocation(q)));
+    const failed = inputs.filter((_, i) => !coords[i]);
+    if (failed.length) { res.innerHTML = `<div style="color:var(--red);font-size:11px">⚠️ Could not find: ${failed.join(', ')}</div>`; return; }
+
+    res.innerHTML = '<div style="color:var(--text3);font-size:11px;font-family:var(--font-mono)">🛣️ Calculating real road distances…</div>';
+
+    let totalRoadM = 0, totalRoadS = 0, totalStraightM = 0;
+    const legs = [];
+    for (let i = 0; i < coords.length - 1; i++) {
+      const roadRes = await getRoadDistance(coords[i].lat, coords[i].lon, coords[i+1].lat, coords[i+1].lon, 'driving');
+      const straightM = haversineDist(coords[i].lat, coords[i].lon, coords[i+1].lat, coords[i+1].lon);
+      const legM = roadRes.ok ? roadRes.distanceM : straightM * 1.3;
+      const legS = roadRes.ok ? roadRes.durationS : (legM / 13.9);
+      totalRoadM += legM; totalRoadS += legS; totalStraightM += straightM;
+      legs.push({ from: inputs[i], to: inputs[i+1], distM: legM, durS: legS, roadOk: roadRes.ok });
+    }
+
+    const mapsUrl = 'https://www.google.com/maps/dir/' + coords.map((_, i) => encodeURIComponent(inputs[i] + ' India')).join('/');
+
+    res.innerHTML = `<div style="background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);border-radius:12px;padding:14px;font-size:12px">
+      <div style="font-size:20px;font-weight:700;color:var(--green);font-family:var(--font-mono);margin-bottom:4px">${fmtDist(totalRoadM)} total road distance</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px">🚗 ~${fmtDur(totalRoadS)} driving · 📏 ${fmtDist(totalStraightM)} straight line</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+        ${legs.map((l, i) => `
+          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:10px">
+            <div style="width:22px;height:22px;background:rgba(0,255,170,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--green);font-family:var(--font-mono);flex-shrink:0">${i+1}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:var(--text);font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.from.substring(0,22)} → ${l.to.substring(0,22)}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">${l.roadOk ? '🛣️ road' : '📏 estimated'}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--font-mono)">${fmtDist(l.distM)}</div>
+              <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${fmtDur(l.durS)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <!-- TRAVEL MODE BUTTONS FOR ROUTE -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <a href="${mapsUrl}/@${coords[0].lat},${coords[0].lon},12z/data=!4m2!4m1!3e0" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 12px;background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:600">🚗 Drive</a>
+        <a href="${mapsUrl}/@${coords[0].lat},${coords[0].lon},12z/data=!4m2!4m1!3e2" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 12px;background:rgba(56,182,255,.1);color:var(--blue);border:1px solid rgba(56,182,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🚶 Walk</a>
+        <a href="${mapsUrl}/@${coords[0].lat},${coords[0].lon},12z/data=!4m2!4m1!3e3" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 12px;background:rgba(255,179,71,.1);color:var(--amber);border:1px solid rgba(255,179,71,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🚆 Transit</a>
+        <a href="${mapsUrl}/@${coords[0].lat},${coords[0].lon},12z/data=!4m2!4m1!3e1" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:7px 12px;background:rgba(176,140,255,.1);color:var(--purple);border:1px solid rgba(176,140,255,.25);border-radius:20px;text-decoration:none;font-family:var(--font-mono)">🚲 Cycle</a>
+      </div>
+      <a href="${mapsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:9px 18px;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));color:var(--green);border:1px solid rgba(0,255,170,.35);border-radius:20px;text-decoration:none;font-family:var(--font-mono);font-weight:700">🗺️ Open Full Route in Google Maps</a>
+    </div>`;
+  } catch(e) {
+    res.innerHTML = `<div style="color:var(--red);font-size:11px">⚠️ ${e.message}</div>`;
+  }
+}
+
 </script>
 </body>
 </html>
