@@ -3727,6 +3727,237 @@ window.agentLogout=function(){stopDeepgramListen();_dgOriginalLogout();};
 
 console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 </script>
+// ═══════════════════════════════════════════════════════════
+// VISHAL NAVIGATION — PATCH v2
+// Fix 1: Deepgram real-time STT in PUBLIC SEARCH mic button
+// Fix 2: Agent auto-stops + auto-confirms when address spoken
+// ═══════════════════════════════════════════════════════════
 
+// ────────────────────────────────────────────────────────────
+// FIX 1: Replace togglePubMic with Deepgram-powered version
+// ────────────────────────────────────────────────────────────
+(function () {
+  let pubDgSocket = null, pubDgStream = null, pubDgProcessor = null;
+  let pubDgContext = null, pubDgActive = false;
+  let pubDgFinalText = '', pubDgInterim = '';
+  let pubDgSilenceTimer = null;
+
+  async function startPubDeepgram() {
+    try {
+      pubDgStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+      });
+    } catch (e) {
+      toast('⚠️ Microphone permission denied', 'err');
+      return false;
+    }
+
+    const wsUrl =
+      'wss://api.deepgram.com/v1/listen' +
+      '?model=nova-2' +
+      '&language=hi-Latn-IN' +
+      '&detect_language=true' +
+      '&punctuate=true' +
+      '&smart_format=true' +
+      '&interim_results=true' +
+      '&endpointing=400' +
+      '&utterance_end_ms=1000';
+
+    pubDgSocket = new WebSocket(wsUrl, ['token', DEEPGRAM_KEY]);
+
+    pubDgSocket.onopen = () => {
+      pubDgActive = true;
+      pubDgFinalText = '';
+      pubDgInterim = '';
+      pubDgContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const source = pubDgContext.createMediaStreamSource(pubDgStream);
+      pubDgProcessor = pubDgContext.createScriptProcessor(4096, 1, 1);
+      pubDgProcessor.onaudioprocess = (e) => {
+        if (!pubDgSocket || pubDgSocket.readyState !== WebSocket.OPEN) return;
+        const pcm = e.inputBuffer.getChannelData(0);
+        const int16 = new Int16Array(pcm.length);
+        for (let i = 0; i < pcm.length; i++)
+          int16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
+        pubDgSocket.send(int16.buffer);
+      };
+      source.connect(pubDgProcessor);
+      pubDgProcessor.connect(pubDgContext.destination);
+    };
+
+    pubDgSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const transcript = data?.channel?.alternatives?.[0]?.transcript?.trim();
+        const isFinal = data?.is_final;
+        const speechFinal = data?.speech_final;
+        if (!transcript) return;
+
+        // Show live in input box
+        const inp = document.getElementById('pubQ');
+        if (inp) inp.value = pubDgFinalText + (pubDgFinalText ? ' ' : '') + transcript;
+
+        if (isFinal || speechFinal) {
+          pubDgFinalText = (pubDgFinalText + ' ' + transcript).trim();
+          if (inp) inp.value = pubDgFinalText;
+
+          // Auto-search after 1.5s silence once we have enough words
+          clearTimeout(pubDgSilenceTimer);
+          if (pubDgFinalText.split(' ').length >= 2) {
+            pubDgSilenceTimer = setTimeout(() => {
+              if (pubDgActive && pubDgFinalText.trim().length > 2) {
+                stopPubDeepgram();
+                pubSearch();
+              }
+            }, 1500);
+          }
+        }
+      } catch (e) {}
+    };
+
+    pubDgSocket.onerror = () => {
+      stopPubDeepgram();
+      // fallback to original Groq Whisper
+      typeof togglePubMicOriginal === 'function' && togglePubMicOriginal();
+    };
+
+    pubDgSocket.onclose = () => { pubDgActive = false; };
+    return true;
+  }
+
+  function stopPubDeepgram() {
+    pubDgActive = false;
+    clearTimeout(pubDgSilenceTimer);
+    try { if (pubDgProcessor) pubDgProcessor.disconnect(); } catch (e) {}
+    try { if (pubDgContext) pubDgContext.close(); } catch (e) {}
+    try { if (pubDgSocket) pubDgSocket.close(); } catch (e) {}
+    try { if (pubDgStream) pubDgStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    pubDgSocket = null; pubDgProcessor = null; pubDgContext = null; pubDgStream = null;
+
+    const micBtn = document.getElementById('pubMic');
+    if (micBtn) { micBtn.classList.remove('active'); micBtn.textContent = '🎤'; }
+    const inp = document.getElementById('pubQ');
+    if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
+  }
+
+  // Save original as fallback
+  window.togglePubMicOriginal = window.togglePubMic;
+
+  // Override with Deepgram version
+  window.togglePubMic = async function () {
+    if (pubDgActive) { stopPubDeepgram(); return; }
+
+    const micBtn = document.getElementById('pubMic');
+    const inp = document.getElementById('pubQ');
+    if (micBtn) { micBtn.classList.add('active'); micBtn.textContent = '⏹'; }
+    if (inp) inp.placeholder = '🟢 Listening via Deepgram… speak any India location';
+
+    const ok = await startPubDeepgram();
+    if (!ok) {
+      if (micBtn) { micBtn.classList.remove('active'); micBtn.textContent = '🎤'; }
+      if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
+    }
+  };
+
+  console.log('✅ Patch Fix 1: Deepgram wired to public search mic');
+})();
+
+
+// ────────────────────────────────────────────────────────────
+// FIX 2: Agent auto-stops Deepgram and auto-confirms address
+// ────────────────────────────────────────────────────────────
+(function () {
+  // How long after last final transcript with a valid address to auto-confirm
+  const AUTO_CONFIRM_DELAY_MS = 2500;
+  let autoConfirmTimer = null;
+  let lastExtractedResult = null;
+
+  // Monkey-patch showAgentResult so we intercept every result shown
+  const _origShowAgentResult = window.showAgentResult;
+  window.showAgentResult = function (r, isDup) {
+    _origShowAgentResult && _origShowAgentResult(r, isDup);
+    lastExtractedResult = r;
+
+    // Only auto-confirm if Deepgram is still actively streaming
+    // (i.e. agent didn't manually stop)
+    if (!window.dgActive) return;
+
+    // High confidence → auto-stop Deepgram + auto-confirm after short delay
+    if (r && r.confidence >= 60) {
+      clearTimeout(autoConfirmTimer);
+
+      // 1. Stop Deepgram socket immediately so no more audio processes
+      stopDeepgramListenSafe();
+
+      // 2. Show countdown toast
+      toast('✅ Address captured — confirming in 2.5s…', '', 2500);
+
+      // 3. Auto-confirm
+      autoConfirmTimer = setTimeout(() => {
+        if (lastExtractedResult && typeof confirmAddr === 'function') {
+          confirmAddr();
+          toast('✅ Auto-saved! Listening again in 2s…');
+
+          // 4. Auto-restart listening after brief pause for next customer
+          setTimeout(() => {
+            if (window.currentMode === 'agent' && window.isListening !== true) {
+              typeof toggleListen === 'function' && toggleListen();
+            }
+          }, 2000);
+        }
+      }, AUTO_CONFIRM_DELAY_MS);
+    }
+  };
+
+  // Safe wrapper to stop Deepgram without crashing if not active
+  function stopDeepgramListenSafe() {
+    try {
+      if (window.dgActive) {
+        window.dgActive = false;
+        if (window.dgProcessor) window.dgProcessor.disconnect();
+        if (window.dgContext) window.dgContext.close();
+        if (window.dgSocket) window.dgSocket.close();
+        if (window.dgStream) window.dgStream.getTracks().forEach(t => t.stop());
+        window.dgSocket = null;
+        window.dgProcessor = null;
+        window.dgContext = null;
+        window.dgStream = null;
+        window.dgLiveTranscript = '';
+      }
+    } catch (e) {}
+
+    // Reset listen button visuals
+    window.isListening = false;
+    const lo = document.getElementById('listenOuter');
+    const lb = document.getElementById('listenBtn');
+    if (lo) lo.classList.remove('active');
+    if (lb) lb.classList.remove('active');
+    const icon = document.getElementById('listenIcon');
+    const lbl = document.getElementById('listenLbl');
+    if (icon) icon.textContent = '🎙️';
+    if (lbl) lbl.textContent = 'TAP TO START';
+    document.getElementById('waveBars')?.classList.remove('active');
+    typeof setQuality === 'function' && setQuality('');
+    const badge = document.getElementById('dgLiveBadge');
+    if (badge) badge.remove();
+  }
+
+  // Also patch confirmAddr so it clears the auto-confirm timer if user manually confirms
+  const _origConfirmAddr = window.confirmAddr;
+  window.confirmAddr = function () {
+    clearTimeout(autoConfirmTimer);
+    lastExtractedResult = null;
+    _origConfirmAddr && _origConfirmAddr();
+  };
+
+  // Patch rejectAddr similarly
+  const _origRejectAddr = window.rejectAddr;
+  window.rejectAddr = function () {
+    clearTimeout(autoConfirmTimer);
+    lastExtractedResult = null;
+    _origRejectAddr && _origRejectAddr();
+  };
+
+  console.log('✅ Patch Fix 2: Agent auto-stop + auto-confirm wired');
+})();
 </body>
 </html>
