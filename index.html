@@ -1284,9 +1284,23 @@ async function _indiaPostPin(q){
   const pin=q.match(/\b\d{6}\b/)?.[0];if(!pin)return null;
   try{const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`);const d=await r.json();const po=d?.[0]?.PostOffice?.[0];if(po){const nr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(po.District+' '+po.State+' India')}&format=json&limit=1&countrycodes=in`,{headers:{'User-Agent':'VishalNavigation/1.0'}});const nd=await nr.json();if(nd?.length)return{lat:parseFloat(nd[0].lat),lon:parseFloat(nd[0].lon),display:`${po.Name}, ${po.District}, ${po.State} - ${pin}`,src:'India Post'};}}catch(e){}return null;
 }
+async function _geokeo(q){
+  try{
+    const r=await fetch(`https://geokeo.com/geocode/v1/search.php?q=${encodeURIComponent(q+' India')}&api=none`);
+    const d=await r.json();
+    const res=d?.results?.[0];
+    if(res?.geometry?.location){
+      return{lat:parseFloat(res.geometry.location.lat),lon:parseFloat(res.geometry.location.lng),display:res.formatted_address||q,src:'GeoKeo'};
+    }
+  }catch(e){}
+  return null;
+}
 async function geocodeLocation(query){
   const raw=query.replace(/, India$/i,'').trim();
   const norm=normaliseQ(raw);
+  // GeoKeo first — India-specific, no key needed, fast
+  const gk=await _geokeo(norm);
+  if(gk)return gk;
   const fast=await Promise.all([_mmiGeo(norm),_mmiSearch(norm),_nominatim(norm),_photon(norm)]);
   for(const r of fast)if(r)return r;
   if(/\b\d{6}\b/.test(raw)){const pr=await _indiaPostPin(raw);if(pr)return pr;}
@@ -3550,5 +3564,169 @@ async function planRoute() {
 }
 
 </script>
+
+<!-- ═══════════════════════════════════════════════
+     DEEPGRAM REAL-TIME STT — INJECTED
+     Key: 6cc1f796b4d685cd65f5578d2d405e023c8db204
+     ═══════════════════════════════════════════════ -->
+<script>
+const DEEPGRAM_KEY='6cc1f796b4d685cd65f5578d2d405e023c8db204';
+let dgSocket=null,dgStream=null,dgProcessor=null;
+let dgContext=null,dgLiveTranscript='',dgActive=false,dgCaptureTimer=null;
+
+async function startDeepgramListen(){
+  try{
+    dgStream=await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true,sampleRate:16000}
+    });
+  }catch(e){console.warn('Mic denied:',e.message);return false;}
+
+  const wsUrl='wss://api.deepgram.com/v1/listen'
+    +'?model=nova-2'
+    +'&language=hi-Latn-IN'
+    +'&detect_language=true'
+    +'&punctuate=true'
+    +'&smart_format=true'
+    +'&interim_results=true'
+    +'&endpointing=300'
+    +'&utterance_end_ms=1000';
+
+  dgSocket=new WebSocket(wsUrl,['token',DEEPGRAM_KEY]);
+
+  dgSocket.onopen=()=>{
+    dgActive=true;dgLiveTranscript='';
+    console.log('\u2705 Deepgram connected');
+    dgContext=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+    const source=dgContext.createMediaStreamSource(dgStream);
+    dgProcessor=dgContext.createScriptProcessor(4096,1,1);
+    dgProcessor.onaudioprocess=(e)=>{
+      if(!dgSocket||dgSocket.readyState!==WebSocket.OPEN)return;
+      const pcm=e.inputBuffer.getChannelData(0);
+      const int16=new Int16Array(pcm.length);
+      for(let i=0;i<pcm.length;i++)int16[i]=Math.max(-32768,Math.min(32767,pcm[i]*32768));
+      dgSocket.send(int16.buffer);
+    };
+    source.connect(dgProcessor);
+    dgProcessor.connect(dgContext.destination);
+  };
+
+  dgSocket.onmessage=(event)=>{
+    try{
+      const data=JSON.parse(event.data);
+      const transcript=data?.channel?.alternatives?.[0]?.transcript?.trim();
+      const isFinal=data?.is_final;
+      const speechFinal=data?.speech_final;
+      if(!transcript)return;
+
+      const transEl=document.getElementById('agentTranscript');
+      if(transEl){
+        transEl.classList.add('show');
+        transEl.innerHTML='\ud83c\udf99\ufe0f <span style="color:var(--text3)">'+dgLiveTranscript+'</span> <span style="color:var(--green)">'+transcript+'</span>';
+      }
+
+      if(isFinal||speechFinal){
+        dgLiveTranscript=(dgLiveTranscript+' '+transcript).trim();
+        window.currentTranscript=dgLiveTranscript;
+        const fired=checkAllTriggers(dgLiveTranscript);
+        if(!window.strategiesFired)window.strategiesFired=new Set();
+        fired.forEach(s=>window.strategiesFired.add(s));
+        if(checkAgentQuestion(dgLiveTranscript))window.strategiesFired.add('s1');
+        updateStrategyUI(window.strategiesFired);
+        if(transEl){
+          let display=dgLiveTranscript;
+          try{TRIGGER_WORDS.location.forEach(tw=>{display=display.replace(new RegExp('\b'+tw+'\b','gi'),'<span class="hl">'+tw+'</span>');});}catch(e){}
+          transEl.innerHTML='\ud83c\udf99\ufe0f '+display;
+        }
+        const wordCount=dgLiveTranscript.split(' ').length;
+        updateLayerUI(Math.min(wordCount,10));
+        if(wordCount>=5&&fired.size>=1){
+          clearTimeout(dgCaptureTimer);
+          dgCaptureTimer=setTimeout(()=>{
+            if(dgActive&&dgLiveTranscript.split(' ').length>=5){
+              window.captureMode=false;
+              setStatus('\u2699\ufe0f Deepgram captured \u2014 extracting...','processing','Real-time STT complete');
+              window.totalAttempts=(window.totalAttempts||0)+1;
+              extractAndVerify(dgLiveTranscript);
+            }
+          },1500);
+        }
+      }
+    }catch(e){}
+  };
+
+  dgSocket.onerror=()=>{
+    console.warn('Deepgram error \u2014 falling back to Groq Whisper');
+    stopDeepgramListen();
+    typeof _dgOriginalStart==='function'&&_dgOriginalStart();
+  };
+  dgSocket.onclose=()=>{dgActive=false;};
+  return true;
+}
+
+function stopDeepgramListen(){
+  dgActive=false;
+  clearTimeout(dgCaptureTimer);
+  try{if(dgProcessor)dgProcessor.disconnect();}catch(e){}
+  try{if(dgContext)dgContext.close();}catch(e){}
+  try{if(dgSocket)dgSocket.close();}catch(e){}
+  try{if(dgStream)dgStream.getTracks().forEach(t=>t.stop());}catch(e){}
+  dgSocket=null;dgProcessor=null;dgContext=null;dgStream=null;
+  dgLiveTranscript='';
+  const badge=document.getElementById('dgLiveBadge');
+  if(badge)badge.remove();
+}
+
+// Override toggleListen — try Deepgram first, fall back to original
+const _dgOriginalStart=typeof startListen==='function'?startListen:function(){};
+const _dgOriginalStop=typeof stopListen==='function'?stopListen:function(){};
+
+window.toggleListen=async function(){
+  if(dgActive||window.isListening){
+    stopDeepgramListen();
+    _dgOriginalStop();
+    return;
+  }
+  const ok=await startDeepgramListen();
+  if(ok){
+    window.isListening=true;
+    window.currentTranscript='';
+    window.rollingBuffer=[];
+    window.captureMode=false;
+    window.strategiesFired=new Set();
+    document.getElementById('listenOuter')?.classList.add('active');
+    document.getElementById('listenBtn')?.classList.add('active');
+    const icon=document.getElementById('listenIcon');
+    const lbl=document.getElementById('listenLbl');
+    if(icon)icon.textContent='\u23f9';
+    if(lbl)lbl.textContent='TAP TO STOP';
+    document.getElementById('waveBars')?.classList.add('active');
+    typeof setQuality==='function'&&setQuality('good');
+    typeof setStatus==='function'&&setStatus('\ud83d\udfe2 Deepgram LIVE \u2014 speak naturally...','listening','Real-time \u00b7 nova-2 \u00b7 20 Indian languages');
+    typeof updateLayerUI==='function'&&updateLayerUI(1);
+    const center=document.getElementById('tbCenter');
+    if(center&&!document.getElementById('dgLiveBadge')){
+      const badge=document.createElement('span');
+      badge.id='dgLiveBadge';
+      badge.className='tb-badge live';
+      badge.innerHTML='\ud83d\udfe2 DEEPGRAM LIVE';
+      center.appendChild(badge);
+    }
+    typeof toast==='function'&&toast('\ud83c\udf99\ufe0f Deepgram streaming \u2014 speak the address!');
+  }else{
+    _dgOriginalStart();
+  }
+};
+
+window.stopListen=function(){
+  stopDeepgramListen();
+  _dgOriginalStop();
+};
+
+const _dgOriginalLogout=typeof agentLogout!=='undefined'?agentLogout:function(){};
+window.agentLogout=function(){stopDeepgramListen();_dgOriginalLogout();};
+
+console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
+</script>
+
 </body>
 </html>
