@@ -3959,5 +3959,1271 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 
   console.log('✅ Patch Fix 2: Agent auto-stop + auto-confirm wired');
 })();
+<!-- ═══════════════════════════════════════════════════════════════
+     VISHAL NAVIGATION — AGENT + ADMIN UPGRADE PATCH
+     Paste this entire <script> block just before </body>
+     It overrides: showAgentView(), showAdminView(), refreshAdmin()
+     and adds all new UI components
+     ═══════════════════════════════════════════════════════════════ -->
+
+<style id="vn-upgrade-styles">
+/* ── AGENT UPGRADE ─────────────────────────────────────── */
+.agent-left-v2{background:rgba(5,10,18,.95);border-right:1px solid rgba(0,255,170,.08);display:flex;flex-direction:column;overflow:hidden}
+.agent-right-v2{display:flex;flex-direction:column;overflow:hidden;background:#030810}
+
+/* Live fields panel */
+.live-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px}
+.lf-field{background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;transition:all .3s;position:relative}
+.lf-field.filling{border-color:var(--green);box-shadow:0 0 16px rgba(0,255,170,.15);animation:fieldPulse .6s ease}
+.lf-field.filled{border-color:rgba(0,255,170,.4);background:rgba(0,255,170,.05)}
+.lf-field.verified{border-color:var(--green);background:rgba(0,255,170,.08)}
+@keyframes fieldPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+.lf-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.lf-value{font-size:13px;font-weight:600;color:var(--text);min-height:20px;font-family:var(--font-body)}
+.lf-value.empty{color:var(--text3);font-weight:400;font-size:11px;font-style:italic}
+.lf-check{font-size:12px;display:none}
+.lf-field.verified .lf-check{display:inline;color:var(--green)}
+.lf-field.filling .lf-value::after{content:'|';animation:blink .7s infinite;color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Full width field */
+.lf-field.full{grid-column:1/-1}
+
+/* Live transcript */
+.live-transcript-box{width:100%;max-width:520px;background:rgba(4,8,16,.9);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;min-height:60px;max-height:100px;overflow-y:auto;font-size:11px;font-family:var(--font-mono);color:var(--text2);line-height:1.7;position:relative}
+.live-transcript-box::before{content:'🎙️ LIVE';position:absolute;top:8px;right:10px;font-size:8px;color:var(--green);letter-spacing:1px;opacity:.6}
+.live-transcript-box .word{display:inline}
+.live-transcript-box .word.new{color:var(--green);font-weight:600;animation:wordIn .3s ease}
+@keyframes wordIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+/* Force extract + stop buttons */
+.agent-action-row{display:flex;gap:8px;width:100%;max-width:520px}
+.btn-force{flex:1;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.25);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-force:hover{background:rgba(56,182,255,.15);box-shadow:0 0 16px rgba(56,182,255,.2)}
+.btn-force:disabled{opacity:.3;cursor:not-allowed}
+.btn-stop-save{flex:2;background:linear-gradient(135deg,#00ffaa,#00cc88);border:none;color:#000;border-radius:10px;padding:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 20px rgba(0,255,170,.3)}
+.btn-stop-save:hover{box-shadow:0 8px 32px rgba(0,255,170,.5);transform:translateY(-1px)}
+.btn-stop-save:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Confidence meter */
+.conf-meter-wrap{width:100%;max-width:520px}
+.conf-meter-bar{height:6px;background:var(--border2);border-radius:4px;overflow:hidden;margin-top:4px}
+.conf-meter-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.2,.8,.3,1),background .3s}
+
+/* Call records table */
+.call-records{width:100%;border-collapse:collapse;font-size:11px}
+.call-records th{font-size:9px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.call-records td{padding:9px 10px;border-bottom:1px solid rgba(20,32,48,.6);color:var(--text2);font-family:var(--font-mono);font-size:11px;vertical-align:middle}
+.call-records td:first-child{color:var(--text);font-family:var(--font-body);font-size:12px;font-weight:600}
+.call-records tr:hover td{background:rgba(0,255,170,.02)}
+.call-records tr:last-child td{border-bottom:none}
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:3px 8px;border-radius:6px;font-family:var(--font-mono);font-weight:700;letter-spacing:.5px}
+.status-badge.patched{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25)}
+.status-badge.draft{background:rgba(255,179,71,.1);color:var(--amber);border:1px solid rgba(255,179,71,.25)}
+.status-badge.review{background:rgba(255,85,102,.1);color:var(--red);border:1px solid rgba(255,85,102,.25)}
+.pin-verified{display:inline-flex;align-items:center;gap:3px;color:var(--green);font-size:10px}
+.pin-unverified{color:var(--text3);font-size:10px}
+
+/* ── ADMIN UPGRADE ─────────────────────────────────────── */
+#adminView.active{display:flex!important;flex-direction:row}
+.admin-sidebar-v2{width:220px;min-width:220px;background:rgba(3,6,12,.98);border-right:1px solid rgba(0,255,170,.06);display:flex;flex-direction:column;flex-shrink:0}
+.admin-sidebar-v2 .brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
+.admin-sidebar-v2 .brand-logo{width:36px;height:36px;background:linear-gradient(135deg,#00ffaa,#00cc88);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;box-shadow:0 0 16px rgba(0,255,170,.3)}
+.admin-sidebar-v2 .brand-name{font-size:13px;font-weight:800;font-family:var(--font-display);color:var(--text)}
+.admin-sidebar-v2 .brand-sub{font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px}
+.admin-nav-v2{display:flex;flex-direction:column;padding:12px 10px;gap:2px;flex:1}
+.admin-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--text2);font-weight:500;border:1px solid transparent}
+.admin-nav-item:hover{background:rgba(0,255,170,.04);color:var(--text)}
+.admin-nav-item.active{background:rgba(0,255,170,.08);color:var(--green);border-color:rgba(0,255,170,.15)}
+.admin-nav-item .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.admin-nav-badge{margin-left:auto;background:rgba(255,85,102,.15);color:var(--red);font-size:9px;padding:2px 7px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(255,85,102,.25)}
+
+.admin-content-v2{flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+
+/* Top bar */
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid rgba(0,255,170,.06);background:rgba(3,6,12,.9);flex-shrink:0;backdrop-filter:blur(16px)}
+.admin-topbar-title{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase}
+.admin-topbar-heading{font-size:22px;font-weight:800;font-family:var(--font-display);color:var(--text);letter-spacing:-.5px;margin-top:2px}
+.admin-topbar-actions{display:flex;gap:10px;align-items:center}
+.btn-open-agent{display:flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(0,255,170,.08);border:1px solid rgba(0,255,170,.25);color:var(--green);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-open-agent:hover{background:rgba(0,255,170,.15);box-shadow:0 0 16px rgba(0,255,170,.2)}
+.btn-signout{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,85,102,.08);border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-signout:hover{background:rgba(255,85,102,.15)}
+.btn-refresh{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(7,13,20,.8);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-refresh:hover{border-color:var(--green);color:var(--green)}
+.btn-refresh.spinning .refresh-icon{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.refresh-icon{display:inline-block}
+.admin-user-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.15);border-radius:20px;font-size:11px;color:var(--green);font-family:var(--font-mono)}
+.admin-user-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:livePulse 1.5s infinite}
+
+/* Stats grid */
+.admin-body{padding:24px 28px;flex:1}
+.stats-grid-v2{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:all .25s;cursor:default}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 14px 14px;opacity:0;transition:opacity .3s}
+.stat-card.green::after{background:linear-gradient(90deg,var(--green2),var(--green));opacity:1}
+.stat-card.amber::after{background:linear-gradient(90deg,var(--amber2),var(--amber));opacity:1}
+.stat-card.blue::after{background:linear-gradient(90deg,#2563eb,var(--blue));opacity:1}
+.stat-card.red::after{background:linear-gradient(90deg,#cc2233,var(--red));opacity:1}
+.stat-card.purple::after{background:linear-gradient(90deg,#7c3aed,var(--purple));opacity:1}
+.stat-card-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.stat-card-icon{font-size:14px;opacity:.5}
+.stat-card-val{font-size:32px;font-weight:700;font-family:var(--font-mono);line-height:1;margin-bottom:4px}
+.stat-card.green .stat-card-val{color:var(--green);text-shadow:0 0 20px rgba(0,255,170,.3)}
+.stat-card.amber .stat-card-val{color:var(--amber);text-shadow:0 0 20px rgba(255,179,71,.3)}
+.stat-card.blue .stat-card-val{color:var(--blue);text-shadow:0 0 20px rgba(56,182,255,.3)}
+.stat-card.red .stat-card-val{color:var(--red)}
+.stat-card.purple .stat-card-val{color:var(--purple)}
+.stat-card-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;overflow:hidden}
+.chart-title{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.chart-title-icon{font-size:12px;opacity:.6}
+
+/* Bar chart */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:20px;position:relative}
+.bar-chart::after{content:'';position:absolute;bottom:20px;left:0;right:0;height:1px;background:rgba(255,255,255,.04)}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar-inner{width:100%;display:flex;align-items:flex-end;flex:1}
+.bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.2,.8,.3,1);min-height:2px;position:relative}
+.bar:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text);font-family:var(--font-mono);white-space:nowrap;background:rgba(7,13,20,.9);padding:2px 6px;border-radius:4px;border:1px solid var(--border2)}
+.bar-lbl{font-size:8px;color:var(--text3);font-family:var(--font-mono);text-align:center}
+
+/* Donut chart */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px}
+.donut-legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);font-family:var(--font-mono)}
+.donut-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-val{margin-left:auto;font-weight:700;font-size:12px}
+
+/* Recent calls table */
+.table-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.table-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
+.table-card-title{font-size:13px;font-weight:700;font-family:var(--font-display)}
+.table-card-actions{display:flex;gap:8px}
+.tbl-search{background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text);outline:none;font-family:var(--font-body);width:160px}
+.tbl-search:focus{border-color:rgba(0,255,170,.4)}
+.tbl-export{padding:6px 14px;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.2);color:var(--blue);border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font-display);font-weight:600}
+
+/* Admin pages */
+.admin-page-v2{display:none}
+.admin-page-v2.active{display:block}
+
+/* Agents page */
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.agent-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:16px;transition:all .25s}
+.agent-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.agent-card-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.agent-avatar{width:40px;height:40px;background:linear-gradient(135deg,rgba(0,255,170,.2),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.agent-card-name{font-size:13px;font-weight:700;color:var(--text);font-family:var(--font-display)}
+.agent-card-id{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.agent-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.agent-stat{text-align:center;background:rgba(12,21,32,.6);border-radius:8px;padding:8px 4px}
+.agent-stat-val{font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--green)}
+.agent-stat-lbl{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.agent-card-footer{display:flex;gap:6px;margin-top:12px}
+.agent-action{flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-display);border:none;transition:all .2s;text-align:center}
+.agent-action.primary{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.2)}
+.agent-action.primary:hover{background:rgba(0,255,170,.18)}
+.agent-action.danger{background:rgba(255,85,102,.08);color:var(--red);border:1px solid rgba(255,85,102,.2)}
+.agent-action.danger:hover{background:rgba(255,85,102,.15)}
+
+/* Online indicator */
+.online-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,170,.6);animation:livePulse 1.5s infinite;flex-shrink:0}
+.offline-dot{width:8px;height:8px;background:var(--text3);border-radius:50%;flex-shrink:0}
+</style>
+
+<script id="vn-agent-admin-upgrade">
+// ═══════════════════════════════════════════════════════
+// AGENT SECTION — 7 auto-filling fields + live transcript
+// ═══════════════════════════════════════════════════════
+
+// Live field state
+const LIVE_FIELDS = {
+  name: { label: 'Customer Name', icon: '👤', value: '', verified: false },
+  phone: { label: 'Phone', icon: '📱', value: '', verified: false },
+  house: { label: 'House / Flat No.', icon: '🏠', value: '', verified: false },
+  street: { label: 'Street / Gali', icon: '🛣️', value: '', verified: false },
+  colony: { label: 'Colony / Sector', icon: '🏘️', value: '', verified: false },
+  city: { label: 'City', icon: '🏙️', value: '', verified: false },
+  pincode: { label: 'Pincode', icon: '📮', value: '', verified: false },
+};
+
+let liveFieldsEl = {};
+let callRecords = [];
+let liveConfidence = 0;
+let currentCallStart = null;
+
+function renderAgentView() {
+  const agentView = document.getElementById('agentView');
+  if (!agentView) return;
+
+  agentView.innerHTML = `
+    <!-- LEFT PANEL — History + Records -->
+    <div class="agent-left-v2">
+      <div class="al-tabs">
+        <div class="al-tab active" onclick="switchAgentTab2('history',this)">History</div>
+        <div class="al-tab" onclick="switchAgentTab2('stats',this)">Stats</div>
+        <div class="al-tab" onclick="switchAgentTab2('records',this)">Records</div>
+      </div>
+
+      <!-- HISTORY TAB -->
+      <div class="al-content active" id="at2-history">
+        <div class="al-empty" id="histEmpty2">No addresses captured yet.<br>Start listening to begin.</div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div class="al-content" id="at2-stats">
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-num" id="s2-today">0</div><div class="stat-lbl">Today</div></div>
+          <div class="stat-box"><div class="stat-num" id="s2-total">0</div><div class="stat-lbl">Total</div></div>
+          <div class="stat-box"><div class="stat-num" id="s2-rate">0%</div><div class="stat-lbl">Success</div></div>
+          <div class="stat-box"><div class="stat-num" id="s2-dup">0</div><div class="stat-lbl">Duplicates</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <button class="al-action-btn" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="al-action-btn danger" onclick="clearHistory()">🗑️ Clear History</button>
+        </div>
+      </div>
+
+      <!-- RECORDS TAB -->
+      <div class="al-content" id="at2-records" style="padding:0">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px">CALL RECORDS</span>
+          <button onclick="exportCallRecords()" style="font-size:10px;color:var(--blue);font-family:var(--font-mono);background:none;border:none;cursor:pointer">📥 Export</button>
+        </div>
+        <div style="overflow-y:auto;flex:1">
+          <table class="call-records" style="width:100%">
+            <thead>
+              <tr>
+                <th>Address</th>
+                <th>Pin</th>
+                <th>Conf</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="callRecordsTbody">
+              <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text3);font-size:11px">No records yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL — Live capture -->
+    <div class="agent-right-v2" style="flex:1;overflow-y:auto">
+      <div style="display:flex;flex-direction:column;align-items:center;padding:20px 24px;gap:16px;min-height:100%">
+
+        <!-- LISTEN BUTTON -->
+        <div class="listen-outer" id="listenOuter2" onclick="toggleListen()">
+          <div class="listen-ring r1"></div><div class="listen-ring r2"></div>
+          <div class="listen-ring r3"></div><div class="listen-ring r4"></div>
+          <div class="listen-btn" id="listenBtn2">
+            <div class="listen-icon" id="listenIcon2">🎙️</div>
+            <div class="listen-lbl" id="listenLbl2">TAP TO START</div>
+          </div>
+        </div>
+
+        <!-- WAVE BARS -->
+        <div class="wave-bars" id="waveBars2">
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+        </div>
+
+        <!-- STATUS -->
+        <div class="agent-status">
+          <div class="as-main" id="asMain2">Tap to start listening</div>
+          <div class="as-sub" id="asSub2">7 strategies · 10 layers · 20 languages</div>
+        </div>
+
+        <!-- STRATEGY INDICATORS -->
+        <div class="strategy-row">
+          <div class="strat" id="s1">S1:AgentQ</div><div class="strat" id="s2">S2:Trigger</div>
+          <div class="strat" id="s3">S3:Context</div><div class="strat" id="s4">S4:Silence</div>
+          <div class="strat" id="s5">S5:Pattern</div><div class="strat" id="s6">S6:Pincode</div>
+          <div class="strat" id="s7">S7:Buffer</div>
+        </div>
+
+        <!-- LAYER DOTS -->
+        <div class="layers-row" id="layersRow2">
+          <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
+          <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
+          <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
+          <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
+          <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
+        </div>
+
+        <!-- LIVE TRANSCRIPT -->
+        <div class="live-transcript-box" id="liveTranscriptBox">
+          <span style="color:var(--text3);font-style:italic">Transcript will appear here as customer speaks…</span>
+        </div>
+
+        <!-- CONFIDENCE METER -->
+        <div class="conf-meter-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px">CONFIDENCE</span>
+            <span id="confPctLive" style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--text3)">0%</span>
+          </div>
+          <div class="conf-meter-bar">
+            <div class="conf-meter-fill" id="confFillLive" style="width:0%;background:var(--border2)"></div>
+          </div>
+        </div>
+
+        <!-- 7 AUTO-FILLING FIELDS -->
+        <div class="live-fields" id="liveFields">
+          <div class="lf-field" id="lff-name">
+            <div class="lf-label">👤 Name <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-name">Listening…</div>
+          </div>
+          <div class="lf-field" id="lff-phone">
+            <div class="lf-label">📱 Phone <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-phone">Listening…</div>
+          </div>
+          <div class="lf-field" id="lff-house">
+            <div class="lf-label">🏠 House / Flat <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-house">Listening…</div>
+          </div>
+          <div class="lf-field" id="lff-street">
+            <div class="lf-label">🛣️ Street / Gali <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-street">Listening…</div>
+          </div>
+          <div class="lf-field full" id="lff-colony">
+            <div class="lf-label">🏘️ Colony / Sector <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-colony">Listening…</div>
+          </div>
+          <div class="lf-field" id="lff-city">
+            <div class="lf-label">🏙️ City <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-city">Listening…</div>
+          </div>
+          <div class="lf-field" id="lff-pincode">
+            <div class="lf-label">📮 Pincode <span class="lf-check">✓</span></div>
+            <div class="lf-value empty" id="lfv-pincode">Listening…</div>
+          </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="agent-action-row" id="agentActionRow">
+          <button class="btn-force" id="btnForceExtract" onclick="forceExtract()" disabled>
+            ⚡ Force Extract
+          </button>
+          <button class="btn-stop-save" id="btnStopSave" onclick="stopAndSave()" disabled>
+            ✅ Stop &amp; Save
+          </button>
+        </div>
+
+        <!-- MANUAL INPUT -->
+        <div class="manual-row" style="width:100%;max-width:520px">
+          <input class="manual-inp" id="manualInp" placeholder="⌨️ Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
+          <button class="manual-go" onclick="manualSearch()">Search</button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  // Sync listen button states
+  syncListenButtons();
+  renderHistoryV2();
+  updateAgentStatsV2();
+}
+
+function syncListenButtons() {
+  // Mirror state between old and new listen buttons
+  const outer = document.getElementById('listenOuter2');
+  const btn = document.getElementById('listenBtn2');
+  const icon = document.getElementById('listenIcon2');
+  const lbl = document.getElementById('listenLbl2');
+  const wave = document.getElementById('waveBars2');
+
+  if (window.isListening) {
+    outer?.classList.add('active');
+    btn?.classList.add('active');
+    if (icon) icon.textContent = '⏹';
+    if (lbl) lbl.textContent = 'TAP TO STOP';
+    wave?.classList.add('active');
+    document.getElementById('btnForceExtract').disabled = false;
+    document.getElementById('btnStopSave').disabled = false;
+  } else {
+    outer?.classList.remove('active');
+    btn?.classList.remove('active');
+    if (icon) icon.textContent = '🎙️';
+    if (lbl) lbl.textContent = 'TAP TO START';
+    wave?.classList.remove('active');
+    document.getElementById('btnForceExtract').disabled = true;
+    document.getElementById('btnStopSave').disabled = true;
+  }
+}
+
+function switchAgentTab2(name, el) {
+  document.querySelectorAll('.al-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.al-content').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('at2-' + name)?.classList.add('active');
+  if (name === 'stats') updateAgentStatsV2();
+}
+
+function updateAgentStatsV2() {
+  const today = new Date().toLocaleDateString('en-IN');
+  const todayCount = (addrHistory || []).filter(a => a.time?.includes(today)).length;
+  const rate = (totalAttempts || 0) > 0 ? Math.round(((successCount || 0) / totalAttempts) * 100) : 0;
+  const dupC = (addrHistory || []).filter(a => a.isDuplicate).length;
+  const ids = ['s2-today', 's2-total', 's2-rate', 's2-dup'];
+  const vals = [todayCount, (addrHistory || []).length, rate + '%', dupC];
+  ids.forEach((id, i) => { const el = document.getElementById(id); if (el) el.textContent = vals[i]; });
+  // Also update topbar
+  const tbt = document.getElementById('tb-today'), tbtot = document.getElementById('tb-total');
+  if (tbt) tbt.textContent = todayCount;
+  if (tbtot) tbtot.textContent = (addrHistory || []).length;
+}
+
+function renderHistoryV2() {
+  const list = document.getElementById('at2-history');
+  const empty = document.getElementById('histEmpty2');
+  if (!list) return;
+  if (!addrHistory || !addrHistory.length) { if (empty) empty.style.display = 'block'; return; }
+  if (empty) empty.style.display = 'none';
+  Array.from(list.children).forEach(c => { if (c !== empty) c.remove(); });
+  addrHistory.slice().reverse().forEach((item, i) => {
+    const idx = addrHistory.length - 1 - i;
+    const div = document.createElement('div');
+    div.className = 'hi-item' + (item.isDuplicate ? ' dup' : '');
+    div.innerHTML = `<div class="hi-addr">${item.address}${item.district ? ', ' + item.district : ''}</div>
+      <div class="hi-meta"><span class="hi-pin">${item.pincode}</span><span class="hi-time">${item.time?.split(',')[1]?.trim() || item.time}</span>${item.state ? `<span class="hi-state">${item.state}</span>` : ''}</div>
+      <div class="hi-btns"><button class="hi-btn" onclick="copyHi(${idx})">📋 Copy</button><button class="hi-btn" onclick="window.open('https://maps.google.com/maps?q='+encodeURIComponent('${item.address.replace(/'/g, "\\'")}'+', India'),'_blank')">🗺️ Maps</button></div>`;
+    list.appendChild(div);
+  });
+}
+
+// Update live fields from extraction result
+function updateLiveFields(parsed) {
+  const fieldMap = {
+    name: parsed.customer_name || parsed.name || '',
+    phone: parsed.phone || parsed.mobile || '',
+    house: parsed.house || parsed.house_number || '',
+    street: parsed.street || parsed.road || '',
+    colony: parsed.colony || parsed.sector || '',
+    city: parsed.city || '',
+    pincode: parsed.pincode || '',
+  };
+
+  let filledCount = 0;
+  Object.entries(fieldMap).forEach(([key, val]) => {
+    if (!val) return;
+    filledCount++;
+    const fieldEl = document.getElementById('lff-' + key);
+    const valEl = document.getElementById('lfv-' + key);
+    if (!valEl) return;
+    valEl.textContent = val;
+    valEl.classList.remove('empty');
+    if (fieldEl) {
+      fieldEl.classList.add('filling');
+      setTimeout(() => {
+        fieldEl.classList.remove('filling');
+        fieldEl.classList.add('filled');
+        // Verify pincode
+        if (key === 'pincode' && val.match(/^\d{6}$/)) {
+          fieldEl.classList.add('verified');
+          toast('📮 Pincode ' + val + ' verified! ✓');
+        }
+      }, 600);
+    }
+  });
+
+  // Update confidence
+  const conf = parsed.confidence || Math.min(filledCount * 14, 95);
+  updateConfidenceLive(conf);
+}
+
+function updateConfidenceLive(pct) {
+  liveConfidence = pct;
+  const fill = document.getElementById('confFillLive');
+  const pctEl = document.getElementById('confPctLive');
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.style.background = pct >= 80 ? 'linear-gradient(90deg,var(--green2),var(--green))' :
+      pct >= 55 ? 'linear-gradient(90deg,var(--amber2),var(--amber))' :
+      'linear-gradient(90deg,#cc2233,var(--red))';
+  }
+  if (pctEl) {
+    pctEl.textContent = pct + '%';
+    pctEl.style.color = pct >= 80 ? 'var(--green)' : pct >= 55 ? 'var(--amber)' : 'var(--red)';
+  }
+}
+
+function updateLiveTranscript(text) {
+  const box = document.getElementById('liveTranscriptBox');
+  if (!box || !text) return;
+  box.innerHTML = text.split(' ').map((w, i) =>
+    `<span class="word${i === text.split(' ').length - 1 ? ' new' : ''}">${w} </span>`
+  ).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function resetLiveFields() {
+  Object.keys(LIVE_FIELDS).forEach(key => {
+    const fieldEl = document.getElementById('lff-' + key);
+    const valEl = document.getElementById('lfv-' + key);
+    if (valEl) { valEl.textContent = 'Listening…'; valEl.classList.add('empty'); }
+    if (fieldEl) { fieldEl.classList.remove('filling', 'filled', 'verified'); }
+  });
+  updateConfidenceLive(0);
+  const box = document.getElementById('liveTranscriptBox');
+  if (box) box.innerHTML = '<span style="color:var(--text3);font-style:italic">Transcript will appear here as customer speaks…</span>';
+}
+
+function forceExtract() {
+  if (!window.currentTranscript || !window.currentTranscript.trim()) {
+    toast('⚠️ Nothing to extract yet', 'err'); return;
+  }
+  toast('⚡ Force extracting…');
+  if (typeof extractAndVerify === 'function') extractAndVerify(window.currentTranscript);
+}
+
+function stopAndSave() {
+  if (typeof stopListen === 'function') stopListen();
+  syncListenButtons();
+  // Collect filled fields
+  const addr = [
+    document.getElementById('lfv-house')?.textContent,
+    document.getElementById('lfv-street')?.textContent,
+    document.getElementById('lfv-colony')?.textContent,
+    document.getElementById('lfv-city')?.textContent,
+  ].filter(v => v && !v.includes('Listening')).join(', ');
+  const pin = document.getElementById('lfv-pincode')?.textContent || '';
+  const name = document.getElementById('lfv-name')?.textContent || '';
+  const pinOk = pin.match(/^\d{6}$/);
+
+  if (addr || pin) {
+    // Save to call records
+    const rec = {
+      id: 'CR' + Date.now(),
+      address: addr || window.currentTranscript || 'Draft',
+      pincode: pin,
+      name: name,
+      confidence: liveConfidence,
+      status: liveConfidence >= 70 ? 'patched' : liveConfidence >= 40 ? 'draft' : 'review',
+      pinVerified: !!pinOk,
+      time: new Date().toLocaleString('en-IN'),
+      duration: currentCallStart ? Math.round((Date.now() - currentCallStart) / 1000) : 0,
+    };
+    callRecords.unshift(rec);
+    renderCallRecords();
+    if (typeof confirmAddr === 'function' && window.currentResult) confirmAddr();
+    toast('✅ Call saved — ' + rec.status.toUpperCase());
+  } else {
+    toast('⚠️ No address captured yet', 'warn');
+  }
+  resetLiveFields();
+  currentCallStart = null;
+  document.getElementById('btnForceExtract').disabled = true;
+  document.getElementById('btnStopSave').disabled = true;
+}
+
+function renderCallRecords() {
+  const tbody = document.getElementById('callRecordsTbody');
+  if (!tbody) return;
+  if (!callRecords.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text3);font-size:11px">No records yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = callRecords.map(r => `
+    <tr>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.address}">${r.address.substring(0, 28)}…</td>
+      <td>${r.pinVerified ? `<span class="pin-verified">✓ ${r.pincode}</span>` : `<span class="pin-unverified">${r.pincode || '—'}</span>`}</td>
+      <td style="color:${r.confidence >= 70 ? 'var(--green)' : r.confidence >= 40 ? 'var(--amber)' : 'var(--red)'};font-weight:700">${r.confidence}%</td>
+      <td><span class="status-badge ${r.status}">${r.status}</span></td>
+    </tr>`).join('');
+}
+
+function exportCallRecords() {
+  if (!callRecords.length) { toast('No records to export', 'err'); return; }
+  const hdr = 'ID,Address,Pincode,Name,Confidence,Status,Time\n';
+  const rows = callRecords.map(r => `"${r.id}","${r.address}","${r.pincode}","${r.name}","${r.confidence}%","${r.status}","${r.time}"`).join('\n');
+  const blob = new Blob([hdr + rows], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'call_records.csv'; a.click();
+  toast('📥 Exported!');
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN SECTION — Beautiful dashboard like the screenshot
+// ═══════════════════════════════════════════════════════
+
+function renderAdminView() {
+  const adminView = document.getElementById('adminView');
+  if (!adminView) return;
+
+  const companies = getData('vn_companies', []);
+  const agents = getData('vn_agents', []);
+  const addresses = getData('vn_addresses', []);
+  const today = new Date().toLocaleDateString('en-IN');
+  const activeToday = agents.filter(a => a.lastActive?.includes(today)).length;
+  const patchedCount = addresses.filter(a => (a.confidence || 0) >= 70).length;
+  const draftCount = addresses.filter(a => (a.confidence || 0) < 70 && (a.confidence || 0) >= 40).length;
+  const reviewCount = addresses.filter(a => (a.confidence || 0) < 40).length;
+  const avgConf = addresses.length ? Math.round(addresses.reduce((s, a) => s + (a.confidence || 0), 0) / addresses.length) : 0;
+  const pinVerifiedCount = addresses.filter(a => a.pincode && a.pincode !== 'N/A').length;
+  const pinRate = addresses.length ? Math.round((pinVerifiedCount / addresses.length) * 100) : 0;
+
+  // Build hourly data (last 24h)
+  const hourlyData = buildHourlyData(addresses);
+  const maxHourly = Math.max(...hourlyData.map(h => h.count), 1);
+
+  adminView.innerHTML = `
+    <!-- SIDEBAR -->
+    <div class="admin-sidebar-v2">
+      <div class="brand">
+        <div class="brand-logo">🧭</div>
+        <div class="brand-name">Vishal Navigation</div>
+        <div class="brand-sub">CORPORATE · ADMIN</div>
+      </div>
+      <div class="admin-nav-v2">
+        <div class="admin-nav-item active" id="anav-dashboard" onclick="switchAdminV2('dashboard',this)">
+          <span class="nav-icon">📊</span> Dashboard
+        </div>
+        <div class="admin-nav-item" id="anav-agents" onclick="switchAdminV2('agents',this)">
+          <span class="nav-icon">👤</span> Agents
+          <span class="admin-nav-badge" style="background:rgba(0,255,170,.1);color:var(--green);border-color:rgba(0,255,170,.2)">${agents.length}</span>
+        </div>
+        <div class="admin-nav-item" id="anav-allcalls" onclick="switchAdminV2('allcalls',this)">
+          <span class="nav-icon">📞</span> All Calls
+          <span class="admin-nav-badge">${addresses.length}</span>
+        </div>
+        <div class="admin-nav-item" id="anav-companies" onclick="switchAdminV2('companies',this)">
+          <span class="nav-icon">🏢</span> Companies
+        </div>
+        <div class="admin-nav-item" id="anav-activity" onclick="switchAdminV2('activity',this)">
+          <span class="nav-icon">⚡</span> Activity
+        </div>
+        <div class="admin-nav-item" id="anav-settings" onclick="switchAdminV2('settings',this)">
+          <span class="nav-icon">⚙️</span> Settings
+        </div>
+      </div>
+      <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.04)">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px;letter-spacing:1px">⚔️ COUNCIL STATUS</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span id="cs-naruto" class="council-status-pill">🍥</span>
+          <span id="cs-sasuke" class="council-status-pill">⚡</span>
+          <span id="cs-sakura" class="council-status-pill">🌸</span>
+          <span id="cs-itachi" class="council-status-pill">👁️</span>
+          <span id="cs-shikamaru" class="council-status-pill">🧠</span>
+          <span id="cs-jiraiya" class="council-status-pill">📖</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="admin-content-v2">
+
+      <!-- TOP BAR -->
+      <div class="admin-topbar">
+        <div>
+          <div class="admin-topbar-title">CORPORATE OVERVIEW</div>
+          <div class="admin-topbar-heading" id="adminPageHeading">Operations Dashboard</div>
+        </div>
+        <div class="admin-topbar-actions">
+          <div class="admin-user-chip"><span class="admin-user-dot"></span>ADMIN</div>
+          <button class="btn-open-agent" onclick="agentLogout();showLogin('agent')">
+            <span style="font-size:14px">🎙️</span> Open Agent
+          </button>
+          <button class="btn-refresh" id="btnRefreshAdmin" onclick="refreshAdminV2()">
+            <span class="refresh-icon">↻</span> Refresh
+          </button>
+          <button class="btn-signout" onclick="backToLanding()">
+            <span style="font-size:13px">→</span> Sign Out
+          </button>
+        </div>
+      </div>
+
+      <!-- PAGES -->
+      <div class="admin-body">
+
+        <!-- DASHBOARD PAGE -->
+        <div class="admin-page-v2 active" id="apv2-dashboard">
+
+          <!-- STATS ROW 1 -->
+          <div class="stats-grid-v2">
+            <div class="stat-card green">
+              <div class="stat-card-label">TODAY <span class="stat-card-icon">📞</span></div>
+              <div class="stat-card-val">${addresses.filter(a => a.time?.includes(today)).length}</div>
+              <div class="stat-card-sub">${addresses.length} this week</div>
+            </div>
+            <div class="stat-card amber">
+              <div class="stat-card-label">PATCHED <span class="stat-card-icon">✅</span></div>
+              <div class="stat-card-val">${patchedCount}</div>
+              <div class="stat-card-sub">${addresses.length ? Math.round((patchedCount / addresses.length) * 100) : 0}% success</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-card-label">DRAFTS <span class="stat-card-icon">📝</span></div>
+              <div class="stat-card-val">${draftCount}</div>
+              <div class="stat-card-sub">In progress</div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-card-label">NEEDS REVIEW <span class="stat-card-icon">⚠️</span></div>
+              <div class="stat-card-val">${reviewCount}</div>
+              <div class="stat-card-sub">conf &lt; 40%</div>
+            </div>
+          </div>
+
+          <!-- STATS ROW 2 -->
+          <div class="stats-grid-v2" style="margin-bottom:20px">
+            <div class="stat-card green">
+              <div class="stat-card-label">ACTIVE AGENTS <span class="stat-card-icon">👤</span></div>
+              <div class="stat-card-val">${activeToday}/${agents.length}</div>
+              <div class="stat-card-sub">online today</div>
+            </div>
+            <div class="stat-card purple">
+              <div class="stat-card-label">AVG CONFIDENCE <span class="stat-card-icon">📈</span></div>
+              <div class="stat-card-val">${avgConf}%</div>
+              <div class="stat-card-sub">across all calls</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-card-label">AVG DURATION <span class="stat-card-icon">⏱️</span></div>
+              <div class="stat-card-val">${getAvgDuration(addresses)}</div>
+              <div class="stat-card-sub">per call</div>
+            </div>
+            <div class="stat-card amber">
+              <div class="stat-card-label">PIN VERIFIED RATE <span class="stat-card-icon">📮</span></div>
+              <div class="stat-card-val">${pinRate}%</div>
+              <div class="stat-card-sub">of patched</div>
+            </div>
+          </div>
+
+          <!-- CHARTS ROW -->
+          <div class="charts-row">
+            <!-- Bar chart -->
+            <div class="chart-card">
+              <div class="chart-title"><span class="chart-title-icon">📊</span> HOURLY VOLUME (LAST 24H)</div>
+              <div class="bar-chart">
+                ${hourlyData.map(h => `
+                  <div class="bar-wrap">
+                    <div class="bar-inner">
+                      <div class="bar" data-val="${h.count}"
+                        style="height:${Math.max((h.count / maxHourly) * 100, 4)}%;background:${h.count > 0 ? 'linear-gradient(180deg,var(--amber),var(--amber2))' : 'var(--border2)'}">
+                      </div>
+                    </div>
+                    <div class="bar-lbl">${h.label}</div>
+                  </div>`).join('')}
+              </div>
+            </div>
+
+            <!-- Donut chart -->
+            <div class="chart-card">
+              <div class="chart-title"><span class="chart-title-icon">📈</span> CONFIDENCE DISTRIBUTION</div>
+              <div class="donut-wrap">
+                ${buildDonutChart(patchedCount, draftCount, reviewCount)}
+                <div class="donut-legend">
+                  <div class="donut-legend-item">
+                    <div class="donut-dot" style="background:var(--green)"></div>
+                    Patched
+                    <span class="donut-val" style="color:var(--green)">${patchedCount}</span>
+                  </div>
+                  <div class="donut-legend-item">
+                    <div class="donut-dot" style="background:var(--amber)"></div>
+                    Drafts
+                    <span class="donut-val" style="color:var(--amber)">${draftCount}</span>
+                  </div>
+                  <div class="donut-legend-item">
+                    <div class="donut-dot" style="background:var(--red)"></div>
+                    Review
+                    <span class="donut-val" style="color:var(--red)">${reviewCount}</span>
+                  </div>
+                  <div class="donut-legend-item" style="margin-top:4px;border-top:1px solid var(--border);padding-top:8px">
+                    <div class="donut-dot" style="background:var(--text3)"></div>
+                    Total
+                    <span class="donut-val" style="color:var(--text)">${addresses.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RECENT ADDRESSES -->
+          <div class="table-card">
+            <div class="table-card-hdr">
+              <div class="table-card-title">Recent Addresses</div>
+              <div class="table-card-actions">
+                <input class="tbl-search" placeholder="Search…" oninput="filterAddressesV2(this.value)"/>
+                <button class="tbl-export" onclick="exportAllCSV()">📥 Export All</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse">
+                <thead>
+                  <tr>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Address</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Pincode</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Agent</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Company</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Conf</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Status</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Time</th>
+                  </tr>
+                </thead>
+                <tbody id="dashAddrV2">
+                  ${buildAddressRows(addresses.slice(-10).reverse(), agents, companies)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- AGENTS PAGE -->
+        <div class="admin-page-v2" id="apv2-agents">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+            <div>
+              <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">MANAGE</div>
+              <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Agents</div>
+            </div>
+            <button onclick="switchAdminV2('addagent',document.getElementById('anav-agents'))" style="padding:9px 18px;background:linear-gradient(135deg,var(--green2),var(--green));border:none;color:#000;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">+ Add Agent</button>
+          </div>
+          <div class="agents-grid">
+            ${buildAgentCards(agents, companies, addresses)}
+          </div>
+        </div>
+
+        <!-- ALL CALLS PAGE -->
+        <div class="admin-page-v2" id="apv2-allcalls">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">ALL RECORDS</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">All Calls</div>
+          </div>
+          <div class="table-card">
+            <div class="table-card-hdr">
+              <div class="table-card-title">Address Log (${addresses.length})</div>
+              <div class="table-card-actions">
+                <input class="tbl-search" placeholder="Search…" oninput="filterAddressesV2(this.value)"/>
+                <button class="tbl-export" onclick="exportAllCSV()">📥 Export All</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto;max-height:500px;overflow-y:auto">
+              <table style="width:100%;border-collapse:collapse">
+                <thead style="position:sticky;top:0;background:rgba(5,10,18,.98)">
+                  <tr>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 16px;border-bottom:1px solid var(--border);text-align:left;letter-spacing:1px;text-transform:uppercase">Address</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left">Pincode</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left">District</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left">State</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left">Agent</th>
+                    <th style="font-size:9px;font-family:var(--font-mono);color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border);text-align:left">Time</th>
+                  </tr>
+                </thead>
+                <tbody id="allCallsTbody">
+                  ${buildAllCallsRows(addresses.slice().reverse(), agents, companies)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPANIES PAGE -->
+        <div class="admin-page-v2" id="apv2-companies">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">MANAGE</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Companies</div>
+          </div>
+          <div class="table-card" style="margin-bottom:20px">
+            <div class="table-card-hdr"><div class="table-card-title">Add Company</div></div>
+            <div style="padding:20px">
+              <div class="admin-form">
+                <div><label class="af-label">Company Name</label><input class="af-inp" id="c-name" placeholder="ABC Sales Pvt Ltd"/></div>
+                <div><label class="af-label">Login ID</label><input class="af-inp" id="c-id" placeholder="abc_sales"/></div>
+                <div><label class="af-label">Password</label><input class="af-inp" type="password" id="c-pass" placeholder="Password"/></div>
+                <div><label class="af-label">Email</label><input class="af-inp" id="c-email" placeholder="company@email.com"/></div>
+              </div>
+              <div style="margin-top:14px"><button class="a-btn green" onclick="addCompany()">+ Create Company</button></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-card-hdr"><div class="table-card-title">All Companies (${companies.length})</div></div>
+            <div style="overflow-x:auto">
+              <table class="admin-table" style="width:100%">
+                <thead><tr><th>Name</th><th>ID</th><th>Agents</th><th>Addresses</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="companies-table">${buildCompaniesRows(companies, agents, addresses)}</tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADD AGENT PAGE -->
+        <div class="admin-page-v2" id="apv2-addagent">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">CREATE</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Add New Agent</div>
+          </div>
+          <div class="table-card">
+            <div class="table-card-hdr"><div class="table-card-title">Agent Details</div></div>
+            <div style="padding:20px">
+              <div class="admin-form">
+                <div><label class="af-label">Full Name</label><input class="af-inp" id="a-name" placeholder="Rahul Kumar"/></div>
+                <div><label class="af-label">Agent ID</label><input class="af-inp" id="a-id" placeholder="agent_001"/></div>
+                <div><label class="af-label">Password</label><input class="af-inp" type="password" id="a-pass" placeholder="Password"/></div>
+                <div><label class="af-label">Company</label><select class="af-select" id="a-company">${companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}</select></div>
+              </div>
+              <div style="margin-top:14px;display:flex;gap:10px">
+                <button class="a-btn green" onclick="addAgent();switchAdminV2('agents',document.getElementById('anav-agents'))">+ Create Agent</button>
+                <button onclick="switchAdminV2('agents',document.getElementById('anav-agents'))" style="padding:9px 16px;background:none;border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:12px;cursor:pointer;font-family:var(--font-body)">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVITY PAGE -->
+        <div class="admin-page-v2" id="apv2-activity">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">LIVE</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Activity Feed</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${buildActivityFeed(addresses.slice(-15).reverse(), agents)}
+          </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div class="admin-page-v2" id="apv2-settings">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">CONFIGURE</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Settings</div>
+          </div>
+          <div class="table-card" style="margin-bottom:16px">
+            <div class="table-card-hdr"><div class="table-card-title">Change Admin Password</div></div>
+            <div style="padding:20px">
+              <div class="admin-form">
+                <div><label class="af-label">Current Password</label><input class="af-inp" type="password" id="currPass"/></div>
+                <div><label class="af-label">New Password</label><input class="af-inp" type="password" id="newPass"/></div>
+                <div class="full"><label class="af-label">Confirm New Password</label><input class="af-inp" type="password" id="confPass"/></div>
+              </div>
+              <div style="margin-top:14px"><button class="a-btn green" onclick="changeAdminPass()">Update Password</button></div>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-card-hdr"><div class="table-card-title" style="color:var(--red)">⚠️ Danger Zone</div></div>
+            <div style="padding:20px">
+              <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
+              <div style="margin-top:8px;font-size:11px;color:var(--text3)">Permanently deletes all companies, agents and addresses.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// ── Helper functions ──────────────────────────────────────
+
+function buildHourlyData(addresses) {
+  const now = new Date();
+  const data = [];
+  for (let i = 23; i >= 0; i -= 3) {
+    const h = new Date(now - i * 3600000);
+    const label = h.getHours().toString().padStart(2, '0');
+    const count = addresses.filter(a => {
+      if (!a.time) return false;
+      try {
+        const t = new Date(a.time);
+        return Math.abs(t - h) < 5400000;
+      } catch { return false; }
+    }).length;
+    data.push({ label, count });
+  }
+  return data;
+}
+
+function buildDonutChart(patched, draft, review) {
+  const total = patched + draft + review || 1;
+  const size = 120, cx = 60, cy = 60, r = 44, stroke = 14;
+  const circ = 2 * Math.PI * r;
+  const pPct = patched / total, dPct = draft / total, rPct = review / total;
+  const pDash = circ * pPct, dDash = circ * dPct, rDash = circ * rPct;
+  const pOff = 0, dOff = -pDash, rOff = -(pDash + dDash);
+
+  return `<svg class="donut-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border2)" stroke-width="${stroke}"/>
+    ${patched > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--green)" stroke-width="${stroke}"
+      stroke-dasharray="${pDash} ${circ - pDash}" stroke-dashoffset="${circ / 4}" transform="rotate(-90 ${cx} ${cy})"
+      style="filter:drop-shadow(0 0 6px rgba(0,255,170,.4))"/>` : ''}
+    ${draft > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--amber)" stroke-width="${stroke}"
+      stroke-dasharray="${dDash} ${circ - dDash}" stroke-dashoffset="${circ / 4 - pDash}" transform="rotate(-90 ${cx} ${cy})"/>` : ''}
+    ${review > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--red)" stroke-width="${stroke}"
+      stroke-dasharray="${rDash} ${circ - rDash}" stroke-dashoffset="${circ / 4 - pDash - dDash}" transform="rotate(-90 ${cx} ${cy})"/>` : ''}
+    <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="var(--text)">${total}</text>
+    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-family="var(--font-mono)" font-size="9" fill="var(--text3)">TOTAL</text>
+  </svg>`;
+}
+
+function buildAddressRows(addresses, agents, companies) {
+  if (!addresses.length) return '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No addresses yet</td></tr>';
+  return addresses.map(a => {
+    const ag = agents.find(ag => ag.id === a.agentId);
+    const co = companies.find(c => c.id === a.companyId);
+    const conf = a.confidence || 0;
+    const status = conf >= 70 ? 'patched' : conf >= 40 ? 'draft' : 'review';
+    return `<tr>
+      <td style="padding:10px 16px;color:var(--text);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid rgba(20,32,48,.6)">${a.address}</td>
+      <td style="padding:10px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${a.pincode || 'N/A'}</td>
+      <td style="padding:10px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${ag?.name || '—'}</td>
+      <td style="padding:10px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${co?.name || '—'}</td>
+      <td style="padding:10px 12px;font-family:var(--font-mono);font-size:11px;font-weight:700;border-bottom:1px solid rgba(20,32,48,.6);color:${conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--amber)' : 'var(--red)'}">${conf}%</td>
+      <td style="padding:10px 12px;border-bottom:1px solid rgba(20,32,48,.6)"><span class="status-badge ${status}">${status}</span></td>
+      <td style="padding:10px 12px;color:var(--text3);font-family:var(--font-mono);font-size:10px;border-bottom:1px solid rgba(20,32,48,.6)">${a.time?.split(',')[1]?.trim() || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildAllCallsRows(addresses, agents, companies) {
+  if (!addresses.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No addresses yet</td></tr>';
+  return addresses.map(a => {
+    const ag = agents.find(ag => ag.id === a.agentId);
+    return `<tr>
+      <td style="padding:9px 16px;color:var(--text);font-size:12px;border-bottom:1px solid rgba(20,32,48,.5);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.address}</td>
+      <td style="padding:9px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.pincode || '—'}</td>
+      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.district || '—'}</td>
+      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.state || '—'}</td>
+      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${ag?.name || '—'}</td>
+      <td style="padding:9px 12px;color:var(--text3);font-family:var(--font-mono);font-size:10px;border-bottom:1px solid rgba(20,32,48,.5)">${a.time?.split(',')[1]?.trim() || ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildAgentCards(agents, companies, addresses) {
+  if (!agents.length) return '<div style="color:var(--text3);font-size:12px;font-family:var(--font-mono);grid-column:1/-1;padding:20px">No agents yet. <a href="#" onclick="switchAdminV2(\'addagent\',document.getElementById(\'anav-agents\'))" style="color:var(--green)">Add one →</a></div>';
+  const today = new Date().toLocaleDateString('en-IN');
+  return agents.map(a => {
+    const co = companies.find(c => c.id === a.companyId);
+    const aAd = addresses.filter(addr => addr.agentId === a.id).length;
+    const isOnline = a.lastActive?.includes(today);
+    const avgConf = aAd > 0 ? Math.round(addresses.filter(addr => addr.agentId === a.id).reduce((s, addr) => s + (addr.confidence || 0), 0) / aAd) : 0;
+    return `<div class="agent-card">
+      <div class="agent-card-top">
+        <div class="agent-avatar">👤</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="agent-card-name">${a.name}</div>
+            <div class="${isOnline ? 'online-dot' : 'offline-dot'}" title="${isOnline ? 'Online today' : 'Offline'}"></div>
+          </div>
+          <div class="agent-card-id">${a.id} · ${co?.name || 'No company'}</div>
+        </div>
+      </div>
+      <div class="agent-card-stats">
+        <div class="agent-stat"><div class="agent-stat-val">${aAd}</div><div class="agent-stat-lbl">Calls</div></div>
+        <div class="agent-stat"><div class="agent-stat-val" style="color:${avgConf >= 70 ? 'var(--green)' : avgConf >= 40 ? 'var(--amber)' : 'var(--red)'}">${avgConf}%</div><div class="agent-stat-lbl">Avg Conf</div></div>
+        <div class="agent-stat"><div class="agent-stat-val" style="color:${isOnline ? 'var(--green)' : 'var(--text3)'}">${isOnline ? '🟢' : '⚫'}</div><div class="agent-stat-lbl">Status</div></div>
+      </div>
+      <div class="agent-card-footer">
+        <button class="agent-action primary" onclick="resetPass('${a.id}')">Reset Pass</button>
+        <button class="agent-action danger" onclick="deleteAgent('${a.id}');refreshAdminV2()">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildCompaniesRows(companies, agents, addresses) {
+  if (!companies.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No companies yet</td></tr>';
+  return companies.map(c => {
+    const cAg = agents.filter(a => a.companyId === c.id).length;
+    const cAd = addresses.filter(a => a.companyId === c.id).length;
+    return `<tr>
+      <td>${c.name}</td>
+      <td style="font-family:var(--font-mono);color:var(--blue)">${c.id}</td>
+      <td>${cAg}</td><td>${cAd}</td>
+      <td><span class="badge ${c.active ? 'on' : 'off'}">${c.active ? 'Active' : 'Inactive'}</span></td>
+      <td style="display:flex;gap:5px">
+        <button class="a-btn blue" style="padding:4px 8px;font-size:10px" onclick="toggleCompany('${c.id}');refreshAdminV2()">${c.active ? 'Deactivate' : 'Activate'}</button>
+        <button class="a-btn red" style="padding:4px 8px;font-size:10px" onclick="deleteCompany('${c.id}');refreshAdminV2()">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function buildActivityFeed(addresses, agents) {
+  if (!addresses.length) return '<div style="color:var(--text3);font-size:12px;font-family:var(--font-mono);padding:20px">No activity yet</div>';
+  return addresses.map(a => {
+    const ag = agents.find(ag => ag.id === a.agentId);
+    const conf = a.confidence || 0;
+    const icon = conf >= 70 ? '✅' : conf >= 40 ? '📝' : '⚠️';
+    const color = conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--amber)' : 'var(--red)';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(5,10,18,.8);border:1px solid var(--border);border-radius:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+      <div style="font-size:18px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.address}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">${ag?.name || 'Unknown'} · ${a.pincode || 'No pin'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:${color}">${conf}%</div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono)">${a.time?.split(',')[1]?.trim() || ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getAvgDuration(addresses) {
+  const withDur = addresses.filter(a => a.duration > 0);
+  if (!withDur.length) return '—';
+  const avg = Math.round(withDur.reduce((s, a) => s + a.duration, 0) / withDur.length);
+  return avg >= 60 ? Math.floor(avg / 60) + 'm ' + (avg % 60) + 's' : avg + 's';
+}
+
+function switchAdminV2(page, el) {
+  document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.admin-page-v2').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const pageEl = document.getElementById('apv2-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  const headings = {
+    dashboard: 'Operations Dashboard', agents: 'Agent Management',
+    allcalls: 'All Calls', companies: 'Companies', activity: 'Activity Feed',
+    settings: 'Settings', addagent: 'Add New Agent'
+  };
+  const h = document.getElementById('adminPageHeading');
+  if (h) h.textContent = headings[page] || 'Dashboard';
+}
+
+function refreshAdminV2() {
+  const btn = document.getElementById('btnRefreshAdmin');
+  if (btn) btn.classList.add('spinning');
+  setTimeout(() => {
+    renderAdminView();
+    if (btn) btn.classList.remove('spinning');
+    toast('✅ Dashboard refreshed');
+  }, 600);
+}
+
+function filterAddressesV2(v) {
+  const addresses = getData('vn_addresses', []);
+  const agents = getData('vn_agents', []);
+  const companies = getData('vn_companies', []);
+  const filtered = v ? addresses.filter(a =>
+    a.address?.toLowerCase().includes(v.toLowerCase()) ||
+    (a.pincode || '').includes(v) ||
+    (a.district || '').toLowerCase().includes(v.toLowerCase())
+  ) : addresses.slice(-10).reverse();
+
+  const tbody1 = document.getElementById('dashAddrV2');
+  const tbody2 = document.getElementById('allCallsTbody');
+  const rows = buildAddressRows(filtered.slice(0, 20), agents, companies);
+  const allRows = buildAllCallsRows(filtered, agents, companies);
+  if (tbody1) tbody1.innerHTML = rows;
+  if (tbody2) tbody2.innerHTML = allRows;
+}
+
+// ── Override showAgentView and showAdminView ──────────────
+
+const _origShowAgentView2 = typeof showAgentView === 'function' ? showAgentView : function(){};
+window.showAgentView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.add('active');
+  document.getElementById('adminView').classList.remove('active');
+
+  document.getElementById('tbCenter').innerHTML = `<span class="tb-badge live">LIVE</span><span class="tb-badge">👤 ${currentAgent?.name || 'Agent'} · ${currentCompany?.name || ''}</span>`;
+  document.getElementById('tbRight').innerHTML = `
+    <div class="qual-row"><div class="qual-bars" id="qualBars"><span></span><span></span><span></span><span></span></div><span class="qual-lbl" id="qualLbl">No audio</span></div>
+    <div class="tb-sep"></div>
+    <div class="tb-stat"><div class="tb-stat-val" id="tb-today">0</div><div class="tb-stat-lbl">Today</div></div>
+    <div class="tb-stat"><div class="tb-stat-val" id="tb-total">0</div><div class="tb-stat-lbl">Total</div></div>
+    <div class="tb-sep"></div>
+    <button class="tb-btn danger" onclick="agentLogout()">Logout</button>`;
+
+  renderAgentView();
+  currentMode = 'agent';
+  currentCallStart = Date.now();
+  setTimeout(startAgentTracking, 500);
+};
+
+const _origShowAdminView2 = typeof showAdminView === 'function' ? showAdminView : function(){};
+window.showAdminView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.remove('active');
+  document.getElementById('adminView').classList.add('active');
+  // Hide old topbar for admin — admin has its own
+  document.getElementById('tbCenter').innerHTML = '';
+  document.getElementById('tbRight').innerHTML = '';
+  document.querySelector('.topbar').style.display = 'none';
+  renderAdminView();
+  currentMode = 'admin';
+};
+
+// Restore topbar when leaving admin
+const _origBackToLanding2 = typeof backToLanding === 'function' ? backToLanding : function(){};
+window.backToLanding = function() {
+  document.querySelector('.topbar').style.display = '';
+  _origBackToLanding2();
+};
+
+// Patch extractAndVerify to also update live fields
+const _origExtractAndVerify = typeof extractAndVerify === 'function' ? extractAndVerify : null;
+if (_origExtractAndVerify) {
+  const _patched = async function(transcript) {
+    await _origExtractAndVerify(transcript);
+    // After extraction, try to update live fields from currentResult
+    if (window.currentResult) {
+      updateLiveFields({
+        house: window.currentResult.house,
+        street: window.currentResult.street,
+        colony: window.currentResult.colony,
+        city: window.currentResult.city,
+        pincode: window.currentResult.pincode,
+        confidence: window.currentResult.confidence,
+      });
+    }
+  };
+  window.extractAndVerify = _patched;
+}
+
+// Patch currentTranscript updates to show in live transcript box
+const origTranscribeChunk = typeof transcribeChunk === 'function' ? transcribeChunk : null;
+if (origTranscribeChunk) {
+  window.transcribeChunk = async function(blob) {
+    await origTranscribeChunk(blob);
+    if (window.currentTranscript) updateLiveTranscript(window.currentTranscript);
+    syncListenButtons();
+  };
+}
+
+// Patch toggleListen to sync buttons
+const _origToggleListen = typeof toggleListen === 'function' ? toggleListen : null;
+if (_origToggleListen) {
+  window.toggleListen = async function() {
+    await _origToggleListen();
+    syncListenButtons();
+    if (window.isListening) currentCallStart = Date.now();
+  };
+}
+
+// Patch setStatus to also update v2 status elements
+const _origSetStatus = typeof setStatus === 'function' ? setStatus : null;
+if (_origSetStatus) {
+  window.setStatus = function(main, type, sub) {
+    _origSetStatus(main, type, sub);
+    const m2 = document.getElementById('asMain2');
+    const s2 = document.getElementById('asSub2');
+    if (m2) { m2.textContent = main; m2.className = 'as-main ' + (type || ''); }
+    if (s2 && sub !== undefined) s2.textContent = sub;
+  };
+}
+
+// Also patch updateLayerUI to work with v2 layers
+const _origUpdateLayerUI = typeof updateLayerUI === 'function' ? updateLayerUI : null;
+if (_origUpdateLayerUI) {
+  window.updateLayerUI = function(active, warn) {
+    _origUpdateLayerUI(active, warn);
+    for (let i = 1; i <= 10; i++) {
+      const el = document.getElementById('l' + i);
+      if (!el) continue;
+      if (i <= active) el.className = 'layer-dot' + (warn && i === active ? ' warn' : ' active');
+      else el.className = 'layer-dot';
+    }
+  };
+}
+
+console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
+</script>
 </body>
 </html>
