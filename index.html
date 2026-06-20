@@ -2253,14 +2253,12 @@ async function toggleListen(){
 async function startListen(){
   try{
     let stream;
-    // Try browser audio first (S2 - customer voice only from web dialer)
     try{
-      stream=await navigator.mediaDevices.getDisplayMedia({audio:{echoCancellation:true,noiseSuppression:true,sampleRate:16000},video:false});
-      toast('✅ Capturing call audio — customer voice only!');
-      document.getElementById('s2').classList.add('fired'); // S2 strategy active
-    }catch(e){
       stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,sampleRate:16000}});
       toast('🎙️ Using microphone');
+    }catch(micErr){
+      console.warn('getUserMedia failed:',micErr.name,micErr.message);
+      throw micErr;
     }
 
     isListening=true;
@@ -2297,8 +2295,13 @@ async function startListen(){
     setTimeout(()=>{ if(isListening&&mediaRecorder?.state==='recording') mediaRecorder.stop(); },4000);
 
   }catch(e){
-    toast('❌ Mic permission denied — please allow microphone access','err');
-    setStatus('❌ Permission denied','','Allow microphone access to use voice capture');
+    let reason='Allow microphone access to use voice capture';
+    if(e.name==='NotAllowedError') reason='Microphone permission was blocked. Click the 🔒 icon in your browser address bar and allow microphone access, then try again.';
+    else if(e.name==='NotFoundError') reason='No microphone was found on this device.';
+    else if(e.name==='NotReadableError') reason='Microphone is being used by another app or tab.';
+    else if(location.protocol!=='https:'&&location.hostname!=='localhost') reason='Microphone needs HTTPS — this page must be served over https:// for voice capture to work.';
+    toast('❌ '+(e.name||'Mic error')+': '+reason,'err',5000);
+    setStatus('❌ '+(e.name||'Permission denied'),'',reason);
   }
 }
 
@@ -3579,7 +3582,18 @@ async function startDeepgramListen(){
     dgStream=await navigator.mediaDevices.getUserMedia({
       audio:{echoCancellation:true,noiseSuppression:true,sampleRate:16000}
     });
-  }catch(e){console.warn('Mic denied:',e.message);return false;}
+  }catch(e){
+    console.warn('Mic denied:',e.name,e.message);
+    let reason='Allow microphone access to use voice capture';
+    if(e.name==='NotAllowedError') reason='Microphone permission was blocked. Click the 🔒 icon in your browser address bar and allow microphone access, then try again.';
+    else if(e.name==='NotFoundError') reason='No microphone was found on this device.';
+    else if(e.name==='NotReadableError') reason='Microphone is being used by another app or tab. Close other apps using the mic.';
+    else if(location.protocol!=='https:'&&location.hostname!=='localhost') reason='Microphone needs HTTPS. This page must be served over https:// for voice capture to work.';
+    else reason=e.message||reason;
+    typeof setStatus==='function'&&setStatus('❌ '+e.name||'Mic error','',reason);
+    typeof toast==='function'&&toast('⚠️ '+reason,'err',5000);
+    return false;
+  }
 
   const wsUrl='wss://api.deepgram.com/v1/listen'
     +'?model=nova-2'
@@ -3727,6 +3741,7 @@ window.agentLogout=function(){stopDeepgramListen();_dgOriginalLogout();};
 
 console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 </script>
+<script>
 // ═══════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — PATCH v2
 // Fix 1: Deepgram real-time STT in PUBLIC SEARCH mic button
@@ -4137,6 +4152,89 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 /* Online indicator */
 .online-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,170,.6);animation:livePulse 1.5s infinite;flex-shrink:0}
 .offline-dot{width:8px;height:8px;background:var(--text3);border-radius:50%;flex-shrink:0}
+
+:root{--pat-bg:#0a0e16;--pat-card:#0e1420;--pat-border:#1c2433;--pat-text:#e8edf5;--pat-text2:#8a94a8;--pat-text3:#5a6578;--pat-amber:#f59e0b;--pat-amber-dim:rgba(245,158,11,.12);--pat-green:#22c55e;--pat-green-dim:rgba(34,197,94,.12)}
+
+.patcher-shell{padding:20px 24px 32px;max-width:980px;margin:0 auto;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:16px}
+#agentView.active{display:block!important;overflow-y:auto;background:var(--pat-bg)}
+
+.patcher-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.pstat-card{background:var(--pat-card);border:1px solid var(--pat-border);border-radius:14px;padding:16px 18px}
+.pstat-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pstat-lbl{font-size:10px;font-family:var(--font-mono);color:var(--pat-text3);letter-spacing:1px}
+.pstat-icon{font-size:14px;opacity:.7}
+.pstat-val{font-size:30px;font-weight:700;color:var(--pat-text);font-family:var(--font-mono)}
+.pstat-card.patched .pstat-val{color:var(--pat-green)}
+.pstat-card.draft .pstat-val{color:var(--pat-amber)}
+
+.patcher-card{background:var(--pat-card);border:1px solid var(--pat-border);border-radius:14px;padding:20px}
+
+.ql-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.ql-icon{font-size:13px;color:var(--pat-amber)}
+.ql-label{font-size:11px;font-weight:700;color:var(--pat-text);letter-spacing:.5px;font-family:var(--font-mono)}
+.ql-hint{font-size:11px;color:var(--pat-text3)}
+.ql-input-row{display:flex;gap:10px}
+.ql-inp{flex:1;background:#0a0e16;border:1px solid var(--pat-border);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--pat-text);outline:none}
+.ql-inp:focus{border-color:var(--pat-amber)}
+.ql-btn{background:var(--pat-amber);color:#1a0f02;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-display)}
+.ql-btn:hover{background:#fbbf24}
+.ql-result{margin-top:12px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--pat-text2);flex-wrap:wrap}
+.ql-pin{color:var(--pat-green);font-weight:700;font-family:var(--font-mono)}
+
+.listener-card{padding:18px 20px}
+.lc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.lc-left{display:flex;align-items:flex-start;gap:12px}
+.lc-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.lc-badge{font-size:10px;color:var(--pat-amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:3px;font-weight:700}
+.lc-title{font-size:13px;color:var(--pat-text);font-weight:600}
+.lc-status{font-size:10px;font-weight:700;padding:4px 12px;border-radius:8px;background:var(--pat-border);color:var(--pat-text3);letter-spacing:.5px;flex-shrink:0}
+.lc-status.patched{background:var(--pat-green-dim);color:var(--pat-green)}
+.lc-status.draft{background:var(--pat-amber-dim);color:var(--pat-amber)}
+.lc-body{display:flex;flex-direction:column;align-items:center;gap:14px}
+
+.aiex-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.aiex-title{font-size:11px;font-weight:700;color:var(--pat-amber);letter-spacing:1px;display:flex;align-items:center;gap:7px;font-family:var(--font-mono)}
+.aiex-actions{display:flex;gap:8px;flex-wrap:wrap}
+.aiex-btn{display:flex;align-items:center;gap:6px;background:#0a0e16;border:1px solid var(--pat-border);color:var(--pat-text2);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-display)}
+.aiex-btn:hover{border-color:var(--pat-text3)}
+.aiex-btn.primary{background:var(--pat-amber);color:#1a0f02;border-color:var(--pat-amber)}
+.aiex-btn.primary:hover{background:#fbbf24}
+.aiex-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.aiex-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.aiex-field{display:flex;flex-direction:column;gap:6px}
+.aiex-field.full{grid-column:1/-1}
+.aiex-field label{font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px;font-weight:700}
+.aiex-field input{background:#0a0e16;border:1px solid var(--pat-border);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--pat-text);outline:none;transition:all .2s}
+.aiex-field input:focus{border-color:var(--pat-amber)}
+.aiex-field input.filled{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
+.aiex-field input.verified{border-color:var(--pat-green);box-shadow:0 0 0 1px rgba(34,197,94,.2)}
+.aiex-field input::placeholder{color:var(--pat-text3)}
+
+.pr-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--pat-border);flex-wrap:wrap;gap:10px}
+.pr-title{font-size:14px;font-weight:700;color:var(--pat-text);display:flex;align-items:center;gap:8px}
+.pr-count{background:var(--pat-border);color:var(--pat-text2);font-size:11px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono)}
+.pr-actions{display:flex;gap:8px}
+.pr-search{background:#0a0e16;border:1px solid var(--pat-border);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--pat-text);outline:none;width:220px}
+.pr-status-filter{background:#0a0e16;border:1px solid var(--pat-border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--pat-text2);outline:none}
+.pr-table{width:100%;border-collapse:collapse;font-size:12px}
+.pr-table thead th{font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px;text-align:left;padding:10px 16px;border-bottom:1px solid var(--pat-border);white-space:nowrap}
+.pr-table tbody td{padding:11px 16px;color:var(--pat-text2);border-bottom:1px solid rgba(28,36,51,.6);white-space:nowrap}
+.pr-table tbody tr:hover td{background:rgba(255,255,255,.02)}
+.pr-table tbody tr:last-child td{border-bottom:none}
+.pr-addr-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pin-ok{color:var(--pat-green);font-family:var(--font-mono);font-weight:600}
+.pr-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:7px;letter-spacing:.5px}
+.pr-badge.patched{background:var(--pat-green-dim);color:var(--pat-green)}
+.pr-badge.draft{background:var(--pat-amber-dim);color:var(--pat-amber)}
+.pr-open{background:none;border:1px solid var(--pat-border);color:var(--pat-text2);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600}
+.pr-open:hover{border-color:var(--pat-amber);color:var(--pat-amber)}
+
+@media(max-width:700px){
+  .patcher-stats{grid-template-columns:repeat(2,1fr)}
+  .aiex-grid{grid-template-columns:1fr 1fr}
+  .aiex-field.full{grid-column:1/-1}
+}
 </style>
 
 <script id="vn-agent-admin-upgrade">
@@ -4160,187 +4258,319 @@ let callRecords = [];
 let liveConfidence = 0;
 let currentCallStart = null;
 
+function updatePatcherStats() {
+  const addresses = (typeof addrHistory !== 'undefined' && addrHistory) ? addrHistory : [];
+  const today = new Date().toLocaleDateString('en-IN');
+  const todayCount = addresses.filter(a => a.time && a.time.includes(today)).length;
+  const patchedCount = addresses.filter(a => (a.confidence || 0) >= 60).length;
+  const draftCount = addresses.length - patchedCount;
+  const withDur = addresses.filter(a => a.duration > 0);
+  let durStr = '00:00';
+  if (withDur.length) {
+    const avgSec = Math.round(withDur.reduce((s, a) => s + a.duration, 0) / withDur.length);
+    durStr = String(Math.floor(avgSec / 60)).padStart(2, '0') + ':' + String(avgSec % 60).padStart(2, '0');
+  }
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('ps-today', todayCount);
+  set('ps-patched', patchedCount);
+  set('ps-draft', draftCount);
+  set('ps-duration', durStr);
+}
+
+function renderPatchedRecordsTable(filtered) {
+  const addresses = filtered || ((typeof addrHistory !== 'undefined' && addrHistory) ? addrHistory.slice().reverse() : []);
+  const tbody = document.getElementById('patchedRecordsTbody');
+  const countEl = document.getElementById('prCount');
+  if (countEl) countEl.textContent = (typeof addrHistory !== 'undefined' ? addrHistory.length : 0);
+  if (!tbody) return;
+  if (!addresses.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--pat-text3);font-size:11px">No records yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = addresses.map(a => {
+    const conf = a.confidence || 0;
+    const status = conf >= 60 ? 'patched' : 'draft';
+    const when = a.time || '';
+    return `<tr>
+      <td>${when}</td>
+      <td>${a.name || '\u2014'}</td>
+      <td>${a.phone || '\u2014'}</td>
+      <td class="pr-addr-cell" title="${(a.address || '').replace(/"/g,'&quot;')}">${a.address ? a.address.substring(0, 40) : '\u2014'}</td>
+      <td>${a.pincode && a.pincode !== 'N/A' ? `<span class="pin-ok">${a.pincode} \u2713</span>` : '\u2014'}</td>
+      <td>${(typeof currentAgent !== 'undefined' && currentAgent && currentAgent.name) || 'Agent'}</td>
+      <td><span class="pr-badge ${status}">${status}</span></td>
+      <td><button class="pr-open" onclick="openPatchedRecord('${(a.address||'').replace(/'/g,"\\'")}')">Open</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterPatchedRecords(query) {
+  const all = (typeof addrHistory !== 'undefined' && addrHistory) ? addrHistory.slice().reverse() : [];
+  const statusFilter = document.getElementById('prStatusFilter')?.value || '';
+  const q = (query || '').toLowerCase().trim();
+  const filtered = all.filter(a => {
+    const matchesQuery = !q || [a.name, a.phone, a.address, a.pincode, a.district, a.state]
+      .filter(Boolean).some(f => f.toString().toLowerCase().includes(q));
+    const conf = a.confidence || 0;
+    const status = conf >= 60 ? 'patched' : 'draft';
+    const matchesStatus = !statusFilter || status === statusFilter;
+    return matchesQuery && matchesStatus;
+  });
+  renderPatchedRecordsTable(filtered);
+}
+
+function openPatchedRecord(addr) {
+  const inp = document.getElementById('lfv-addrline');
+  if (inp) inp.value = addr;
+  toast('\uD83D\uDCC4 Loaded into form');
+}
+
+async function runQuickLookup() {
+  const q = (document.getElementById('quickLookupInp')?.value || '').trim();
+  if (!q) { toast('\u26A0\uFE0F Enter a pincode or city name', 'err'); return; }
+  const resEl = document.getElementById('quickLookupResult');
+  if (resEl) resEl.innerHTML = '<div style="color:var(--pat-text3);font-size:11px;font-family:var(--font-mono);padding:8px 0">Searching\u2026</div>';
+  try {
+    const dbRes = (typeof searchPinDB === 'function') ? searchPinDB(q) : [];
+    let result = dbRes && dbRes.length ? dbRes[0] : null;
+    if (!result) {
+      const pinMatch = q.match(/\b(\d{6})\b/);
+      if (pinMatch) {
+        const r = await fetch('https://api.postalpincode.in/pincode/' + pinMatch[1]);
+        const d = await r.json();
+        const po = d?.[0]?.PostOffice?.[0];
+        if (po) result = { p: pinMatch[1], po: po.Name, d: po.District, s: po.State };
+      }
+    }
+    if (result && resEl) {
+      resEl.innerHTML = `<div class="ql-result">
+        <span class="ql-pin">\uD83D\uDCEE ${result.p}</span>
+        <span>${result.po || ''}</span>
+        <span style="color:var(--pat-text3)">${result.d || ''}, ${result.s || ''}</span>
+      </div>`;
+      const cityEl = document.getElementById('lfv-city');
+      const stateEl = document.getElementById('lfv-state');
+      const pinEl = document.getElementById('lfv-pincode');
+      if (cityEl) cityEl.value = result.d || '';
+      if (stateEl) stateEl.value = result.s || '';
+      if (pinEl) pinEl.value = result.p || '';
+    } else if (resEl) {
+      resEl.innerHTML = '<div style="color:var(--red);font-size:11px;padding:8px 0">\u26A0\uFE0F Not found. Try a different pincode or city.</div>';
+    }
+  } catch (e) {
+    if (resEl) resEl.innerHTML = `<div style="color:var(--red);font-size:11px;padding:8px 0">\u26A0\uFE0F ${e.message}</div>`;
+  }
+}
+
 function renderAgentView() {
   const agentView = document.getElementById('agentView');
   if (!agentView) return;
 
   agentView.innerHTML = `
-    <!-- LEFT PANEL — History + Records -->
-    <div class="agent-left-v2">
-      <div class="al-tabs">
-        <div class="al-tab active" onclick="switchAgentTab2('history',this)">History</div>
-        <div class="al-tab" onclick="switchAgentTab2('stats',this)">Stats</div>
-        <div class="al-tab" onclick="switchAgentTab2('records',this)">Records</div>
+    <div class="patcher-shell">
+
+      <div class="patcher-stats">
+        <div class="pstat-card">
+          <div class="pstat-row">
+            <span class="pstat-lbl">CALLS TODAY</span>
+            <span class="pstat-icon">\u260E\uFE0F</span>
+          </div>
+          <div class="pstat-val" id="ps-today">0</div>
+        </div>
+        <div class="pstat-card patched">
+          <div class="pstat-row">
+            <span class="pstat-lbl">PATCHED</span>
+            <span class="pstat-icon">\u2713</span>
+          </div>
+          <div class="pstat-val" id="ps-patched">0</div>
+        </div>
+        <div class="pstat-card draft">
+          <div class="pstat-row">
+            <span class="pstat-lbl">DRAFTS</span>
+            <span class="pstat-icon">\u2630</span>
+          </div>
+          <div class="pstat-val" id="ps-draft">0</div>
+        </div>
+        <div class="pstat-card">
+          <div class="pstat-row">
+            <span class="pstat-lbl">AVG DURATION</span>
+            <span class="pstat-icon">\uD83C\uDF99\uFE0F</span>
+          </div>
+          <div class="pstat-val" id="ps-duration">00:00</div>
+        </div>
       </div>
 
-      <!-- HISTORY TAB -->
-      <div class="al-content active" id="at2-history">
-        <div class="al-empty" id="histEmpty2">No addresses captured yet.<br>Start listening to begin.</div>
+      <div class="patcher-card">
+        <div class="ql-row">
+          <span class="ql-icon">\uD83D\uDD0D</span>
+          <span class="ql-label">QUICK LOOKUP</span>
+          <span class="ql-hint">\u2014 pincode (6-digit) ya city/locality name try karein</span>
+        </div>
+        <div class="ql-input-row">
+          <input id="quickLookupInp" class="ql-inp" placeholder="e.g. 411001 or Shivajinagar" onkeydown="if(event.key==='Enter')runQuickLookup()"/>
+          <button class="ql-btn" onclick="runQuickLookup()"><span>\uD83D\uDD0D</span> Lookup</button>
+        </div>
+        <div id="quickLookupResult"></div>
       </div>
 
-      <!-- STATS TAB -->
-      <div class="al-content" id="at2-stats">
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-num" id="s2-today">0</div><div class="stat-lbl">Today</div></div>
-          <div class="stat-box"><div class="stat-num" id="s2-total">0</div><div class="stat-lbl">Total</div></div>
-          <div class="stat-box"><div class="stat-num" id="s2-rate">0%</div><div class="stat-lbl">Success</div></div>
-          <div class="stat-box"><div class="stat-num" id="s2-dup">0</div><div class="stat-lbl">Duplicates</div></div>
+      <div class="patcher-card listener-card">
+        <div class="lc-top">
+          <div class="lc-left">
+            <span class="lc-icon">\uD83C\uDF99\uFE0F</span>
+            <div>
+              <div class="lc-badge">LISTENER MODE (LIVE)</div>
+              <div class="lc-title">Live Call Listening \u2014 Deepgram real-time \u00b7 7 strategies \u00b7 10 layers</div>
+            </div>
+          </div>
+          <span class="lc-status" id="lcStatusBadge">IDLE</span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <button class="al-action-btn" onclick="exportCSV()">📥 Export CSV</button>
-          <button class="al-action-btn danger" onclick="clearHistory()">🗑️ Clear History</button>
+
+        <div class="lc-body">
+          <div class="listen-outer" id="listenOuter" onclick="toggleListen()">
+            <div class="listen-ring r1"></div><div class="listen-ring r2"></div>
+            <div class="listen-ring r3"></div><div class="listen-ring r4"></div>
+            <div class="listen-btn" id="listenBtn">
+              <div class="listen-icon" id="listenIcon">\uD83C\uDF99\uFE0F</div>
+              <div class="listen-lbl" id="listenLbl">TAP TO START</div>
+            </div>
+          </div>
+
+          <div class="wave-bars" id="waveBars">
+            <div class="wb"></div><div class="wb"></div><div class="wb"></div>
+            <div class="wb"></div><div class="wb"></div><div class="wb"></div>
+            <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          </div>
+
+          <div class="agent-status">
+            <div class="as-main" id="asMain">Tap to start listening</div>
+            <div class="as-sub" id="asSub">7 strategies \u00b7 10 layers \u00b7 20 languages</div>
+          </div>
+
+          <div class="strategy-row">
+            <div class="strat" id="s1">S1:AgentQ</div><div class="strat" id="s2">S2:Trigger</div>
+            <div class="strat" id="s3">S3:Context</div><div class="strat" id="s4">S4:Silence</div>
+            <div class="strat" id="s5">S5:Pattern</div><div class="strat" id="s6">S6:Pincode</div>
+            <div class="strat" id="s7">S7:Buffer</div>
+          </div>
+
+          <div class="layers-row" id="layersRow">
+            <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
+            <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
+            <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
+            <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
+            <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
+          </div>
+
+          <div class="live-transcript-box" id="liveTranscriptBox">
+            <span style="color:var(--pat-text3);font-style:italic">Transcript will appear here as customer speaks\u2026</span>
+          </div>
+
+          <div class="conf-meter-wrap">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px">CONFIDENCE</span>
+              <span id="confPctLive" style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--pat-text3)">0%</span>
+            </div>
+            <div class="conf-meter-bar">
+              <div class="conf-meter-fill" id="confFillLive" style="width:0%;background:var(--border2)"></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- RECORDS TAB -->
-      <div class="al-content" id="at2-records" style="padding:0">
-        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px">CALL RECORDS</span>
-          <button onclick="exportCallRecords()" style="font-size:10px;color:var(--blue);font-family:var(--font-mono);background:none;border:none;cursor:pointer">📥 Export</button>
+      <div class="patcher-card">
+        <div class="aiex-hdr">
+          <div class="aiex-title"><span>\u2728</span> AI-EXTRACTED ADDRESS</div>
+          <div class="aiex-actions">
+            <button class="aiex-btn" onclick="triggerCurrentLocation()"><span>\uD83D\uDCCD</span> Detect by GPS</button>
+            <button class="aiex-btn" onclick="forceExtract()" id="btnVerifyPin"><span>\u2713</span> Verify Pincode</button>
+            <button class="aiex-btn primary" onclick="stopAndSave()" id="btnPatchSave"><span>\uD83D\uDCBE</span> Patch &amp; Save</button>
+          </div>
         </div>
-        <div style="overflow-y:auto;flex:1">
-          <table class="call-records" style="width:100%">
+
+        <div class="aiex-grid">
+          <div class="aiex-field">
+            <label>\uD83D\uDC64 CUSTOMER NAME</label>
+            <input id="lfv-name" placeholder="e.g. Rohit Kumar"/>
+          </div>
+          <div class="aiex-field">
+            <label>\uD83D\uDCDE PHONE (10-DIGIT)</label>
+            <input id="lfv-phone" placeholder="98xxxxxxxx"/>
+          </div>
+          <div class="aiex-field">
+            <label>\uD83D\uDCF2 ALT PHONE</label>
+            <input id="lfv-altphone" placeholder="optional"/>
+          </div>
+          <div class="aiex-field full">
+            <label>\uD83D\uDCCD ADDRESS LINE</label>
+            <input id="lfv-addrline" placeholder="House no, street, area"/>
+          </div>
+          <div class="aiex-field">
+            <label>\uD83D\uDCCD LANDMARK</label>
+            <input id="lfv-landmark" placeholder="Near\u2026"/>
+          </div>
+          <div class="aiex-field">
+            <label>\uD83D\uDCCD CITY</label>
+            <input id="lfv-city" placeholder="District"/>
+          </div>
+          <div class="aiex-field">
+            <label>\uD83D\uDCCD STATE</label>
+            <input id="lfv-state" placeholder="State"/>
+          </div>
+          <div class="aiex-field">
+            <label># PINCODE</label>
+            <input id="lfv-pincode" placeholder="6-digit"/>
+          </div>
+        </div>
+
+        <div class="manual-row" style="margin-top:14px">
+          <input class="manual-inp" id="manualInp" placeholder="\u2328\uFE0F Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
+          <button class="manual-go" onclick="manualSearch()">Search</button>
+        </div>
+      </div>
+
+      <div class="patcher-card" style="padding:0;overflow:hidden">
+        <div class="pr-hdr">
+          <div class="pr-title"><span>\u2630</span> Patched Records <span class="pr-count" id="prCount">0</span></div>
+          <div class="pr-actions">
+            <input class="pr-search" id="prSearch" placeholder="Search name / phone / city / pincode" oninput="filterPatchedRecords(this.value)"/>
+            <select class="pr-status-filter" id="prStatusFilter" onchange="filterPatchedRecords(document.getElementById('prSearch').value)">
+              <option value="">All status</option>
+              <option value="patched">Patched</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="pr-table">
             <thead>
               <tr>
-                <th>Address</th>
-                <th>Pin</th>
-                <th>Conf</th>
-                <th>Status</th>
+                <th>WHEN</th><th>CUSTOMER</th><th>PHONE</th><th>ADDRESS</th>
+                <th>PINCODE</th><th>AGENT</th><th>STATUS</th><th></th>
               </tr>
             </thead>
-            <tbody id="callRecordsTbody">
-              <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text3);font-size:11px">No records yet</td></tr>
+            <tbody id="patchedRecordsTbody">
+              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--pat-text3);font-size:11px">No records yet</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-    </div>
 
-    <!-- RIGHT PANEL — Live capture -->
-    <div class="agent-right-v2" style="flex:1;overflow-y:auto">
-      <div style="display:flex;flex-direction:column;align-items:center;padding:20px 24px;gap:16px;min-height:100%">
-
-        <!-- LISTEN BUTTON -->
-        <div class="listen-outer" id="listenOuter2" onclick="toggleListen()">
-          <div class="listen-ring r1"></div><div class="listen-ring r2"></div>
-          <div class="listen-ring r3"></div><div class="listen-ring r4"></div>
-          <div class="listen-btn" id="listenBtn2">
-            <div class="listen-icon" id="listenIcon2">🎙️</div>
-            <div class="listen-lbl" id="listenLbl2">TAP TO START</div>
-          </div>
-        </div>
-
-        <!-- WAVE BARS -->
-        <div class="wave-bars" id="waveBars2">
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-          <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
-        </div>
-
-        <!-- STATUS -->
-        <div class="agent-status">
-          <div class="as-main" id="asMain2">Tap to start listening</div>
-          <div class="as-sub" id="asSub2">7 strategies · 10 layers · 20 languages</div>
-        </div>
-
-        <!-- STRATEGY INDICATORS -->
-        <div class="strategy-row">
-          <div class="strat" id="s1">S1:AgentQ</div><div class="strat" id="s2">S2:Trigger</div>
-          <div class="strat" id="s3">S3:Context</div><div class="strat" id="s4">S4:Silence</div>
-          <div class="strat" id="s5">S5:Pattern</div><div class="strat" id="s6">S6:Pincode</div>
-          <div class="strat" id="s7">S7:Buffer</div>
-        </div>
-
-        <!-- LAYER DOTS -->
-        <div class="layers-row" id="layersRow2">
-          <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
-          <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
-          <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
-          <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
-          <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
-        </div>
-
-        <!-- LIVE TRANSCRIPT -->
-        <div class="live-transcript-box" id="liveTranscriptBox">
-          <span style="color:var(--text3);font-style:italic">Transcript will appear here as customer speaks…</span>
-        </div>
-
-        <!-- CONFIDENCE METER -->
-        <div class="conf-meter-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px">CONFIDENCE</span>
-            <span id="confPctLive" style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--text3)">0%</span>
-          </div>
-          <div class="conf-meter-bar">
-            <div class="conf-meter-fill" id="confFillLive" style="width:0%;background:var(--border2)"></div>
-          </div>
-        </div>
-
-        <!-- 7 AUTO-FILLING FIELDS -->
-        <div class="live-fields" id="liveFields">
-          <div class="lf-field" id="lff-name">
-            <div class="lf-label">👤 Name <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-name">Listening…</div>
-          </div>
-          <div class="lf-field" id="lff-phone">
-            <div class="lf-label">📱 Phone <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-phone">Listening…</div>
-          </div>
-          <div class="lf-field" id="lff-house">
-            <div class="lf-label">🏠 House / Flat <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-house">Listening…</div>
-          </div>
-          <div class="lf-field" id="lff-street">
-            <div class="lf-label">🛣️ Street / Gali <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-street">Listening…</div>
-          </div>
-          <div class="lf-field full" id="lff-colony">
-            <div class="lf-label">🏘️ Colony / Sector <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-colony">Listening…</div>
-          </div>
-          <div class="lf-field" id="lff-city">
-            <div class="lf-label">🏙️ City <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-city">Listening…</div>
-          </div>
-          <div class="lf-field" id="lff-pincode">
-            <div class="lf-label">📮 Pincode <span class="lf-check">✓</span></div>
-            <div class="lf-value empty" id="lfv-pincode">Listening…</div>
-          </div>
-        </div>
-
-        <!-- ACTION BUTTONS -->
-        <div class="agent-action-row" id="agentActionRow">
-          <button class="btn-force" id="btnForceExtract" onclick="forceExtract()" disabled>
-            ⚡ Force Extract
-          </button>
-          <button class="btn-stop-save" id="btnStopSave" onclick="stopAndSave()" disabled>
-            ✅ Stop &amp; Save
-          </button>
-        </div>
-
-        <!-- MANUAL INPUT -->
-        <div class="manual-row" style="width:100%;max-width:520px">
-          <input class="manual-inp" id="manualInp" placeholder="⌨️ Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
-          <button class="manual-go" onclick="manualSearch()">Search</button>
-        </div>
-
-      </div>
     </div>
   `;
 
-  // Sync listen button states
   syncListenButtons();
-  renderHistoryV2();
-  updateAgentStatsV2();
+  renderPatchedRecordsTable();
+  updatePatcherStats();
 }
 
 function syncListenButtons() {
-  // Mirror state between old and new listen buttons
-  const outer = document.getElementById('listenOuter2');
-  const btn = document.getElementById('listenBtn2');
-  const icon = document.getElementById('listenIcon2');
-  const lbl = document.getElementById('listenLbl2');
-  const wave = document.getElementById('waveBars2');
+  const outer = document.getElementById('listenOuter');
+  const btn = document.getElementById('listenBtn');
+  const icon = document.getElementById('listenIcon');
+  const lbl = document.getElementById('listenLbl');
+  const wave = document.getElementById('waveBars');
+  const verifyBtn = document.getElementById('btnVerifyPin');
+  const patchBtn = document.getElementById('btnPatchSave');
 
   if (window.isListening) {
     outer?.classList.add('active');
@@ -4348,16 +4578,14 @@ function syncListenButtons() {
     if (icon) icon.textContent = '⏹';
     if (lbl) lbl.textContent = 'TAP TO STOP';
     wave?.classList.add('active');
-    document.getElementById('btnForceExtract').disabled = false;
-    document.getElementById('btnStopSave').disabled = false;
+    if (verifyBtn) verifyBtn.disabled = false;
+    if (patchBtn) patchBtn.disabled = false;
   } else {
     outer?.classList.remove('active');
     btn?.classList.remove('active');
     if (icon) icon.textContent = '🎙️';
     if (lbl) lbl.textContent = 'TAP TO START';
     wave?.classList.remove('active');
-    document.getElementById('btnForceExtract').disabled = true;
-    document.getElementById('btnStopSave').disabled = true;
   }
 }
 
@@ -4406,10 +4634,9 @@ function updateLiveFields(parsed) {
   const fieldMap = {
     name: parsed.customer_name || parsed.name || '',
     phone: parsed.phone || parsed.mobile || '',
-    house: parsed.house || parsed.house_number || '',
-    street: parsed.street || parsed.road || '',
-    colony: parsed.colony || parsed.sector || '',
-    city: parsed.city || '',
+    addrline: [parsed.house || parsed.house_number, parsed.street || parsed.road, parsed.colony || parsed.sector].filter(Boolean).join(', '),
+    city: parsed.city || parsed.district || '',
+    state: parsed.state || '',
     pincode: parsed.pincode || '',
   };
 
@@ -4417,26 +4644,16 @@ function updateLiveFields(parsed) {
   Object.entries(fieldMap).forEach(([key, val]) => {
     if (!val) return;
     filledCount++;
-    const fieldEl = document.getElementById('lff-' + key);
-    const valEl = document.getElementById('lfv-' + key);
-    if (!valEl) return;
-    valEl.textContent = val;
-    valEl.classList.remove('empty');
-    if (fieldEl) {
-      fieldEl.classList.add('filling');
-      setTimeout(() => {
-        fieldEl.classList.remove('filling');
-        fieldEl.classList.add('filled');
-        // Verify pincode
-        if (key === 'pincode' && val.match(/^\d{6}$/)) {
-          fieldEl.classList.add('verified');
-          toast('📮 Pincode ' + val + ' verified! ✓');
-        }
-      }, 600);
+    const inp = document.getElementById('lfv-' + key);
+    if (!inp) return;
+    inp.value = val;
+    inp.classList.add('filled');
+    if (key === 'pincode' && /^\d{6}$/.test(val)) {
+      inp.classList.add('verified');
+      toast('📮 Pincode ' + val + ' verified! ✓');
     }
   });
 
-  // Update confidence
   const conf = parsed.confidence || Math.min(filledCount * 14, 95);
   updateConfidenceLive(conf);
 }
@@ -4455,75 +4672,87 @@ function updateConfidenceLive(pct) {
     pctEl.textContent = pct + '%';
     pctEl.style.color = pct >= 80 ? 'var(--green)' : pct >= 55 ? 'var(--amber)' : 'var(--red)';
   }
+  const badge = document.getElementById('lcStatusBadge');
+  if (badge) {
+    badge.textContent = pct >= 60 ? 'PATCHED' : pct > 0 ? 'DRAFT' : 'IDLE';
+    badge.className = 'lc-status' + (pct >= 60 ? ' patched' : pct > 0 ? ' draft' : '');
+  }
 }
 
 function updateLiveTranscript(text) {
   const box = document.getElementById('liveTranscriptBox');
   if (!box || !text) return;
-  box.innerHTML = text.split(' ').map((w, i) =>
-    `<span class="word${i === text.split(' ').length - 1 ? ' new' : ''}">${w} </span>`
+  const words = text.split(' ');
+  box.innerHTML = words.map((w, i) =>
+    `<span class="word${i === words.length - 1 ? ' new' : ''}">${w} </span>`
   ).join('');
   box.scrollTop = box.scrollHeight;
 }
 
 function resetLiveFields() {
-  Object.keys(LIVE_FIELDS).forEach(key => {
-    const fieldEl = document.getElementById('lff-' + key);
-    const valEl = document.getElementById('lfv-' + key);
-    if (valEl) { valEl.textContent = 'Listening…'; valEl.classList.add('empty'); }
-    if (fieldEl) { fieldEl.classList.remove('filling', 'filled', 'verified'); }
+  ['name','phone','altphone','addrline','landmark','city','state','pincode'].forEach(key => {
+    const inp = document.getElementById('lfv-' + key);
+    if (inp) { inp.value = ''; inp.classList.remove('filled', 'verified'); }
   });
   updateConfidenceLive(0);
   const box = document.getElementById('liveTranscriptBox');
-  if (box) box.innerHTML = '<span style="color:var(--text3);font-style:italic">Transcript will appear here as customer speaks…</span>';
+  if (box) box.innerHTML = '<span style="color:var(--pat-text3);font-style:italic">Transcript will appear here as customer speaks…</span>';
 }
 
 function forceExtract() {
   if (!window.currentTranscript || !window.currentTranscript.trim()) {
     toast('⚠️ Nothing to extract yet', 'err'); return;
   }
-  toast('⚡ Force extracting…');
+  toast('⚡ Verifying pincode…');
   if (typeof extractAndVerify === 'function') extractAndVerify(window.currentTranscript);
 }
 
 function stopAndSave() {
   if (typeof stopListen === 'function') stopListen();
   syncListenButtons();
-  // Collect filled fields
-  const addr = [
-    document.getElementById('lfv-house')?.textContent,
-    document.getElementById('lfv-street')?.textContent,
-    document.getElementById('lfv-colony')?.textContent,
-    document.getElementById('lfv-city')?.textContent,
-  ].filter(v => v && !v.includes('Listening')).join(', ');
-  const pin = document.getElementById('lfv-pincode')?.textContent || '';
-  const name = document.getElementById('lfv-name')?.textContent || '';
-  const pinOk = pin.match(/^\d{6}$/);
 
-  if (addr || pin) {
-    // Save to call records
-    const rec = {
-      id: 'CR' + Date.now(),
-      address: addr || window.currentTranscript || 'Draft',
-      pincode: pin,
+  const name = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city = document.getElementById('lfv-city')?.value.trim() || '';
+  const state = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const pinOk = /^\d{6}$/.test(pin);
+
+  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+
+  if (fullAddr || pin) {
+    const entry = {
+      address: fullAddr || window.currentTranscript || 'Draft',
+      pincode: pin || 'N/A',
+      district: city,
+      state: state,
       name: name,
+      phone: phone,
       confidence: liveConfidence,
-      status: liveConfidence >= 70 ? 'patched' : liveConfidence >= 40 ? 'draft' : 'review',
-      pinVerified: !!pinOk,
       time: new Date().toLocaleString('en-IN'),
+      agentId: (typeof currentAgent !== 'undefined' && currentAgent) ? currentAgent.id : null,
+      companyId: (typeof currentCompany !== 'undefined' && currentCompany) ? currentCompany.id : null,
+      isDuplicate: false,
       duration: currentCallStart ? Math.round((Date.now() - currentCallStart) / 1000) : 0,
     };
-    callRecords.unshift(rec);
-    renderCallRecords();
-    if (typeof confirmAddr === 'function' && window.currentResult) confirmAddr();
-    toast('✅ Call saved — ' + rec.status.toUpperCase());
+    if (typeof addrHistory !== 'undefined') {
+      addrHistory.push(entry);
+      const all = (typeof getData === 'function') ? getData('vn_addresses', []) : [];
+      all.push(entry);
+      if (typeof setData === 'function') setData('vn_addresses', all);
+    }
+    renderPatchedRecordsTable();
+    updatePatcherStats();
+    toast(liveConfidence >= 60 ? '✅ Patched & Saved!' : '📝 Saved as draft');
   } else {
-    toast('⚠️ No address captured yet', 'warn');
+    toast('⚠️ No address captured yet', 'err');
   }
   resetLiveFields();
   currentCallStart = null;
-  document.getElementById('btnForceExtract').disabled = true;
-  document.getElementById('btnStopSave').disabled = true;
+  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
+  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
 }
 
 function renderCallRecords() {
