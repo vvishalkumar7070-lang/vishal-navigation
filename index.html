@@ -891,6 +891,7 @@ document.addEventListener('DOMContentLoaded', function(){
               <div><label class="af-label">Login ID</label><input class="af-inp" id="c-id" placeholder="abc_sales"/></div>
               <div><label class="af-label">Password</label><input class="af-inp" type="password" id="c-pass" placeholder="Password"/></div>
               <div><label class="af-label">Email (optional)</label><input class="af-inp" id="c-email" placeholder="company@email.com"/></div>
+              <div><label class="af-label">Plan</label><select class="af-select" id="c-plan"><option value="starter">Starter — 5 seats, 500/mo</option><option value="growth">Growth — 25 seats, 5,000/mo</option><option value="enterprise">Enterprise — Unlimited</option></select></div>
             </div>
             <div style="margin-top:14px"><button class="a-btn green" onclick="addCompany()">+ Create Company</button></div>
           </div>
@@ -2832,15 +2833,40 @@ function filterAddresses(v){
   }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">No results</td></tr>';
 }
 
+// ══════════════════════════════════════════════════════════
+// PLAN TIERS — real seat and usage limits, enforced below
+// ══════════════════════════════════════════════════════════
+const PLANS={
+  starter:{name:'Starter',seats:5,monthlyPatches:500,price:'₹4,999/mo'},
+  growth:{name:'Growth',seats:25,monthlyPatches:5000,price:'₹19,999/mo'},
+  enterprise:{name:'Enterprise',seats:Infinity,monthlyPatches:Infinity,price:'Custom'},
+};
+function getPlan(company){
+  return PLANS[company?.plan]||PLANS.starter;
+}
+function getCurrentMonthKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function getCompanyUsage(companyId){
+  const addresses=getData('vn_addresses',[]);
+  const monthKey=getCurrentMonthKey();
+  return addresses.filter(a=>a.companyId===companyId&&a.time&&new Date(a.time).getFullYear()+'-'+String(new Date(a.time).getMonth()+1).padStart(2,'0')===monthKey).length;
+}
+function getCompanySeatCount(companyId){
+  return getData('vn_agents',[]).filter(a=>a.companyId===companyId).length;
+}
+
 function addCompany(){
   const name=document.getElementById('c-name').value.trim();
   const id=document.getElementById('c-id').value.trim();
   const pass=document.getElementById('c-pass').value;
   const email=document.getElementById('c-email').value.trim();
+  const plan=document.getElementById('c-plan')?.value||'starter';
   if(!name||!id||!pass){toast('Fill all required fields','err');return;}
   const companies=getData('vn_companies',[]);
   if(companies.find(c=>c.id===id)){toast('Company ID already exists','err');return;}
-  companies.push({id,name,pass,email,active:true,created:new Date().toLocaleDateString('en-IN')});
+  companies.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN'),renewsOn:new Date(Date.now()+30*86400000).toLocaleDateString('en-IN')});
   setData('vn_companies',companies);
   refreshAdmin();
   toast('✅ Company created: '+name);
@@ -2869,6 +2895,14 @@ function addAgent(){
   const pass=document.getElementById('a-pass').value;
   const companyId=document.getElementById('a-company').value;
   if(!name||!id||!pass||!companyId){toast('Fill all fields','err');return;}
+  const companies=getData('vn_companies',[]);
+  const company=companies.find(c=>c.id===companyId);
+  const plan=getPlan(company);
+  const seatsUsed=getCompanySeatCount(companyId);
+  if(seatsUsed>=plan.seats){
+    toast(`⚠️ Seat limit reached (${plan.seats} on ${plan.name} plan). Upgrade to add more agents.`,'err',5000);
+    return;
+  }
   const agents=getData('vn_agents',[]);
   if(agents.find(a=>a.id===id)){toast('Agent ID already exists','err');return;}
   agents.push({id,name,pass,companyId,active:true,lastActive:null,created:new Date().toLocaleDateString('en-IN')});
@@ -4153,88 +4187,250 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 .online-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,170,.6);animation:livePulse 1.5s infinite;flex-shrink:0}
 .offline-dot{width:8px;height:8px;background:var(--text3);border-radius:50%;flex-shrink:0}
 
-:root{--pat-bg:#0a0e16;--pat-card:#0e1420;--pat-border:#1c2433;--pat-text:#e8edf5;--pat-text2:#8a94a8;--pat-text3:#5a6578;--pat-amber:#f59e0b;--pat-amber-dim:rgba(245,158,11,.12);--pat-green:#22c55e;--pat-green-dim:rgba(34,197,94,.12)}
-
-.patcher-shell{padding:20px 24px 32px;max-width:980px;margin:0 auto;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:16px}
-#agentView.active{display:block!important;overflow-y:auto;background:var(--pat-bg)}
-
-.patcher-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.pstat-card{background:var(--pat-card);border:1px solid var(--pat-border);border-radius:14px;padding:16px 18px}
-.pstat-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.pstat-lbl{font-size:10px;font-family:var(--font-mono);color:var(--pat-text3);letter-spacing:1px}
-.pstat-icon{font-size:14px;opacity:.7}
-.pstat-val{font-size:30px;font-weight:700;color:var(--pat-text);font-family:var(--font-mono)}
-.pstat-card.patched .pstat-val{color:var(--pat-green)}
-.pstat-card.draft .pstat-val{color:var(--pat-amber)}
-
-.patcher-card{background:var(--pat-card);border:1px solid var(--pat-border);border-radius:14px;padding:20px}
-
-.ql-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.ql-icon{font-size:13px;color:var(--pat-amber)}
-.ql-label{font-size:11px;font-weight:700;color:var(--pat-text);letter-spacing:.5px;font-family:var(--font-mono)}
-.ql-hint{font-size:11px;color:var(--pat-text3)}
-.ql-input-row{display:flex;gap:10px}
-.ql-inp{flex:1;background:#0a0e16;border:1px solid var(--pat-border);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--pat-text);outline:none}
-.ql-inp:focus{border-color:var(--pat-amber)}
-.ql-btn{background:var(--pat-amber);color:#1a0f02;border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-display)}
-.ql-btn:hover{background:#fbbf24}
-.ql-result{margin-top:12px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--pat-text2);flex-wrap:wrap}
-.ql-pin{color:var(--pat-green);font-weight:700;font-family:var(--font-mono)}
-
-.listener-card{padding:18px 20px}
-.lc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.lc-left{display:flex;align-items:flex-start;gap:12px}
-.lc-icon{font-size:20px;flex-shrink:0;margin-top:2px}
-.lc-badge{font-size:10px;color:var(--pat-amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:3px;font-weight:700}
-.lc-title{font-size:13px;color:var(--pat-text);font-weight:600}
-.lc-status{font-size:10px;font-weight:700;padding:4px 12px;border-radius:8px;background:var(--pat-border);color:var(--pat-text3);letter-spacing:.5px;flex-shrink:0}
-.lc-status.patched{background:var(--pat-green-dim);color:var(--pat-green)}
-.lc-status.draft{background:var(--pat-amber-dim);color:var(--pat-amber)}
-.lc-body{display:flex;flex-direction:column;align-items:center;gap:14px}
-
-.aiex-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
-.aiex-title{font-size:11px;font-weight:700;color:var(--pat-amber);letter-spacing:1px;display:flex;align-items:center;gap:7px;font-family:var(--font-mono)}
-.aiex-actions{display:flex;gap:8px;flex-wrap:wrap}
-.aiex-btn{display:flex;align-items:center;gap:6px;background:#0a0e16;border:1px solid var(--pat-border);color:var(--pat-text2);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-display)}
-.aiex-btn:hover{border-color:var(--pat-text3)}
-.aiex-btn.primary{background:var(--pat-amber);color:#1a0f02;border-color:var(--pat-amber)}
-.aiex-btn.primary:hover{background:#fbbf24}
-.aiex-btn:disabled{opacity:.4;cursor:not-allowed}
-
-.aiex-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.aiex-field{display:flex;flex-direction:column;gap:6px}
-.aiex-field.full{grid-column:1/-1}
-.aiex-field label{font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px;font-weight:700}
-.aiex-field input{background:#0a0e16;border:1px solid var(--pat-border);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--pat-text);outline:none;transition:all .2s}
-.aiex-field input:focus{border-color:var(--pat-amber)}
-.aiex-field input.filled{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.04)}
-.aiex-field input.verified{border-color:var(--pat-green);box-shadow:0 0 0 1px rgba(34,197,94,.2)}
-.aiex-field input::placeholder{color:var(--pat-text3)}
-
-.pr-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--pat-border);flex-wrap:wrap;gap:10px}
-.pr-title{font-size:14px;font-weight:700;color:var(--pat-text);display:flex;align-items:center;gap:8px}
-.pr-count{background:var(--pat-border);color:var(--pat-text2);font-size:11px;padding:2px 9px;border-radius:10px;font-family:var(--font-mono)}
-.pr-actions{display:flex;gap:8px}
-.pr-search{background:#0a0e16;border:1px solid var(--pat-border);border-radius:8px;padding:7px 12px;font-size:12px;color:var(--pat-text);outline:none;width:220px}
-.pr-status-filter{background:#0a0e16;border:1px solid var(--pat-border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--pat-text2);outline:none}
-.pr-table{width:100%;border-collapse:collapse;font-size:12px}
-.pr-table thead th{font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px;text-align:left;padding:10px 16px;border-bottom:1px solid var(--pat-border);white-space:nowrap}
-.pr-table tbody td{padding:11px 16px;color:var(--pat-text2);border-bottom:1px solid rgba(28,36,51,.6);white-space:nowrap}
-.pr-table tbody tr:hover td{background:rgba(255,255,255,.02)}
-.pr-table tbody tr:last-child td{border-bottom:none}
-.pr-addr-cell{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pin-ok{color:var(--pat-green);font-family:var(--font-mono);font-weight:600}
-.pr-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:7px;letter-spacing:.5px}
-.pr-badge.patched{background:var(--pat-green-dim);color:var(--pat-green)}
-.pr-badge.draft{background:var(--pat-amber-dim);color:var(--pat-amber)}
-.pr-open{background:none;border:1px solid var(--pat-border);color:var(--pat-text2);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:600}
-.pr-open:hover{border-color:var(--pat-amber);color:var(--pat-amber)}
-
-@media(max-width:700px){
-  .patcher-stats{grid-template-columns:repeat(2,1fr)}
-  .aiex-grid{grid-template-columns:1fr 1fr}
-  .aiex-field.full{grid-column:1/-1}
+/* ════════════════════════════════════════════════════════════
+   CORPORATE ENTERPRISE THEME — light, Stripe/Linear-style
+   Scoped to #agentView and #adminView only
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --corp-bg:#f6f7f9;--corp-surface:#ffffff;--corp-surface2:#fafbfc;
+  --corp-border:#e3e6eb;--corp-border-strong:#d1d6dd;
+  --corp-text:#1a1d24;--corp-text2:#5e6470;--corp-text3:#94999f;
+  --corp-blue:#3b5bdb;--corp-blue-dim:#eef1fd;--corp-blue-strong:#2d46ad;
+  --corp-green:#0d9354;--corp-green-dim:#e8f7ee;
+  --corp-amber:#b5740a;--corp-amber-dim:#fdf3e2;
+  --corp-red:#c52f2f;--corp-red-dim:#fcebeb;
+  --corp-shadow:0 1px 2px rgba(20,22,30,.04),0 1px 8px rgba(20,22,30,.04);
+  --corp-shadow-md:0 2px 6px rgba(20,22,30,.06),0 8px 24px rgba(20,22,30,.06);
+  --corp-radius:10px;--corp-radius-lg:14px;
 }
+
+#agentView.active,#adminView.active{background:var(--corp-bg)!important;color:var(--corp-text)}
+.corp-shell{padding:28px 32px 48px;max-width:1080px;margin:0 auto;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:20px;font-family:var(--font-body)}
+
+.corp-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 0 4px}
+.corp-brand{display:flex;align-items:center;gap:10px}
+.corp-brand-mark{width:32px;height:32px;background:var(--corp-blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700}
+.corp-brand-name{font-size:15px;font-weight:600;color:var(--corp-text)}
+.corp-brand-sub{font-size:11px;color:var(--corp-text3);letter-spacing:.3px}
+.corp-topbar-right{display:flex;align-items:center;gap:10px}
+.corp-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px}
+.corp-pill.live{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-pill.plan{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+.corp-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 16px;border-radius:var(--corp-radius);border:1px solid var(--corp-border);background:var(--corp-surface);color:var(--corp-text2);cursor:pointer;transition:all .15s}
+.corp-btn:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
+.corp-btn.primary{background:var(--corp-blue);border-color:var(--corp-blue);color:#fff}
+.corp-btn.primary:hover{background:var(--corp-blue-strong)}
+.corp-btn.danger{border-color:var(--corp-red-dim);color:var(--corp-red);background:var(--corp-red-dim)}
+.corp-btn.danger:hover{background:#f9dada}
+.corp-btn:disabled{opacity:.45;cursor:not-allowed}
+
+.corp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.corp-stat{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px 20px;box-shadow:var(--corp-shadow)}
+.corp-stat-lbl{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.corp-stat-val{font-size:28px;font-weight:600;color:var(--corp-text);line-height:1}
+.corp-stat-val.green{color:var(--corp-green)}
+.corp-stat-val.amber{color:var(--corp-amber)}
+.corp-stat-sub{font-size:12px;color:var(--corp-text3);margin-top:4px}
+
+.corp-card{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:22px 24px;box-shadow:var(--corp-shadow)}
+.corp-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.corp-card-title{font-size:14px;font-weight:600;color:var(--corp-text);display:flex;align-items:center;gap:8px}
+.corp-card-sub{font-size:12px;color:var(--corp-text3);margin-top:2px}
+
+.corp-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:10px 13px;font-size:13px;color:var(--corp-text);outline:none;width:100%;transition:all .15s}
+.corp-inp:focus{border-color:var(--corp-blue);background:#fff;box-shadow:0 0 0 3px var(--corp-blue-dim)}
+.corp-inp::placeholder{color:var(--corp-text3)}
+.corp-inp.filled{border-color:var(--corp-green);background:var(--corp-green-dim)}
+.corp-inp.verified{box-shadow:0 0 0 2px var(--corp-green-dim)}
+.corp-field{display:flex;flex-direction:column;gap:6px}
+.corp-field.full{grid-column:1/-1}
+.corp-field label{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.2px}
+.corp-field-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+.corp-listen-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
+.corp-listen-outer{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.corp-listen-ring{position:absolute;border-radius:50%;border:1px solid var(--corp-blue-dim);pointer-events:none;transition:all .4s}
+.corp-listen-ring.r1{width:120px;height:120px}.corp-listen-ring.r2{width:148px;height:148px}
+.corp-listen-ring.r3{width:176px;height:176px}.corp-listen-ring.r4{width:204px;height:204px}
+.corp-listen-outer.active .corp-listen-ring{animation:corpRingExpand 2.5s ease-out infinite}
+.corp-listen-outer.active .corp-listen-ring.r2{animation-delay:.5s}
+.corp-listen-outer.active .corp-listen-ring.r3{animation-delay:1s}
+.corp-listen-outer.active .corp-listen-ring.r4{animation-delay:1.5s}
+@keyframes corpRingExpand{0%{opacity:.6;transform:scale(.92);border-color:var(--corp-blue)}100%{opacity:0;transform:scale(1.1);border-color:transparent}}
+.corp-listen-btn{width:96px;height:96px;border-radius:50%;background:var(--corp-surface);border:2px solid var(--corp-border-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .25s;z-index:1;box-shadow:var(--corp-shadow-md)}
+.corp-listen-btn:hover{border-color:var(--corp-blue)}
+.corp-listen-btn.active{background:var(--corp-red-dim);border-color:var(--corp-red)}
+.corp-listen-icon{font-size:26px}
+.corp-listen-lbl{font-size:8px;font-weight:700;color:var(--corp-text3);letter-spacing:1px;text-transform:uppercase}
+.corp-status-main{font-size:14px;font-weight:600;color:var(--corp-text)}
+.corp-status-sub{font-size:11px;color:var(--corp-text3);margin-top:2px}
+.corp-wave{display:flex;align-items:center;gap:3px;height:28px}
+.corp-wb{width:3px;border-radius:3px;background:var(--corp-border);transition:height .1s}
+.corp-wave.active .corp-wb{background:var(--corp-blue);animation:corpWave .8s ease-in-out infinite}
+
+.corp-strategy-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:480px}
+.corp-strat{font-size:9px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text3);transition:all .25s}
+.corp-strat.fired{background:var(--corp-blue-dim);border-color:var(--corp-blue);color:var(--corp-blue-strong)}
+.corp-layers-row{display:flex;gap:4px;width:100%;max-width:480px}
+.corp-layer-dot{flex:1;height:4px;border-radius:2px;background:var(--corp-border);transition:all .3s}
+.corp-layer-dot.active{background:var(--corp-blue)}
+.corp-layer-dot.warn{background:var(--corp-amber)}
+
+.corp-transcript{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:12px 15px;font-size:12px;color:var(--corp-text2);width:100%;max-width:480px;min-height:48px;line-height:1.6}
+.corp-conf-wrap{width:100%;max-width:480px}
+.corp-conf-bar{height:5px;background:var(--corp-border);border-radius:3px;overflow:hidden;margin-top:5px}
+.corp-conf-fill{height:100%;border-radius:3px;transition:width .5s ease,background .3s}
+
+.corp-table{width:100%;border-collapse:collapse;font-size:13px}
+.corp-table thead th{font-size:11px;color:var(--corp-text3);font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid var(--corp-border);white-space:nowrap}
+.corp-table tbody td{padding:11px 14px;color:var(--corp-text2);border-bottom:1px solid var(--corp-border);white-space:nowrap}
+.corp-table tbody tr:hover td{background:var(--corp-surface2)}
+.corp-table tbody tr:last-child td{border-bottom:none}
+.corp-table .addr-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--corp-text)}
+.corp-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block}
+.corp-badge.patched{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-badge.draft{background:var(--corp-amber-dim);color:var(--corp-amber)}
+.corp-badge.active{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-badge.inactive{background:var(--corp-surface2);color:var(--corp-text3)}
+.corp-pin-ok{color:var(--corp-green);font-weight:600}
+
+.corp-sidebar{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:2px}
+.corp-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--corp-radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--corp-text2);transition:all .15s}
+.corp-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
+.corp-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+.corp-nav-badge{margin-left:auto;background:var(--corp-surface2);color:var(--corp-text3);font-size:10px;padding:2px 7px;border-radius:9px;font-weight:600}
+
+.corp-admin-layout{display:flex;gap:24px;padding:28px 32px 48px;max-width:1200px;margin:0 auto;overflow-y:auto;height:100%}
+.corp-admin-main{flex:1;display:flex;flex-direction:column;gap:20px;min-width:0}
+
+.corp-usage-meter{display:flex;align-items:center;gap:12px}
+.corp-usage-bar{flex:1;height:8px;background:var(--corp-border);border-radius:4px;overflow:hidden}
+.corp-usage-fill{height:100%;border-radius:4px;transition:width .4s}
+.corp-usage-fill.ok{background:var(--corp-green)}
+.corp-usage-fill.warn{background:var(--corp-amber)}
+.corp-usage-fill.over{background:var(--corp-red)}
+.corp-usage-text{font-size:12px;color:var(--corp-text2);font-weight:600;white-space:nowrap}
+
+.corp-plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.corp-plan-card{border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px;background:var(--corp-surface2)}
+.corp-plan-card.current{border:2px solid var(--corp-blue);background:var(--corp-blue-dim)}
+.corp-plan-name{font-size:13px;color:var(--corp-text3);font-weight:600}
+.corp-plan-price{font-size:22px;font-weight:600;color:var(--corp-text);margin:6px 0}
+.corp-plan-detail{font-size:12px;color:var(--corp-text2)}
+.corp-plan-current-badge{display:inline-block;background:var(--corp-blue);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;margin-bottom:8px}
+
+@keyframes corpWave{0%,100%{height:4px}50%{height:24px}}
+
+@media(max-width:900px){
+  .corp-admin-layout{flex-direction:column}
+  .corp-sidebar{width:100%;flex-direction:row;overflow-x:auto}
+  .corp-stats{grid-template-columns:repeat(2,1fr)}
+  .corp-field-grid{grid-template-columns:1fr 1fr}
+  .corp-plan-grid{grid-template-columns:1fr}
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN VIEW LIGHT RETHEME — overrides old dark classes
+   Scoped to #adminView so public/landing pages stay untouched
+   ════════════════════════════════════════════════════════════ */
+/* Scope old dark-theme variable NAMES to light corp values inside agent/admin —
+   this catches every remaining inline style="color:var(--text3)" etc without
+   needing to edit each one individually. Public/landing pages are untouched
+   since this rule only applies inside #agentView and #adminView. */
+#agentView,#adminView{
+  --text:var(--corp-text);--text2:var(--corp-text2);--text3:var(--corp-text3);
+  --green:var(--corp-green);--green2:var(--corp-green);
+  --amber:var(--corp-amber);--amber2:var(--corp-amber);
+  --red:var(--corp-red);--blue:var(--corp-blue);
+  --border:var(--corp-border);--border2:var(--corp-border-strong);--border3:var(--corp-border-strong);
+  --surface:var(--corp-surface);--surface2:var(--corp-surface2);
+  --font-mono:var(--font-body);--font-display:var(--font-body);
+}
+
+#adminView.active{background:var(--corp-bg)!important;display:flex!important}
+
+#adminView .admin-sidebar-v2{width:230px;min-width:230px;background:var(--corp-surface);border-right:1px solid var(--corp-border);box-shadow:none}
+#adminView .brand-logo{background:var(--corp-blue);box-shadow:none;color:#fff;font-size:16px}
+#adminView .brand-name{color:var(--corp-text);font-weight:600}
+#adminView .brand-sub{color:var(--corp-text3)}
+#adminView .admin-nav-item{color:var(--corp-text2);border-radius:var(--corp-radius);font-weight:500}
+#adminView .admin-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
+#adminView .admin-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+#adminView .admin-nav-badge{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
+#adminView .admin-nav-item.active .admin-nav-badge{background:rgba(59,91,219,.12);color:var(--corp-blue-strong);border-color:transparent}
+#adminView .council-status-pill{background:var(--corp-surface2);border:1px solid var(--corp-border);box-shadow:none}
+#adminView .council-status-pill.active{border-color:var(--corp-blue);background:var(--corp-blue-dim);box-shadow:none;animation:none}
+#adminView .council-status-pill.done{border-color:var(--corp-green);background:var(--corp-green-dim)}
+
+#adminView .admin-content-v2{background:var(--corp-bg)}
+#adminView .admin-topbar{background:var(--corp-surface);border-bottom:1px solid var(--corp-border);backdrop-filter:none}
+#adminView .admin-topbar-title{color:var(--corp-text3)}
+#adminView .admin-topbar-heading{color:var(--corp-text);font-weight:600;font-family:var(--font-body)}
+#adminView .admin-user-chip{background:var(--corp-green-dim);border:1px solid transparent;color:var(--corp-green)}
+#adminView .admin-user-dot{background:var(--corp-green);box-shadow:none}
+#adminView .btn-open-agent{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-family:var(--font-body)}
+#adminView .btn-open-agent:hover{background:#dde4fb}
+#adminView .btn-refresh{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text2);font-family:var(--font-body)}
+#adminView .btn-refresh:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
+#adminView .btn-signout{background:var(--corp-red-dim);border:1px solid transparent;color:var(--corp-red);font-family:var(--font-body)}
+#adminView .btn-signout:hover{background:#f9dada}
+
+#adminView .admin-body{background:transparent}
+#adminView .stats-grid-v2{gap:14px}
+#adminView .stat-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .stat-card:hover{border-color:var(--corp-border-strong);box-shadow:var(--corp-shadow-md);transform:none}
+#adminView .stat-card::after{display:none}
+#adminView .stat-card-label{color:var(--corp-text3)}
+#adminView .stat-card-val{font-family:var(--font-body)!important;text-shadow:none!important}
+#adminView .stat-card.green .stat-card-val{color:var(--corp-green)!important}
+#adminView .stat-card.amber .stat-card-val{color:var(--corp-amber)!important}
+#adminView .stat-card.blue .stat-card-val{color:var(--corp-blue)!important}
+#adminView .stat-card.red .stat-card-val{color:var(--corp-red)!important}
+#adminView .stat-card.purple .stat-card-val{color:#7c5cd6!important}
+#adminView .stat-card-sub{color:var(--corp-text3)}
+
+#adminView .chart-card,#adminView .table-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .chart-title{color:var(--corp-text3)}
+#adminView .bar-chart::after{background:var(--corp-border)}
+#adminView .bar:hover::after{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .bar-lbl{color:var(--corp-text3)}
+#adminView .donut-legend-item{color:var(--corp-text2)}
+
+#adminView .table-card-hdr{border-bottom:1px solid var(--corp-border)}
+#adminView .table-card-title{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .tbl-search{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .tbl-search:focus{border-color:var(--corp-blue)}
+#adminView .tbl-export{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-weight:600}
+#adminView .tbl-export:hover{background:#dde4fb}
+
+#adminView .admin-table th{color:var(--corp-text3);border-bottom:1px solid var(--corp-border)}
+#adminView .admin-table td{color:var(--corp-text2);border-bottom:1px solid var(--corp-border)}
+#adminView .admin-table td:first-child{color:var(--corp-text)}
+#adminView .admin-table tr:hover td{background:var(--corp-surface2)}
+
+#adminView .agents-grid{gap:14px}
+#adminView .agent-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .agent-card:hover{border-color:var(--corp-border-strong);transform:none;box-shadow:var(--corp-shadow-md)}
+#adminView .agent-avatar{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong)}
+#adminView .agent-card-name{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .agent-card-id{color:var(--corp-text3)}
+#adminView .agent-stat{background:var(--corp-surface2)}
+#adminView .agent-stat-val{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .agent-stat-lbl{color:var(--corp-text3)}
+#adminView .agent-action.primary{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
+#adminView .agent-action.primary:hover{background:#dde4fb}
+#adminView .agent-action.danger{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
+#adminView .agent-action.danger:hover{background:#f9dada}
+
+#adminView .a-btn.green{background:var(--corp-green);color:#fff;box-shadow:none}
+#adminView .a-btn.green:hover{background:#0b7a45;transform:none;box-shadow:none}
+#adminView .a-btn.red{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
+#adminView .a-btn.blue{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
+#adminView .af-inp,#adminView .af-select,#adminView .search-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .af-inp:focus,#adminView .af-select:focus{border-color:var(--corp-blue);box-shadow:0 0 0 3px var(--corp-blue-dim)}
+#adminView .af-label{color:var(--corp-text3)}
+#adminView .badge.on{background:var(--corp-green-dim);color:var(--corp-green);border:1px solid transparent}
+#adminView .badge.off{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
 </style>
 
 <script id="vn-agent-admin-upgrade">
@@ -4271,10 +4467,10 @@ function updatePatcherStats() {
     durStr = String(Math.floor(avgSec / 60)).padStart(2, '0') + ':' + String(avgSec % 60).padStart(2, '0');
   }
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('ps-today', todayCount);
-  set('ps-patched', patchedCount);
-  set('ps-draft', draftCount);
-  set('ps-duration', durStr);
+  set('cs-today', todayCount);
+  set('cs-patched', patchedCount);
+  set('cs-draft', draftCount);
+  set('cs-duration', durStr);
 }
 
 function renderPatchedRecordsTable(filtered) {
@@ -4284,7 +4480,7 @@ function renderPatchedRecordsTable(filtered) {
   if (countEl) countEl.textContent = (typeof addrHistory !== 'undefined' ? addrHistory.length : 0);
   if (!tbody) return;
   if (!addresses.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--pat-text3);font-size:11px">No records yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--corp-text3);font-size:13px">No records yet</td></tr>';
     return;
   }
   tbody.innerHTML = addresses.map(a => {
@@ -4295,11 +4491,11 @@ function renderPatchedRecordsTable(filtered) {
       <td>${when}</td>
       <td>${a.name || '\u2014'}</td>
       <td>${a.phone || '\u2014'}</td>
-      <td class="pr-addr-cell" title="${(a.address || '').replace(/"/g,'&quot;')}">${a.address ? a.address.substring(0, 40) : '\u2014'}</td>
-      <td>${a.pincode && a.pincode !== 'N/A' ? `<span class="pin-ok">${a.pincode} \u2713</span>` : '\u2014'}</td>
+      <td class="addr-cell" title="${(a.address || '').replace(/"/g,'&quot;')}">${a.address ? a.address.substring(0, 40) : '\u2014'}</td>
+      <td>${a.pincode && a.pincode !== 'N/A' ? `<span class="corp-pin-ok">${a.pincode} \u2713</span>` : '\u2014'}</td>
       <td>${(typeof currentAgent !== 'undefined' && currentAgent && currentAgent.name) || 'Agent'}</td>
-      <td><span class="pr-badge ${status}">${status}</span></td>
-      <td><button class="pr-open" onclick="openPatchedRecord('${(a.address||'').replace(/'/g,"\\'")}')">Open</button></td>
+      <td><span class="corp-badge ${status}">${status}</span></td>
+      <td><button class="corp-btn" onclick="openPatchedRecord('${(a.address||'').replace(/'/g,"\\'")}')">Open</button></td>
     </tr>`;
   }).join('');
 }
@@ -4329,7 +4525,7 @@ async function runQuickLookup() {
   const q = (document.getElementById('quickLookupInp')?.value || '').trim();
   if (!q) { toast('\u26A0\uFE0F Enter a pincode or city name', 'err'); return; }
   const resEl = document.getElementById('quickLookupResult');
-  if (resEl) resEl.innerHTML = '<div style="color:var(--pat-text3);font-size:11px;font-family:var(--font-mono);padding:8px 0">Searching\u2026</div>';
+  if (resEl) resEl.innerHTML = '<div style="color:var(--corp-text3);font-size:12px;padding:6px 0">Searching\u2026</div>';
   try {
     const dbRes = (typeof searchPinDB === 'function') ? searchPinDB(q) : [];
     let result = dbRes && dbRes.length ? dbRes[0] : null;
@@ -4343,22 +4539,22 @@ async function runQuickLookup() {
       }
     }
     if (result && resEl) {
-      resEl.innerHTML = `<div class="ql-result">
-        <span class="ql-pin">\uD83D\uDCEE ${result.p}</span>
-        <span>${result.po || ''}</span>
-        <span style="color:var(--pat-text3)">${result.d || ''}, ${result.s || ''}</span>
+      resEl.innerHTML = `<div style="background:var(--corp-green-dim);border-radius:var(--corp-radius);padding:10px 14px;display:flex;align-items:center;gap:12px;font-size:13px;flex-wrap:wrap">
+        <span style="color:var(--corp-green);font-weight:700">${result.p}</span>
+        <span style="color:var(--corp-text)">${result.po || ''}</span>
+        <span style="color:var(--corp-text3)">${result.d || ''}, ${result.s || ''}</span>
       </div>`;
       const cityEl = document.getElementById('lfv-city');
       const stateEl = document.getElementById('lfv-state');
       const pinEl = document.getElementById('lfv-pincode');
-      if (cityEl) cityEl.value = result.d || '';
-      if (stateEl) stateEl.value = result.s || '';
-      if (pinEl) pinEl.value = result.p || '';
+      if (cityEl) { cityEl.value = result.d || ''; cityEl.classList.add('filled'); }
+      if (stateEl) { stateEl.value = result.s || ''; stateEl.classList.add('filled'); }
+      if (pinEl) { pinEl.value = result.p || ''; pinEl.classList.add('filled','verified'); }
     } else if (resEl) {
-      resEl.innerHTML = '<div style="color:var(--red);font-size:11px;padding:8px 0">\u26A0\uFE0F Not found. Try a different pincode or city.</div>';
+      resEl.innerHTML = '<div style="color:var(--corp-red);font-size:12px;padding:6px 0">\u26A0\uFE0F Not found. Try a different pincode or city.</div>';
     }
   } catch (e) {
-    if (resEl) resEl.innerHTML = `<div style="color:var(--red);font-size:11px;padding:8px 0">\u26A0\uFE0F ${e.message}</div>`;
+    if (resEl) resEl.innerHTML = `<div style="color:var(--corp-red);font-size:12px;padding:6px 0">\u26A0\uFE0F ${e.message}</div>`;
   }
 }
 
@@ -4366,174 +4562,197 @@ function renderAgentView() {
   const agentView = document.getElementById('agentView');
   if (!agentView) return;
 
+  const plan = (typeof currentCompany !== 'undefined' && currentCompany) ? getPlan(currentCompany) : PLANS.starter;
+  const usage = (typeof currentCompany !== 'undefined' && currentCompany) ? getCompanyUsage(currentCompany.id) : 0;
+  const usagePct = plan.monthlyPatches === Infinity ? 0 : Math.min(100, Math.round((usage / plan.monthlyPatches) * 100));
+  const usageClass = usagePct >= 100 ? 'over' : usagePct >= 80 ? 'warn' : 'ok';
+  const usageLimitText = plan.monthlyPatches === Infinity ? 'Unlimited' : plan.monthlyPatches.toLocaleString('en-IN');
+
   agentView.innerHTML = `
-    <div class="patcher-shell">
+    <div class="corp-shell">
 
-      <div class="patcher-stats">
-        <div class="pstat-card">
-          <div class="pstat-row">
-            <span class="pstat-lbl">CALLS TODAY</span>
-            <span class="pstat-icon">\u260E\uFE0F</span>
+      <div class="corp-topbar">
+        <div class="corp-brand">
+          <div class="corp-brand-mark">VN</div>
+          <div>
+            <div class="corp-brand-name">Vishal Navigation</div>
+            <div class="corp-brand-sub">Address Patcher · ${(typeof currentCompany !== 'undefined' && currentCompany?.name) || 'Company'}</div>
           </div>
-          <div class="pstat-val" id="ps-today">0</div>
         </div>
-        <div class="pstat-card patched">
-          <div class="pstat-row">
-            <span class="pstat-lbl">PATCHED</span>
-            <span class="pstat-icon">\u2713</span>
-          </div>
-          <div class="pstat-val" id="ps-patched">0</div>
-        </div>
-        <div class="pstat-card draft">
-          <div class="pstat-row">
-            <span class="pstat-lbl">DRAFTS</span>
-            <span class="pstat-icon">\u2630</span>
-          </div>
-          <div class="pstat-val" id="ps-draft">0</div>
-        </div>
-        <div class="pstat-card">
-          <div class="pstat-row">
-            <span class="pstat-lbl">AVG DURATION</span>
-            <span class="pstat-icon">\uD83C\uDF99\uFE0F</span>
-          </div>
-          <div class="pstat-val" id="ps-duration">00:00</div>
+        <div class="corp-topbar-right">
+          <span class="corp-pill live"><span style="width:6px;height:6px;background:var(--corp-green);border-radius:50%;display:inline-block"></span> Live</span>
+          <span class="corp-pill plan">${plan.name} plan</span>
+          <button class="corp-btn danger" onclick="agentLogout()">Sign out</button>
         </div>
       </div>
 
-      <div class="patcher-card">
-        <div class="ql-row">
-          <span class="ql-icon">\uD83D\uDD0D</span>
-          <span class="ql-label">QUICK LOOKUP</span>
-          <span class="ql-hint">\u2014 pincode (6-digit) ya city/locality name try karein</span>
+      <div class="corp-stats">
+        <div class="corp-stat">
+          <div class="corp-stat-lbl">Calls today</div>
+          <div class="corp-stat-val" id="cs-today">0</div>
         </div>
-        <div class="ql-input-row">
-          <input id="quickLookupInp" class="ql-inp" placeholder="e.g. 411001 or Shivajinagar" onkeydown="if(event.key==='Enter')runQuickLookup()"/>
-          <button class="ql-btn" onclick="runQuickLookup()"><span>\uD83D\uDD0D</span> Lookup</button>
+        <div class="corp-stat">
+          <div class="corp-stat-lbl">Patched</div>
+          <div class="corp-stat-val green" id="cs-patched">0</div>
         </div>
-        <div id="quickLookupResult"></div>
+        <div class="corp-stat">
+          <div class="corp-stat-lbl">Drafts</div>
+          <div class="corp-stat-val amber" id="cs-draft">0</div>
+        </div>
+        <div class="corp-stat">
+          <div class="corp-stat-lbl">Avg duration</div>
+          <div class="corp-stat-val" id="cs-duration">00:00</div>
+        </div>
       </div>
 
-      <div class="patcher-card listener-card">
-        <div class="lc-top">
-          <div class="lc-left">
-            <span class="lc-icon">\uD83C\uDF99\uFE0F</span>
-            <div>
-              <div class="lc-badge">LISTENER MODE (LIVE)</div>
-              <div class="lc-title">Live Call Listening \u2014 Deepgram real-time \u00b7 7 strategies \u00b7 10 layers</div>
-            </div>
+      <div class="corp-card">
+        <div class="corp-card-hdr">
+          <div>
+            <div class="corp-card-title">Monthly usage</div>
+            <div class="corp-card-sub">Resets at the start of each calendar month</div>
           </div>
-          <span class="lc-status" id="lcStatusBadge">IDLE</span>
+        </div>
+        <div class="corp-usage-meter">
+          <div class="corp-usage-bar"><div class="corp-usage-fill ${usageClass}" style="width:${usagePct}%"></div></div>
+          <div class="corp-usage-text">${usage.toLocaleString('en-IN')} / ${usageLimitText} patches</div>
+        </div>
+      </div>
+
+      <div class="corp-card">
+        <div class="corp-card-hdr">
+          <div>
+            <div class="corp-card-title">Quick lookup</div>
+            <div class="corp-card-sub">Pincode or city/locality name</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <input id="quickLookupInp" class="corp-inp" placeholder="e.g. 411001 or Shivajinagar" onkeydown="if(event.key==='Enter')runQuickLookup()"/>
+          <button class="corp-btn primary" onclick="runQuickLookup()">Lookup</button>
+        </div>
+        <div id="quickLookupResult" style="margin-top:10px"></div>
+      </div>
+
+      <div class="corp-card">
+        <div class="corp-card-hdr">
+          <div>
+            <div class="corp-card-title">Live call listening</div>
+            <div class="corp-card-sub">Real-time transcription · 7 strategies · 10 verification layers</div>
+          </div>
+          <span class="corp-pill" id="lcStatusBadge" style="background:var(--corp-surface2);color:var(--corp-text3)">Idle</span>
         </div>
 
-        <div class="lc-body">
-          <div class="listen-outer" id="listenOuter" onclick="toggleListen()">
-            <div class="listen-ring r1"></div><div class="listen-ring r2"></div>
-            <div class="listen-ring r3"></div><div class="listen-ring r4"></div>
-            <div class="listen-btn" id="listenBtn">
-              <div class="listen-icon" id="listenIcon">\uD83C\uDF99\uFE0F</div>
-              <div class="listen-lbl" id="listenLbl">TAP TO START</div>
+        <div class="corp-listen-wrap">
+          <div class="corp-listen-outer" id="listenOuter" onclick="toggleListen()">
+            <div class="corp-listen-ring r1"></div><div class="corp-listen-ring r2"></div>
+            <div class="corp-listen-ring r3"></div><div class="corp-listen-ring r4"></div>
+            <div class="corp-listen-btn" id="listenBtn">
+              <div class="corp-listen-icon" id="listenIcon">\u25CF</div>
+              <div class="corp-listen-lbl" id="listenLbl">Start</div>
             </div>
           </div>
 
-          <div class="wave-bars" id="waveBars">
-            <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-            <div class="wb"></div><div class="wb"></div><div class="wb"></div>
-            <div class="wb"></div><div class="wb"></div><div class="wb"></div><div class="wb"></div>
+          <div class="corp-wave" id="waveBars">
+            <div class="corp-wb"></div><div class="corp-wb"></div><div class="corp-wb"></div>
+            <div class="corp-wb"></div><div class="corp-wb"></div><div class="corp-wb"></div>
+            <div class="corp-wb"></div><div class="corp-wb"></div><div class="corp-wb"></div><div class="corp-wb"></div>
           </div>
 
-          <div class="agent-status">
-            <div class="as-main" id="asMain">Tap to start listening</div>
-            <div class="as-sub" id="asSub">7 strategies \u00b7 10 layers \u00b7 20 languages</div>
+          <div style="text-align:center">
+            <div class="corp-status-main" id="asMain">Tap to start listening</div>
+            <div class="corp-status-sub" id="asSub">7 strategies · 10 layers · 20 languages</div>
           </div>
 
-          <div class="strategy-row">
-            <div class="strat" id="s1">S1:AgentQ</div><div class="strat" id="s2">S2:Trigger</div>
-            <div class="strat" id="s3">S3:Context</div><div class="strat" id="s4">S4:Silence</div>
-            <div class="strat" id="s5">S5:Pattern</div><div class="strat" id="s6">S6:Pincode</div>
-            <div class="strat" id="s7">S7:Buffer</div>
+          <div class="corp-strategy-row">
+            <div class="corp-strat" id="s1">S1 Agent Q</div><div class="corp-strat" id="s2">S2 Trigger</div>
+            <div class="corp-strat" id="s3">S3 Context</div><div class="corp-strat" id="s4">S4 Silence</div>
+            <div class="corp-strat" id="s5">S5 Pattern</div><div class="corp-strat" id="s6">S6 Pincode</div>
+            <div class="corp-strat" id="s7">S7 Buffer</div>
           </div>
 
-          <div class="layers-row" id="layersRow">
-            <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
-            <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
-            <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
-            <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
-            <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
+          <div class="corp-layers-row" id="layersRow">
+            <div class="corp-layer-dot" id="l1"></div><div class="corp-layer-dot" id="l2"></div>
+            <div class="corp-layer-dot" id="l3"></div><div class="corp-layer-dot" id="l4"></div>
+            <div class="corp-layer-dot" id="l5"></div><div class="corp-layer-dot" id="l6"></div>
+            <div class="corp-layer-dot" id="l7"></div><div class="corp-layer-dot" id="l8"></div>
+            <div class="corp-layer-dot" id="l9"></div><div class="corp-layer-dot" id="l10"></div>
           </div>
 
-          <div class="live-transcript-box" id="liveTranscriptBox">
-            <span style="color:var(--pat-text3);font-style:italic">Transcript will appear here as customer speaks\u2026</span>
+          <div class="corp-transcript" id="liveTranscriptBox">
+            <span style="color:var(--corp-text3);font-style:italic">Transcript will appear here as the customer speaks\u2026</span>
           </div>
 
-          <div class="conf-meter-wrap">
+          <div class="corp-conf-wrap">
             <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:9px;color:var(--pat-text3);font-family:var(--font-mono);letter-spacing:1px">CONFIDENCE</span>
-              <span id="confPctLive" style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--pat-text3)">0%</span>
+              <span style="font-size:11px;color:var(--corp-text3);font-weight:600">Confidence</span>
+              <span id="confPctLive" style="font-size:13px;font-weight:700;color:var(--corp-text3)">0%</span>
             </div>
-            <div class="conf-meter-bar">
-              <div class="conf-meter-fill" id="confFillLive" style="width:0%;background:var(--border2)"></div>
+            <div class="corp-conf-bar">
+              <div class="corp-conf-fill" id="confFillLive" style="width:0%;background:var(--corp-border)"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="patcher-card">
-        <div class="aiex-hdr">
-          <div class="aiex-title"><span>\u2728</span> AI-EXTRACTED ADDRESS</div>
-          <div class="aiex-actions">
-            <button class="aiex-btn" onclick="triggerCurrentLocation()"><span>\uD83D\uDCCD</span> Detect by GPS</button>
-            <button class="aiex-btn" onclick="forceExtract()" id="btnVerifyPin"><span>\u2713</span> Verify Pincode</button>
-            <button class="aiex-btn primary" onclick="stopAndSave()" id="btnPatchSave"><span>\uD83D\uDCBE</span> Patch &amp; Save</button>
+      <div class="corp-card">
+        <div class="corp-card-hdr">
+          <div>
+            <div class="corp-card-title">AI-extracted address</div>
+            <div class="corp-card-sub">Review and correct before saving</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="corp-btn" onclick="triggerCurrentLocation()">Detect by GPS</button>
+            <button class="corp-btn" onclick="forceExtract()" id="btnVerifyPin">Verify pincode</button>
+            <button class="corp-btn primary" onclick="stopAndSave()" id="btnPatchSave">Patch &amp; save</button>
           </div>
         </div>
 
-        <div class="aiex-grid">
-          <div class="aiex-field">
-            <label>\uD83D\uDC64 CUSTOMER NAME</label>
-            <input id="lfv-name" placeholder="e.g. Rohit Kumar"/>
+        <div class="corp-field-grid">
+          <div class="corp-field">
+            <label>Customer name</label>
+            <input class="corp-inp" id="lfv-name" placeholder="e.g. Rohit Kumar"/>
           </div>
-          <div class="aiex-field">
-            <label>\uD83D\uDCDE PHONE (10-DIGIT)</label>
-            <input id="lfv-phone" placeholder="98xxxxxxxx"/>
+          <div class="corp-field">
+            <label>Phone (10-digit)</label>
+            <input class="corp-inp" id="lfv-phone" placeholder="98xxxxxxxx"/>
           </div>
-          <div class="aiex-field">
-            <label>\uD83D\uDCF2 ALT PHONE</label>
-            <input id="lfv-altphone" placeholder="optional"/>
+          <div class="corp-field">
+            <label>Alt phone</label>
+            <input class="corp-inp" id="lfv-altphone" placeholder="Optional"/>
           </div>
-          <div class="aiex-field full">
-            <label>\uD83D\uDCCD ADDRESS LINE</label>
-            <input id="lfv-addrline" placeholder="House no, street, area"/>
+          <div class="corp-field full">
+            <label>Address line</label>
+            <input class="corp-inp" id="lfv-addrline" placeholder="House no, street, area"/>
           </div>
-          <div class="aiex-field">
-            <label>\uD83D\uDCCD LANDMARK</label>
-            <input id="lfv-landmark" placeholder="Near\u2026"/>
+          <div class="corp-field">
+            <label>Landmark</label>
+            <input class="corp-inp" id="lfv-landmark" placeholder="Near\u2026"/>
           </div>
-          <div class="aiex-field">
-            <label>\uD83D\uDCCD CITY</label>
-            <input id="lfv-city" placeholder="District"/>
+          <div class="corp-field">
+            <label>City / district</label>
+            <input class="corp-inp" id="lfv-city" placeholder="District"/>
           </div>
-          <div class="aiex-field">
-            <label>\uD83D\uDCCD STATE</label>
-            <input id="lfv-state" placeholder="State"/>
+          <div class="corp-field">
+            <label>State</label>
+            <input class="corp-inp" id="lfv-state" placeholder="State"/>
           </div>
-          <div class="aiex-field">
-            <label># PINCODE</label>
-            <input id="lfv-pincode" placeholder="6-digit"/>
+          <div class="corp-field">
+            <label>Pincode</label>
+            <input class="corp-inp" id="lfv-pincode" placeholder="6-digit"/>
           </div>
         </div>
 
-        <div class="manual-row" style="margin-top:14px">
-          <input class="manual-inp" id="manualInp" placeholder="\u2328\uFE0F Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
-          <button class="manual-go" onclick="manualSearch()">Search</button>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <input class="corp-inp" id="manualInp" placeholder="Type address manually\u2026" onkeydown="if(event.key==='Enter')manualSearch()"/>
+          <button class="corp-btn" onclick="manualSearch()">Search</button>
         </div>
       </div>
 
-      <div class="patcher-card" style="padding:0;overflow:hidden">
-        <div class="pr-hdr">
-          <div class="pr-title"><span>\u2630</span> Patched Records <span class="pr-count" id="prCount">0</span></div>
-          <div class="pr-actions">
-            <input class="pr-search" id="prSearch" placeholder="Search name / phone / city / pincode" oninput="filterPatchedRecords(this.value)"/>
-            <select class="pr-status-filter" id="prStatusFilter" onchange="filterPatchedRecords(document.getElementById('prSearch').value)">
+      <div class="corp-card" style="padding:0;overflow:hidden">
+        <div class="corp-card-hdr" style="padding:18px 22px;margin-bottom:0;border-bottom:1px solid var(--corp-border)">
+          <div class="corp-card-title">Patched records <span class="corp-nav-badge" id="prCount">0</span></div>
+          <div style="display:flex;gap:8px">
+            <input class="corp-inp" id="prSearch" style="width:220px" placeholder="Search name / phone / city / pincode" oninput="filterPatchedRecords(this.value)"/>
+            <select class="corp-inp" id="prStatusFilter" style="width:auto" onchange="filterPatchedRecords(document.getElementById('prSearch').value)">
               <option value="">All status</option>
               <option value="patched">Patched</option>
               <option value="draft">Draft</option>
@@ -4541,15 +4760,15 @@ function renderAgentView() {
           </div>
         </div>
         <div style="overflow-x:auto">
-          <table class="pr-table">
+          <table class="corp-table">
             <thead>
               <tr>
-                <th>WHEN</th><th>CUSTOMER</th><th>PHONE</th><th>ADDRESS</th>
-                <th>PINCODE</th><th>AGENT</th><th>STATUS</th><th></th>
+                <th>When</th><th>Customer</th><th>Phone</th><th>Address</th>
+                <th>Pincode</th><th>Agent</th><th>Status</th><th></th>
               </tr>
             </thead>
             <tbody id="patchedRecordsTbody">
-              <tr><td colspan="8" style="text-align:center;padding:24px;color:var(--pat-text3);font-size:11px">No records yet</td></tr>
+              <tr><td colspan="8" style="text-align:center;padding:28px;color:var(--corp-text3);font-size:13px">No records yet</td></tr>
             </tbody>
           </table>
         </div>
@@ -4664,18 +4883,19 @@ function updateConfidenceLive(pct) {
   const pctEl = document.getElementById('confPctLive');
   if (fill) {
     fill.style.width = pct + '%';
-    fill.style.background = pct >= 80 ? 'linear-gradient(90deg,var(--green2),var(--green))' :
-      pct >= 55 ? 'linear-gradient(90deg,var(--amber2),var(--amber))' :
-      'linear-gradient(90deg,#cc2233,var(--red))';
+    fill.style.background = pct >= 80 ? 'var(--corp-green)' :
+      pct >= 55 ? 'var(--corp-amber)' : 'var(--corp-red)';
   }
   if (pctEl) {
     pctEl.textContent = pct + '%';
-    pctEl.style.color = pct >= 80 ? 'var(--green)' : pct >= 55 ? 'var(--amber)' : 'var(--red)';
+    pctEl.style.color = pct >= 80 ? 'var(--corp-green)' : pct >= 55 ? 'var(--corp-amber)' : 'var(--corp-text3)';
   }
   const badge = document.getElementById('lcStatusBadge');
   if (badge) {
-    badge.textContent = pct >= 60 ? 'PATCHED' : pct > 0 ? 'DRAFT' : 'IDLE';
-    badge.className = 'lc-status' + (pct >= 60 ? ' patched' : pct > 0 ? ' draft' : '');
+    const label = pct >= 60 ? 'Patched' : pct > 0 ? 'Draft' : 'Idle';
+    badge.textContent = label;
+    badge.style.background = pct >= 60 ? 'var(--corp-green-dim)' : pct > 0 ? 'var(--corp-amber-dim)' : 'var(--corp-surface2)';
+    badge.style.color = pct >= 60 ? 'var(--corp-green)' : pct > 0 ? 'var(--corp-amber)' : 'var(--corp-text3)';
   }
 }
 
@@ -4696,7 +4916,7 @@ function resetLiveFields() {
   });
   updateConfidenceLive(0);
   const box = document.getElementById('liveTranscriptBox');
-  if (box) box.innerHTML = '<span style="color:var(--pat-text3);font-style:italic">Transcript will appear here as customer speaks…</span>';
+  if (box) box.innerHTML = '<span style="color:var(--corp-text3);font-style:italic">Transcript will appear here as the customer speaks…</span>';
 }
 
 function forceExtract() {
@@ -4710,6 +4930,16 @@ function forceExtract() {
 function stopAndSave() {
   if (typeof stopListen === 'function') stopListen();
   syncListenButtons();
+
+  // Enforce monthly usage cap for the agent's company plan
+  if (typeof currentCompany !== 'undefined' && currentCompany) {
+    const plan = getPlan(currentCompany);
+    const used = getCompanyUsage(currentCompany.id);
+    if (used >= plan.monthlyPatches) {
+      toast(`⚠️ Monthly limit reached (${plan.monthlyPatches} patches on ${plan.name} plan). Ask your admin to upgrade.`, 'err', 6000);
+      return;
+    }
+  }
 
   const name = document.getElementById('lfv-name')?.value.trim() || '';
   const phone = document.getElementById('lfv-phone')?.value.trim() || '';
@@ -4826,6 +5056,9 @@ function renderAdminView() {
         </div>
         <div class="admin-nav-item" id="anav-companies" onclick="switchAdminV2('companies',this)">
           <span class="nav-icon">🏢</span> Companies
+        </div>
+        <div class="admin-nav-item" id="anav-billing" onclick="switchAdminV2('billing',this)">
+          <span class="nav-icon">💳</span> Billing &amp; Plans
         </div>
         <div class="admin-nav-item" id="anav-activity" onclick="switchAdminV2('activity',this)">
           <span class="nav-icon">⚡</span> Activity
@@ -5114,6 +5347,15 @@ function renderAdminView() {
           </div>
         </div>
 
+        <!-- BILLING & PLANS PAGE -->
+        <div class="admin-page-v2" id="apv2-billing">
+          <div style="margin-bottom:20px">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-bottom:4px">SUBSCRIPTION</div>
+            <div style="font-size:20px;font-weight:800;font-family:var(--font-display)">Billing &amp; Plans</div>
+          </div>
+          <div id="billingPlansContent">${buildBillingPage(companies, agents, addresses)}</div>
+        </div>
+
         <!-- SETTINGS PAGE -->
         <div class="admin-page-v2" id="apv2-settings">
           <div style="margin-bottom:20px">
@@ -5174,61 +5416,62 @@ function buildDonutChart(patched, draft, review) {
   const pOff = 0, dOff = -pDash, rOff = -(pDash + dDash);
 
   return `<svg class="donut-svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border2)" stroke-width="${stroke}"/>
-    ${patched > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--green)" stroke-width="${stroke}"
-      stroke-dasharray="${pDash} ${circ - pDash}" stroke-dashoffset="${circ / 4}" transform="rotate(-90 ${cx} ${cy})"
-      style="filter:drop-shadow(0 0 6px rgba(0,255,170,.4))"/>` : ''}
-    ${draft > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--amber)" stroke-width="${stroke}"
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--corp-border)" stroke-width="${stroke}"/>
+    ${patched > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--corp-green)" stroke-width="${stroke}"
+      stroke-dasharray="${pDash} ${circ - pDash}" stroke-dashoffset="${circ / 4}" transform="rotate(-90 ${cx} ${cy})"/>` : ''}
+    ${draft > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--corp-amber)" stroke-width="${stroke}"
       stroke-dasharray="${dDash} ${circ - dDash}" stroke-dashoffset="${circ / 4 - pDash}" transform="rotate(-90 ${cx} ${cy})"/>` : ''}
-    ${review > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--red)" stroke-width="${stroke}"
+    ${review > 0 ? `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--corp-red)" stroke-width="${stroke}"
       stroke-dasharray="${rDash} ${circ - rDash}" stroke-dashoffset="${circ / 4 - pDash - dDash}" transform="rotate(-90 ${cx} ${cy})"/>` : ''}
-    <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="var(--font-mono)" font-size="18" font-weight="700" fill="var(--text)">${total}</text>
-    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-family="var(--font-mono)" font-size="9" fill="var(--text3)">TOTAL</text>
+    <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="var(--font-body)" font-size="18" font-weight="600" fill="var(--corp-text)">${total}</text>
+    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-family="var(--font-body)" font-size="9" fill="var(--corp-text3)">TOTAL</text>
   </svg>`;
 }
 
 function buildAddressRows(addresses, agents, companies) {
-  if (!addresses.length) return '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);font-size:12px">No addresses yet</td></tr>';
+  if (!addresses.length) return '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--corp-text3);font-size:12px">No addresses yet</td></tr>';
   return addresses.map(a => {
     const ag = agents.find(ag => ag.id === a.agentId);
     const co = companies.find(c => c.id === a.companyId);
     const conf = a.confidence || 0;
     const status = conf >= 70 ? 'patched' : conf >= 40 ? 'draft' : 'review';
+    const confColor = conf >= 70 ? 'var(--corp-green)' : conf >= 40 ? 'var(--corp-amber)' : 'var(--corp-red)';
     return `<tr>
-      <td style="padding:10px 16px;color:var(--text);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid rgba(20,32,48,.6)">${a.address}</td>
-      <td style="padding:10px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${a.pincode || 'N/A'}</td>
-      <td style="padding:10px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${ag?.name || '—'}</td>
-      <td style="padding:10px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.6)">${co?.name || '—'}</td>
-      <td style="padding:10px 12px;font-family:var(--font-mono);font-size:11px;font-weight:700;border-bottom:1px solid rgba(20,32,48,.6);color:${conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--amber)' : 'var(--red)'}">${conf}%</td>
-      <td style="padding:10px 12px;border-bottom:1px solid rgba(20,32,48,.6)"><span class="status-badge ${status}">${status}</span></td>
-      <td style="padding:10px 12px;color:var(--text3);font-family:var(--font-mono);font-size:10px;border-bottom:1px solid rgba(20,32,48,.6)">${a.time?.split(',')[1]?.trim() || ''}</td>
+      <td style="padding:10px 16px;color:var(--corp-text);font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--corp-border)">${a.address}</td>
+      <td style="padding:10px 12px;color:var(--corp-green);font-size:11px;font-weight:600;border-bottom:1px solid var(--corp-border)">${a.pincode || 'N/A'}</td>
+      <td style="padding:10px 12px;color:var(--corp-text2);font-size:11px;border-bottom:1px solid var(--corp-border)">${ag?.name || '—'}</td>
+      <td style="padding:10px 12px;color:var(--corp-text2);font-size:11px;border-bottom:1px solid var(--corp-border)">${co?.name || '—'}</td>
+      <td style="padding:10px 12px;font-size:11px;font-weight:700;border-bottom:1px solid var(--corp-border);color:${confColor}">${conf}%</td>
+      <td style="padding:10px 12px;border-bottom:1px solid var(--corp-border)"><span class="corp-badge ${status === 'patched' ? 'patched' : status === 'draft' ? 'draft' : 'draft'}">${status}</span></td>
+      <td style="padding:10px 12px;color:var(--corp-text3);font-size:10px;border-bottom:1px solid var(--corp-border)">${a.time?.split(',')[1]?.trim() || ''}</td>
     </tr>`;
   }).join('');
 }
 
 function buildAllCallsRows(addresses, agents, companies) {
-  if (!addresses.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No addresses yet</td></tr>';
+  if (!addresses.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--corp-text3)">No addresses yet</td></tr>';
   return addresses.map(a => {
     const ag = agents.find(ag => ag.id === a.agentId);
     return `<tr>
-      <td style="padding:9px 16px;color:var(--text);font-size:12px;border-bottom:1px solid rgba(20,32,48,.5);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.address}</td>
-      <td style="padding:9px 12px;color:var(--green);font-family:var(--font-mono);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.pincode || '—'}</td>
-      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.district || '—'}</td>
-      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${a.state || '—'}</td>
-      <td style="padding:9px 12px;color:var(--text2);font-size:11px;border-bottom:1px solid rgba(20,32,48,.5)">${ag?.name || '—'}</td>
-      <td style="padding:9px 12px;color:var(--text3);font-family:var(--font-mono);font-size:10px;border-bottom:1px solid rgba(20,32,48,.5)">${a.time?.split(',')[1]?.trim() || ''}</td>
+      <td style="padding:9px 16px;color:var(--corp-text);font-size:12px;border-bottom:1px solid var(--corp-border);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.address}</td>
+      <td style="padding:9px 12px;color:var(--corp-green);font-size:11px;font-weight:600;border-bottom:1px solid var(--corp-border)">${a.pincode || '—'}</td>
+      <td style="padding:9px 12px;color:var(--corp-text2);font-size:11px;border-bottom:1px solid var(--corp-border)">${a.district || '—'}</td>
+      <td style="padding:9px 12px;color:var(--corp-text2);font-size:11px;border-bottom:1px solid var(--corp-border)">${a.state || '—'}</td>
+      <td style="padding:9px 12px;color:var(--corp-text2);font-size:11px;border-bottom:1px solid var(--corp-border)">${ag?.name || '—'}</td>
+      <td style="padding:9px 12px;color:var(--corp-text3);font-size:10px;border-bottom:1px solid var(--corp-border)">${a.time?.split(',')[1]?.trim() || ''}</td>
     </tr>`;
   }).join('');
 }
 
 function buildAgentCards(agents, companies, addresses) {
-  if (!agents.length) return '<div style="color:var(--text3);font-size:12px;font-family:var(--font-mono);grid-column:1/-1;padding:20px">No agents yet. <a href="#" onclick="switchAdminV2(\'addagent\',document.getElementById(\'anav-agents\'))" style="color:var(--green)">Add one →</a></div>';
+  if (!agents.length) return '<div style="color:var(--corp-text3);font-size:12px;grid-column:1/-1;padding:20px">No agents yet. <a href="#" onclick="switchAdminV2(\'addagent\',document.getElementById(\'anav-agents\'))" style="color:var(--corp-blue)">Add one →</a></div>';
   const today = new Date().toLocaleDateString('en-IN');
   return agents.map(a => {
     const co = companies.find(c => c.id === a.companyId);
     const aAd = addresses.filter(addr => addr.agentId === a.id).length;
     const isOnline = a.lastActive?.includes(today);
     const avgConf = aAd > 0 ? Math.round(addresses.filter(addr => addr.agentId === a.id).reduce((s, addr) => s + (addr.confidence || 0), 0) / aAd) : 0;
+    const confColor = avgConf >= 70 ? 'var(--corp-green)' : avgConf >= 40 ? 'var(--corp-amber)' : 'var(--corp-red)';
     return `<div class="agent-card">
       <div class="agent-card-top">
         <div class="agent-avatar">👤</div>
@@ -5242,8 +5485,8 @@ function buildAgentCards(agents, companies, addresses) {
       </div>
       <div class="agent-card-stats">
         <div class="agent-stat"><div class="agent-stat-val">${aAd}</div><div class="agent-stat-lbl">Calls</div></div>
-        <div class="agent-stat"><div class="agent-stat-val" style="color:${avgConf >= 70 ? 'var(--green)' : avgConf >= 40 ? 'var(--amber)' : 'var(--red)'}">${avgConf}%</div><div class="agent-stat-lbl">Avg Conf</div></div>
-        <div class="agent-stat"><div class="agent-stat-val" style="color:${isOnline ? 'var(--green)' : 'var(--text3)'}">${isOnline ? '🟢' : '⚫'}</div><div class="agent-stat-lbl">Status</div></div>
+        <div class="agent-stat"><div class="agent-stat-val" style="color:${confColor}">${avgConf}%</div><div class="agent-stat-lbl">Avg Conf</div></div>
+        <div class="agent-stat"><div class="agent-stat-val" style="color:${isOnline ? 'var(--corp-green)' : 'var(--corp-text3)'}">${isOnline ? '●' : '○'}</div><div class="agent-stat-lbl">Status</div></div>
       </div>
       <div class="agent-card-footer">
         <button class="agent-action primary" onclick="resetPass('${a.id}')">Reset Pass</button>
@@ -5254,13 +5497,13 @@ function buildAgentCards(agents, companies, addresses) {
 }
 
 function buildCompaniesRows(companies, agents, addresses) {
-  if (!companies.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No companies yet</td></tr>';
+  if (!companies.length) return '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--corp-text3)">No companies yet</td></tr>';
   return companies.map(c => {
     const cAg = agents.filter(a => a.companyId === c.id).length;
     const cAd = addresses.filter(a => a.companyId === c.id).length;
     return `<tr>
       <td>${c.name}</td>
-      <td style="font-family:var(--font-mono);color:var(--blue)">${c.id}</td>
+      <td style="color:var(--corp-blue)">${c.id}</td>
       <td>${cAg}</td><td>${cAd}</td>
       <td><span class="badge ${c.active ? 'on' : 'off'}">${c.active ? 'Active' : 'Inactive'}</span></td>
       <td style="display:flex;gap:5px">
@@ -5272,24 +5515,90 @@ function buildCompaniesRows(companies, agents, addresses) {
 }
 
 function buildActivityFeed(addresses, agents) {
-  if (!addresses.length) return '<div style="color:var(--text3);font-size:12px;font-family:var(--font-mono);padding:20px">No activity yet</div>';
+  if (!addresses.length) return '<div style="color:var(--corp-text3);font-size:12px;padding:20px">No activity yet</div>';
   return addresses.map(a => {
     const ag = agents.find(ag => ag.id === a.agentId);
     const conf = a.confidence || 0;
     const icon = conf >= 70 ? '✅' : conf >= 40 ? '📝' : '⚠️';
-    const color = conf >= 70 ? 'var(--green)' : conf >= 40 ? 'var(--amber)' : 'var(--red)';
-    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(5,10,18,.8);border:1px solid var(--border);border-radius:10px;transition:all .2s" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+    const color = conf >= 70 ? 'var(--corp-green)' : conf >= 40 ? 'var(--corp-amber)' : 'var(--corp-red)';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:10px;transition:all .2s;box-shadow:var(--corp-shadow)" onmouseover="this.style.borderColor='var(--corp-border-strong)'" onmouseout="this.style.borderColor='var(--corp-border)'">
       <div style="font-size:18px">${icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.address}</div>
-        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px">${ag?.name || 'Unknown'} · ${a.pincode || 'No pin'}</div>
+        <div style="font-size:12px;color:var(--corp-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.address}</div>
+        <div style="font-size:10px;color:var(--corp-text3);margin-top:2px">${ag?.name || 'Unknown'} · ${a.pincode || 'No pin'}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:${color}">${conf}%</div>
-        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono)">${a.time?.split(',')[1]?.trim() || ''}</div>
+        <div style="font-size:12px;font-weight:700;color:${color}">${conf}%</div>
+        <div style="font-size:9px;color:var(--corp-text3)">${a.time?.split(',')[1]?.trim() || ''}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+function buildBillingPage(companies, agents, addresses) {
+  const planCards = Object.entries(PLANS).map(([key, p]) => `
+    <div class="corp-plan-card">
+      <div class="corp-plan-name">${p.name}</div>
+      <div class="corp-plan-price">${p.price}</div>
+      <div class="corp-plan-detail">${p.seats === Infinity ? 'Unlimited' : p.seats} seats</div>
+      <div class="corp-plan-detail">${p.monthlyPatches === Infinity ? 'Unlimited' : p.monthlyPatches.toLocaleString('en-IN')} patches / month</div>
+    </div>`).join('');
+
+  const companyRows = companies.map(c => {
+    const plan = getPlan(c);
+    const seatsUsed = getCompanySeatCount(c.id);
+    const seatPct = plan.seats === Infinity ? 0 : Math.min(100, Math.round((seatsUsed / plan.seats) * 100));
+    const usage = getCompanyUsage(c.id);
+    const usagePct = plan.monthlyPatches === Infinity ? 0 : Math.min(100, Math.round((usage / plan.monthlyPatches) * 100));
+    const seatClass = seatPct >= 100 ? 'over' : seatPct >= 80 ? 'warn' : 'ok';
+    const usageClass = usagePct >= 100 ? 'over' : usagePct >= 80 ? 'warn' : 'ok';
+    return `<tr>
+      <td>${c.name}</td>
+      <td><span class="corp-pill plan" style="font-size:11px">${plan.name}</span></td>
+      <td>
+        <div class="corp-usage-meter" style="max-width:160px">
+          <div class="corp-usage-bar"><div class="corp-usage-fill ${seatClass}" style="width:${seatPct}%"></div></div>
+          <span class="corp-usage-text" style="font-size:11px">${seatsUsed}/${plan.seats === Infinity ? '∞' : plan.seats}</span>
+        </div>
+      </td>
+      <td>
+        <div class="corp-usage-meter" style="max-width:160px">
+          <div class="corp-usage-bar"><div class="corp-usage-fill ${usageClass}" style="width:${usagePct}%"></div></div>
+          <span class="corp-usage-text" style="font-size:11px">${usage}/${plan.monthlyPatches === Infinity ? '∞' : plan.monthlyPatches}</span>
+        </div>
+      </td>
+      <td>${c.renewsOn || '—'}</td>
+      <td>
+        <select class="af-select" style="font-size:11px;padding:4px 8px" onchange="changeCompanyPlan('${c.id}',this.value)">
+          <option value="starter" ${c.plan === 'starter' ? 'selected' : ''}>Starter</option>
+          <option value="growth" ${c.plan === 'growth' ? 'selected' : ''}>Growth</option>
+          <option value="enterprise" ${c.plan === 'enterprise' ? 'selected' : ''}>Enterprise</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No companies yet</td></tr>';
+
+  return `
+    <div class="corp-plan-grid" style="margin-bottom:24px">${planCards}</div>
+    <div class="corp-card">
+      <div class="corp-card-hdr">
+        <div class="corp-card-title">Per-company seats &amp; usage</div>
+      </div>
+      <table class="corp-table">
+        <thead><tr><th>Company</th><th>Plan</th><th>Seats used</th><th>Patches this month</th><th>Renews</th><th>Change plan</th></tr></thead>
+        <tbody>${companyRows}</tbody>
+      </table>
+    </div>`;
+}
+
+function changeCompanyPlan(companyId, newPlan) {
+  const companies = getData('vn_companies', []);
+  const c = companies.find(c => c.id === companyId);
+  if (!c) return;
+  c.plan = newPlan;
+  setData('vn_companies', companies);
+  toast(`✅ Plan updated to ${PLANS[newPlan].name}`);
+  refreshAdminV2();
 }
 
 function getAvgDuration(addresses) {
@@ -5308,7 +5617,7 @@ function switchAdminV2(page, el) {
   const headings = {
     dashboard: 'Operations Dashboard', agents: 'Agent Management',
     allcalls: 'All Calls', companies: 'Companies', activity: 'Activity Feed',
-    settings: 'Settings', addagent: 'Add New Agent'
+    billing: 'Billing & Plans', settings: 'Settings', addagent: 'Add New Agent'
   };
   const h = document.getElementById('adminPageHeading');
   if (h) h.textContent = headings[page] || 'Dashboard';
@@ -5350,15 +5659,7 @@ window.showAgentView = function() {
   document.getElementById('publicView').style.display = 'none';
   document.getElementById('agentView').classList.add('active');
   document.getElementById('adminView').classList.remove('active');
-
-  document.getElementById('tbCenter').innerHTML = `<span class="tb-badge live">LIVE</span><span class="tb-badge">👤 ${currentAgent?.name || 'Agent'} · ${currentCompany?.name || ''}</span>`;
-  document.getElementById('tbRight').innerHTML = `
-    <div class="qual-row"><div class="qual-bars" id="qualBars"><span></span><span></span><span></span><span></span></div><span class="qual-lbl" id="qualLbl">No audio</span></div>
-    <div class="tb-sep"></div>
-    <div class="tb-stat"><div class="tb-stat-val" id="tb-today">0</div><div class="tb-stat-lbl">Today</div></div>
-    <div class="tb-stat"><div class="tb-stat-val" id="tb-total">0</div><div class="tb-stat-lbl">Total</div></div>
-    <div class="tb-sep"></div>
-    <button class="tb-btn danger" onclick="agentLogout()">Logout</button>`;
+  document.querySelector('.topbar').style.display = 'none';
 
   renderAgentView();
   currentMode = 'agent';
@@ -5454,6 +5755,324 @@ if (_origUpdateLayerUI) {
 }
 
 console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
+</script>
+<!-- ═══════════════════════════════════════════════════════════
+     VISHAL NAVIGATION — MASTER FIX
+     Paste this LAST, just before </body>
+     Fixes: agent form filling, strategy UI, listen toggle,
+            plan enforcement, admin addCompany, corp-strat sync
+     ═══════════════════════════════════════════════════════════ -->
+<script id="master-fix">
+(function() {
+'use strict';
+
+// ══════════════════════════════════════════════════════════
+// FIX 1: updateStrategyUI — works with BOTH .strat and .corp-strat
+// ══════════════════════════════════════════════════════════
+window.updateStrategyUI = function(fired) {
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('s' + i);
+    if (!el) continue;
+    const has = fired.has('s' + i);
+    // works for both .strat.fired and .corp-strat.fired
+    el.classList.toggle('fired', has);
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 2: updateLayerUI — works with .layer-dot AND .corp-layer-dot
+// ══════════════════════════════════════════════════════════
+window.updateLayerUI = function(active, warn) {
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('l' + i);
+    if (!el) continue;
+    el.className = el.className.replace(/\s*(active|warn|fail)\b/g, '');
+    if (i <= active) {
+      el.className += warn && i === active ? ' warn' : ' active';
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 3: syncListenButtons — handles both old and new UI
+// ══════════════════════════════════════════════════════════
+window.syncListenButtons = function() {
+  const outer = document.getElementById('listenOuter');
+  const btn   = document.getElementById('listenBtn');
+  const icon  = document.getElementById('listenIcon');
+  const lbl   = document.getElementById('listenLbl');
+  const wave  = document.getElementById('waveBars');
+
+  if (window.isListening || window.dgActive) {
+    outer?.classList.add('active');
+    btn?.classList.add('active');
+    if (icon) icon.textContent = '⏹';
+    if (lbl)  lbl.textContent  = 'TAP TO STOP';
+    wave?.classList.add('active');
+  } else {
+    outer?.classList.remove('active');
+    btn?.classList.remove('active');
+    if (icon) icon.textContent = '🎙️';
+    if (lbl)  lbl.textContent  = 'TAP TO START';
+    wave?.classList.remove('active');
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 4: extractAndVerify — fills lfv-* fields AND old fields
+// ══════════════════════════════════════════════════════════
+const _prevExtract = window.extractAndVerify;
+window.extractAndVerify = async function(transcript) {
+  if (_prevExtract) await _prevExtract(transcript);
+
+  const r = window.currentResult;
+  if (!r) return;
+
+  // Build address line
+  const addrLine = [r.house, r.street, r.colony].filter(Boolean).join(', ');
+
+  const fills = {
+    'lfv-name':     r.name     || '',
+    'lfv-phone':    r.phone    || '',
+    'lfv-addrline': addrLine   || r.rawAddress || '',
+    'lfv-landmark': r.landmark || '',
+    'lfv-city':     r.city     || r.district   || '',
+    'lfv-state':    r.state    || '',
+    'lfv-pincode':  r.pincode  || '',
+  };
+
+  Object.entries(fills).forEach(([id, val]) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (!el || el.value) return; // don't overwrite manual entry
+    el.value = val;
+    el.classList.add('filled');
+    if (id === 'lfv-pincode' && /^\d{6}$/.test(val)) el.classList.add('verified');
+  });
+
+  // Update confidence live
+  if (typeof updateConfidenceLive === 'function') {
+    updateConfidenceLive(r.confidence || 0);
+  }
+
+  // Update live transcript box
+  if (typeof updateLiveTranscript === 'function' && window.currentTranscript) {
+    updateLiveTranscript(window.currentTranscript);
+  }
+
+  // Sync listen buttons state
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 5: transcribeChunk — sync UI after each chunk
+// ══════════════════════════════════════════════════════════
+const _prevTranscribeChunk = window.transcribeChunk;
+if (_prevTranscribeChunk) {
+  window.transcribeChunk = async function(blob) {
+    await _prevTranscribeChunk(blob);
+    if (window.currentTranscript && typeof updateLiveTranscript === 'function') {
+      updateLiveTranscript(window.currentTranscript);
+    }
+    syncListenButtons();
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// FIX 6: toggleListen — sync after every toggle
+// ══════════════════════════════════════════════════════════
+const _prevToggleListen = window.toggleListen;
+if (_prevToggleListen) {
+  window.toggleListen = async function() {
+    await _prevToggleListen();
+    syncListenButtons();
+    if (window.isListening && typeof currentCallStart !== 'undefined') {
+      window.currentCallStart = Date.now();
+    }
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// FIX 7: addCompany — works regardless of plan select presence
+// ══════════════════════════════════════════════════════════
+window.addCompany = function() {
+  const name  = (document.getElementById('c-name')?.value  || '').trim();
+  const id    = (document.getElementById('c-id')?.value    || '').trim();
+  const pass  =  document.getElementById('c-pass')?.value  || '';
+  const email = (document.getElementById('c-email')?.value || '').trim();
+  const plan  = (document.getElementById('c-plan')?.value  || 'starter');
+
+  if (!name || !id || !pass) { toast('Fill all required fields', 'err'); return; }
+
+  const companies = getData('vn_companies', []);
+  if (companies.find(c => c.id === id)) { toast('Company ID already exists', 'err'); return; }
+
+  companies.push({
+    id, name, pass, email, plan, active: true,
+    created: new Date().toLocaleDateString('en-IN'),
+    renewsOn: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-IN'),
+  });
+  setData('vn_companies', companies);
+
+  // Refresh whichever admin UI is active
+  if (typeof refreshAdminV2 === 'function') refreshAdminV2();
+  else if (typeof refreshAdmin === 'function') refreshAdmin();
+
+  toast('✅ Company created: ' + name);
+  ['c-name','c-id','c-pass','c-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 8: setStatus — updates both old and new UI elements
+// ══════════════════════════════════════════════════════════
+const _prevSetStatus = window.setStatus;
+window.setStatus = function(main, type, sub) {
+  // old agent right panel
+  const m = document.getElementById('asMain');
+  const s = document.getElementById('asSub');
+  if (m) { m.textContent = main; m.className = 'as-main corp-status-main ' + (type || ''); }
+  if (s && sub !== undefined) s.textContent = sub;
+
+  // update listen button state
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 9: Deepgram transcript → live transcript box
+// ══════════════════════════════════════════════════════════
+setInterval(function() {
+  const t = window.dgLiveTranscript || window.currentTranscript || '';
+  if (!t) return;
+  const box = document.getElementById('liveTranscriptBox');
+  if (box && box._lastText !== t) {
+    box._lastText = t;
+    if (typeof updateLiveTranscript === 'function') {
+      updateLiveTranscript(t);
+    } else {
+      box.textContent = t;
+    }
+  }
+  // also update old agent transcript
+  const oldBox = document.getElementById('agentTranscript');
+  if (oldBox && oldBox._lastText !== t) {
+    oldBox._lastText = t;
+    oldBox.classList.add('show');
+    oldBox.innerHTML = '🎙️ ' + t;
+  }
+}, 400);
+
+// ══════════════════════════════════════════════════════════
+// FIX 10: showAgentView — hide topbar, render new UI
+// ══════════════════════════════════════════════════════════
+window.showAgentView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.add('active');
+  document.getElementById('adminView').classList.remove('active');
+
+  // Hide old topbar — new agent UI has its own header
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = 'none';
+
+  if (typeof renderAgentView === 'function') {
+    renderAgentView();
+  }
+
+  window.currentMode = 'agent';
+  window.currentCallStart = Date.now();
+
+  if (typeof startAgentTracking === 'function') {
+    setTimeout(startAgentTracking, 500);
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 11: showAdminView — hide topbar, render new admin UI
+// ══════════════════════════════════════════════════════════
+window.showAdminView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.remove('active');
+  document.getElementById('adminView').classList.add('active');
+
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = 'none';
+
+  if (typeof renderAdminView === 'function') {
+    renderAdminView();
+  }
+
+  window.currentMode = 'admin';
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 12: backToLanding / agentLogout — restore topbar
+// ══════════════════════════════════════════════════════════
+const _prevBack = window.backToLanding;
+window.backToLanding = function() {
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = '';
+
+  if (typeof stopDeepgramListen === 'function') { try { stopDeepgramListen(); } catch(e) {} }
+  if (typeof stopListen === 'function') { try { stopListen(); } catch(e) {} }
+  if (typeof stopAgentTracking === 'function') { try { stopAgentTracking(); } catch(e) {} }
+
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appShell').classList.remove('active');
+  window.currentMode = '';
+};
+
+const _prevLogout = window.agentLogout;
+window.agentLogout = function() {
+  if (typeof stopDeepgramListen === 'function') { try { stopDeepgramListen(); } catch(e) {} }
+  if (typeof stopAgentTracking === 'function') { try { stopAgentTracking(); } catch(e) {} }
+  window.currentAgent = null;
+  window.currentCompany = null;
+  window.addrHistory = [];
+  window.backToLanding();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 13: Auto-confirm patch — also resets live fields
+// ══════════════════════════════════════════════════════════
+const _prevConfirmAddr = window.confirmAddr;
+window.confirmAddr = function() {
+  if (_prevConfirmAddr) _prevConfirmAddr();
+  // Reset live fields after save
+  if (typeof resetLiveFields === 'function') resetLiveFields();
+  if (typeof renderPatchedRecordsTable === 'function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats === 'function') updatePatcherStats();
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 14: manualSearch — works with new agent UI input
+// ══════════════════════════════════════════════════════════
+const _prevManual = window.manualSearch;
+window.manualSearch = function() {
+  const inp = document.getElementById('manualInp');
+  const q = (inp?.value || '').trim();
+  if (!q) return;
+  if (inp) inp.value = '';
+  window.currentTranscript = q;
+  window.totalAttempts = (window.totalAttempts || 0) + 1;
+  window.retryCount = 0;
+
+  const box = document.getElementById('liveTranscriptBox') || document.getElementById('agentTranscript');
+  if (box) {
+    box.textContent = '⌨️ Manual: ' + q;
+    box.classList?.add('show');
+  }
+
+  if (typeof extractAndVerify === 'function') extractAndVerify(q);
+};
+
+console.log('✅ Master Fix loaded — all 14 fixes active');
+})();
 </script>
 </body>
 </html>
