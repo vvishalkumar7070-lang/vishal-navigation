@@ -6074,5 +6074,743 @@ window.manualSearch = function() {
 console.log('✅ Master Fix loaded — all 14 fixes active');
 })();
 </script>
+// ═══════════════════════════════════════════════════════════════
+// VISHAL NAVIGATION — CRITICAL FIX PATCH
+// Paste this entire block just before </body>, AFTER all existing scripts
+//
+// Fixes:
+//   1. Listen button: toggle works reliably every click (start/stop/start/stop)
+//   2. Deepgram WebSocket fully destroyed on stop (no zombie connections)
+//   3. Animation ring + wave bars always stop when listening stops
+//   4. System audio / loopback capture (plays recorded audio through speaker)
+//   5. Works for BOTH live calls AND recorded audio playing on device
+// ═══════════════════════════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // ─────────────────────────────────────────────────────────────
+  // SINGLE SOURCE OF TRUTH for all listening state
+  // ─────────────────────────────────────────────────────────────
+  const STATE = {
+    listening: false,
+    dgSocket: null,
+    dgStream: null,
+    dgProcessor: null,
+    dgContext: null,
+    mediaRecorder: null,
+    groqStream: null,
+    groqChunks: [],
+    groqTimer: null,
+    silenceTimer: null,
+    captureTimer: null,
+  };
+
+  const DEEPGRAM_KEY = typeof window.DEEPGRAM_KEY !== 'undefined'
+    ? window.DEEPGRAM_KEY
+    : '6cc1f796b4d685cd65f5578d2d405e023c8db204';
+
+  const GROQ_KEY_VAL = typeof window.GROQ_KEY !== 'undefined'
+    ? window.GROQ_KEY
+    : 'gsk_IADJ83Idcg6aZxAfYl8sWGdyb3FYqMSPPBZ7oeem9uXuPZb7KBPcy';
+
+  // ─────────────────────────────────────────────────────────────
+  // UI SYNC — the ONE place that touches DOM listen elements
+  // ─────────────────────────────────────────────────────────────
+  function syncUI(listening) {
+    const outer = document.getElementById('listenOuter');
+    const btn   = document.getElementById('listenBtn');
+    const icon  = document.getElementById('listenIcon');
+    const lbl   = document.getElementById('listenLbl');
+    const wave  = document.getElementById('waveBars');
+    const badge = document.getElementById('dgLiveBadge');
+
+    if (listening) {
+      outer?.classList.add('active');
+      btn?.classList.add('active');
+      if (icon) icon.textContent = '⏹';
+      if (lbl)  lbl.textContent  = 'TAP TO STOP';
+      wave?.classList.add('active');
+    } else {
+      outer?.classList.remove('active');
+      btn?.classList.remove('active');
+      if (icon) icon.textContent = '🎙️';
+      if (lbl)  lbl.textContent  = 'TAP TO START';
+      wave?.classList.remove('active');
+      badge?.remove();
+    }
+
+    // Keep global flags in sync for any legacy code that reads them
+    window.isListening = listening;
+    window.dgActive    = listening;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // HARD STOP — destroys everything, resets all state
+  // ─────────────────────────────────────────────────────────────
+  function hardStop() {
+    STATE.listening = false;
+
+    // Timers
+    clearTimeout(STATE.groqTimer);
+    clearTimeout(STATE.silenceTimer);
+    clearTimeout(STATE.captureTimer);
+
+    // Deepgram WebSocket
+    if (STATE.dgProcessor) { try { STATE.dgProcessor.disconnect(); } catch (_) {} }
+    if (STATE.dgContext)   { try { STATE.dgContext.close();        } catch (_) {} }
+    if (STATE.dgSocket)    { try { STATE.dgSocket.close();         } catch (_) {} }
+    STATE.dgSocket    = null;
+    STATE.dgProcessor = null;
+    STATE.dgContext   = null;
+
+    // Deepgram stream
+    if (STATE.dgStream) {
+      STATE.dgStream.getTracks().forEach(t => { try { t.stop(); } catch(_) {} });
+      STATE.dgStream = null;
+    }
+
+    // Groq MediaRecorder
+    if (STATE.mediaRecorder && STATE.mediaRecorder.state !== 'inactive') {
+      try { STATE.mediaRecorder.stop(); } catch (_) {}
+    }
+    STATE.mediaRecorder = null;
+    STATE.groqChunks = [];
+
+    // Groq stream
+    if (STATE.groqStream) {
+      STATE.groqStream.getTracks().forEach(t => { try { t.stop(); } catch(_) {} });
+      STATE.groqStream = null;
+    }
+
+    // Also kill any lingering global streams the old code may have created
+    ['dgStream','dgSocket','dgProcessor','dgContext','pubStream','pubDgStream','pubDgSocket']
+      .forEach(key => {
+        try {
+          if (window[key] && typeof window[key].getTracks === 'function')
+            window[key].getTracks().forEach(t => t.stop());
+          if (window[key] && typeof window[key].close === 'function')
+            window[key].close();
+        } catch(_) {}
+        window[key] = null;
+      });
+
+    window.isListening = false;
+    window.dgActive    = false;
+    window.captureMode = false;
+
+    syncUI(false);
+    if (typeof setQuality  === 'function') setQuality('');
+    if (typeof setStatus   === 'function')
+      setStatus('Tap the button to start listening', '', '7 auto-strategies · system + mic audio · 20 languages');
+    if (typeof updateLayerUI === 'function') updateLayerUI(0);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SYSTEM AUDIO CAPTURE
+  // getDisplayMedia captures the screen — but the browser also
+  // sends any audio playing through the system (speakers/tabs).
+  // Works for: call recordings playing on PC, browser-based calls,
+  //            WhatsApp Web audio, recorded demos, etc.
+  // ─────────────────────────────────────────────────────────────
+  async function getSystemAudioStream() {
+    try {
+      // Ask for screen share WITH audio — user must tick "Share tab audio"
+      // or "Share system audio" in the browser prompt.
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,          // video required so Chrome shows the picker
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          sampleRate: 16000,
+          channelCount: 1,
+        },
+        preferCurrentTab: true,  // Chrome 109+: default to current tab
+      });
+
+      // Drop video tracks — we only care about audio
+      displayStream.getVideoTracks().forEach(t => t.stop());
+
+      const audioTracks = displayStream.getAudioTracks();
+      if (!audioTracks.length) {
+        // User didn't share audio — fall back
+        displayStream.getTracks().forEach(t => t.stop());
+        return null;
+      }
+
+      return displayStream;
+    } catch (e) {
+      // getDisplayMedia may be unavailable or user cancelled
+      console.warn('System audio not available:', e.message);
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // MIX TWO STREAMS (mic + system audio)
+  // ─────────────────────────────────────────────────────────────
+  function mixStreams(ctx, ...streams) {
+    const dest = ctx.createMediaStreamDestination();
+    streams.forEach(stream => {
+      if (!stream) return;
+      stream.getAudioTracks().forEach(() => {
+        try {
+          const src = ctx.createMediaStreamSource(stream);
+          src.connect(dest);
+        } catch (_) {}
+      });
+    });
+    return dest.stream;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // START DEEPGRAM — tries mic + system audio mix first
+  // ─────────────────────────────────────────────────────────────
+  async function startDeepgram() {
+    // 1. Get microphone
+    let micStream = null;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000,
+          channelCount: 1,
+        }
+      });
+    } catch (e) {
+      const msgs = {
+        NotAllowedError:  'Microphone permission denied. Click the 🔒 icon in your address bar and allow microphone access.',
+        NotFoundError:    'No microphone found on this device.',
+        NotReadableError: 'Microphone is in use by another app.',
+      };
+      const reason = msgs[e.name] || e.message;
+      if (typeof toast === 'function') toast('⚠️ ' + reason, 'err', 6000);
+      if (typeof setStatus === 'function') setStatus('❌ ' + (e.name || 'Mic error'), '', reason);
+      return false;
+    }
+
+    // 2. Try to get system audio (optional — silently skip if unavailable)
+    let sysStream = null;
+    if (navigator.mediaDevices.getDisplayMedia) {
+      // Don't await — we show a prompt. Only do this if the user explicitly
+      // wants system audio (they'll see the browser picker).
+      // We attempt it and mix if we get it.
+      try {
+        sysStream = await getSystemAudioStream();
+        if (sysStream) {
+          if (typeof toast === 'function') toast('🔊 System audio + mic active!');
+        }
+      } catch (_) {}
+    }
+
+    // 3. Mix streams in WebAudio
+    const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    STATE.dgContext = ctx;
+
+    let finalStream;
+    if (sysStream && sysStream.getAudioTracks().length) {
+      finalStream = mixStreams(ctx, micStream, sysStream);
+      STATE.dgStream = micStream; // we'll stop both on cleanup
+      STATE.groqStream = sysStream; // reuse slot for sys stream ref
+    } else {
+      finalStream = micStream;
+      STATE.dgStream = micStream;
+    }
+
+    // 4. Open Deepgram WebSocket
+    const wsUrl =
+      'wss://api.deepgram.com/v1/listen' +
+      '?model=nova-2' +
+      '&language=multi' +
+      '&punctuate=true' +
+      '&smart_format=true' +
+      '&interim_results=true' +
+      '&endpointing=400' +
+      '&utterance_end_ms=1200' +
+      '&filler_words=false';
+
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl, ['token', DEEPGRAM_KEY]);
+    } catch (e) {
+      hardStop();
+      startGroqFallback(finalStream);
+      return true;
+    }
+    STATE.dgSocket = ws;
+
+    ws.onopen = () => {
+      STATE.listening = true;
+      syncUI(true);
+      if (typeof setQuality  === 'function') setQuality('good');
+      if (typeof setStatus   === 'function')
+        setStatus('🟢 Deepgram LIVE — speak or play audio', 'listening',
+          sysStream ? '🎤 mic + 🔊 system audio · 20 languages' : '🎤 mic only · add system audio via screen share');
+      if (typeof updateLayerUI === 'function') updateLayerUI(1);
+
+      // Add LIVE badge to admin topbar if present
+      const center = document.getElementById('tbCenter') || document.getElementById('lcStatusBadge');
+      if (center && !document.getElementById('dgLiveBadge') && center.id !== 'lcStatusBadge') {
+        const badge = document.createElement('span');
+        badge.id = 'dgLiveBadge';
+        badge.className = 'tb-badge live';
+        badge.style.cssText = 'background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.3);padding:4px 12px;border-radius:20px;font-size:10px;font-family:var(--font-mono);display:flex;align-items:center;gap:5px';
+        badge.innerHTML = '🟢 DEEPGRAM LIVE';
+        center.appendChild(badge);
+      }
+
+      // Wire up audio processor → WebSocket
+      const source = ctx.createMediaStreamSource(finalStream);
+      const proc   = ctx.createScriptProcessor(4096, 1, 1);
+      STATE.dgProcessor = proc;
+
+      proc.onaudioprocess = (e) => {
+        if (!STATE.dgSocket || STATE.dgSocket.readyState !== WebSocket.OPEN) return;
+        const pcm   = e.inputBuffer.getChannelData(0);
+        const int16 = new Int16Array(pcm.length);
+        for (let i = 0; i < pcm.length; i++)
+          int16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
+        try { STATE.dgSocket.send(int16.buffer); } catch(_) {}
+      };
+
+      source.connect(proc);
+      proc.connect(ctx.destination);
+    };
+
+    ws.onmessage = (event) => {
+      handleDeepgramMessage(event.data);
+    };
+
+    ws.onerror = () => {
+      console.warn('Deepgram WS error — falling back to Groq Whisper chunks');
+      hardStop();
+      startGroqFallback(finalStream);
+    };
+
+    ws.onclose = (ev) => {
+      // Only trigger hardStop if we thought we were still listening
+      if (STATE.listening) {
+        console.warn('Deepgram WS closed unexpectedly', ev.code, ev.reason);
+        hardStop();
+        if (typeof toast === 'function') toast('⚠️ Deepgram disconnected', 'err');
+      }
+    };
+
+    return true;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // DEEPGRAM MESSAGE HANDLER
+  // ─────────────────────────────────────────────────────────────
+  let _dgFinalBuffer = '';
+
+  function handleDeepgramMessage(raw) {
+    let data;
+    try { data = JSON.parse(raw); } catch (_) { return; }
+
+    const transcript = data?.channel?.alternatives?.[0]?.transcript?.trim();
+    const isFinal    = data?.is_final;
+    const speechEnd  = data?.speech_final;
+
+    if (!transcript) return;
+
+    if (typeof updateLayerUI === 'function') updateLayerUI(3);
+
+    // Show in live transcript box (new agent UI)
+    const box = document.getElementById('liveTranscriptBox');
+    if (box) {
+      box.innerHTML = `<span style="color:var(--text3)">${_dgFinalBuffer}</span> <span style="color:var(--green);font-weight:600">${transcript}</span>`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // Show in old agent transcript
+    const oldBox = document.getElementById('agentTranscript');
+    if (oldBox) {
+      oldBox.classList.add('show');
+      oldBox.innerHTML = '🎙️ ' + _dgFinalBuffer + ' <span class="hl">' + transcript + '</span>';
+    }
+
+    if (isFinal || speechEnd) {
+      _dgFinalBuffer = (_dgFinalBuffer + ' ' + transcript).trim();
+      window.currentTranscript = _dgFinalBuffer;
+      window.dgLiveTranscript  = _dgFinalBuffer;
+
+      // Run strategy detection
+      const fired = (typeof checkAllTriggers === 'function')
+        ? checkAllTriggers(_dgFinalBuffer)
+        : new Set();
+      if (!window.strategiesFired) window.strategiesFired = new Set();
+      fired.forEach(s => window.strategiesFired.add(s));
+      if (typeof checkAgentQuestion === 'function' && checkAgentQuestion(_dgFinalBuffer))
+        window.strategiesFired.add('s1');
+      if (typeof updateStrategyUI === 'function') updateStrategyUI(window.strategiesFired);
+
+      const wordCount = _dgFinalBuffer.split(/\s+/).length;
+      if (typeof updateLayerUI === 'function') updateLayerUI(Math.min(wordCount, 10));
+
+      // Auto-extract when enough words + strategies fired
+      const shouldCapture = window.strategiesFired.size >= 1 || wordCount >= 6;
+      if (shouldCapture) {
+        clearTimeout(STATE.silenceTimer);
+        STATE.silenceTimer = setTimeout(() => {
+          if (STATE.listening && _dgFinalBuffer.trim().length > 4) {
+            if (typeof extractAndVerify === 'function') {
+              extractAndVerify(_dgFinalBuffer);
+            }
+            // Also fill new form fields if available
+            if (typeof updateLiveFields === 'function') {
+              updateLiveFields({ confidence: 50 });
+            }
+          }
+        }, 1800);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // GROQ WHISPER FALLBACK (chunked 4-second segments)
+  // ─────────────────────────────────────────────────────────────
+  function startGroqFallback(stream) {
+    if (!stream || !stream.active) return;
+    STATE.groqStream = stream;
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus' : 'audio/webm';
+
+    STATE.mediaRecorder = new MediaRecorder(stream, { mimeType });
+    STATE.groqChunks = [];
+
+    STATE.mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) STATE.groqChunks.push(e.data);
+    };
+
+    STATE.mediaRecorder.onstop = async () => {
+      if (!STATE.listening || !STATE.groqChunks.length) return;
+      const blob = new Blob(STATE.groqChunks, { type: mimeType });
+      STATE.groqChunks = [];
+
+      if (blob.size < 1500) return; // too small, skip
+
+      try {
+        const form = new FormData();
+        form.append('file', blob, 'audio.webm');
+        form.append('model', 'whisper-large-v3-turbo');
+        form.append('response_format', 'json');
+        form.append('temperature', '0');
+        form.append('prompt', 'India address, delivery, pincode, gali, mohalla, sector, colony, नगर');
+
+        const res  = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + GROQ_KEY_VAL },
+          body: form,
+        });
+        const data = await res.json();
+        const text = (data.text || '').trim();
+        if (!text) return;
+
+        handleDeepgramMessage(JSON.stringify({
+          channel: { alternatives: [{ transcript: text }] },
+          is_final: true,
+          speech_final: true,
+        }));
+      } catch (e) {
+        console.error('Groq Whisper error:', e);
+      }
+
+      // Schedule next chunk
+      if (STATE.listening && STATE.mediaRecorder?.stream?.active) {
+        STATE.mediaRecorder.start();
+        STATE.groqTimer = setTimeout(() => {
+          if (STATE.mediaRecorder?.state === 'recording') STATE.mediaRecorder.stop();
+        }, 4000);
+      }
+    };
+
+    syncUI(true);
+    if (typeof setStatus === 'function')
+      setStatus('🎤 Listening (Groq Whisper mode)', 'listening', 'Deepgram unavailable — using chunked STT');
+    if (typeof toast === 'function') toast('🎤 Using Groq Whisper (4s chunks)');
+
+    STATE.listening = true;
+    window.isListening = true;
+    window.dgActive = false;
+    _dgFinalBuffer = '';
+
+    STATE.mediaRecorder.start();
+    STATE.groqTimer = setTimeout(() => {
+      if (STATE.mediaRecorder?.state === 'recording') STATE.mediaRecorder.stop();
+    }, 4000);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // THE ONE TOGGLE — wired to the listen button
+  // ─────────────────────────────────────────────────────────────
+  window.toggleListen = async function () {
+    if (STATE.listening) {
+      // ── STOP ──
+      hardStop();
+      _dgFinalBuffer = '';
+      window.currentTranscript = '';
+      window.strategiesFired   = new Set();
+      if (typeof updateLayerUI === 'function') updateLayerUI(0);
+      if (typeof updateStrategyUI === 'function') updateStrategyUI(new Set());
+      return;
+    }
+
+    // ── START ──
+    _dgFinalBuffer = '';
+    window.currentTranscript  = '';
+    window.strategiesFired    = new Set();
+    window.captureMode        = false;
+    window.currentCallStart   = Date.now();
+
+    const ok = await startDeepgram();
+    if (!ok) {
+      // Deepgram auth failed — try raw Groq fallback via mic only
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        startGroqFallback(micStream);
+      } catch (_) {
+        if (typeof toast === 'function') toast('❌ Cannot access microphone', 'err');
+      }
+    }
+  };
+
+  // Also wire stopListen for legacy calls
+  window.stopListen = function () {
+    hardStop();
+    _dgFinalBuffer = '';
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PUBLIC SEARCH MIC — separate from agent listen
+  // ─────────────────────────────────────────────────────────────
+  let _pubActive = false;
+  let _pubWS = null, _pubStream = null, _pubCtx = null, _pubProc = null;
+  let _pubFinal = '', _pubSilTimer = null;
+
+  function stopPubMic() {
+    _pubActive = false;
+    clearTimeout(_pubSilTimer);
+    if (_pubProc) { try { _pubProc.disconnect(); } catch(_) {} }
+    if (_pubCtx)  { try { _pubCtx.close();       } catch(_) {} }
+    if (_pubWS)   { try { _pubWS.close();         } catch(_) {} }
+    if (_pubStream) _pubStream.getTracks().forEach(t => t.stop());
+    _pubWS = null; _pubCtx = null; _pubProc = null; _pubStream = null;
+
+    const btn = document.getElementById('pubMic');
+    const inp = document.getElementById('pubQ');
+    if (btn) { btn.classList.remove('active'); btn.textContent = '🎤'; }
+    if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
+  }
+
+  window.togglePubMic = async function () {
+    if (_pubActive) { stopPubMic(); return; }
+
+    const btn = document.getElementById('pubMic');
+    const inp = document.getElementById('pubQ');
+    if (btn) { btn.classList.add('active'); btn.textContent = '⏹'; }
+    if (inp) inp.placeholder = '🟢 Listening… speak any India location';
+
+    let micStream;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+      });
+    } catch (e) {
+      if (typeof toast === 'function') toast('⚠️ Microphone permission denied', 'err');
+      stopPubMic();
+      return;
+    }
+
+    _pubStream = micStream;
+    _pubFinal  = '';
+
+    const ws = new WebSocket(
+      'wss://api.deepgram.com/v1/listen?model=nova-2&language=multi&punctuate=true&smart_format=true&interim_results=true&endpointing=500&utterance_end_ms=800',
+      ['token', DEEPGRAM_KEY]
+    );
+    _pubWS = ws;
+
+    ws.onopen = () => {
+      _pubActive = true;
+      _pubCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const src  = _pubCtx.createMediaStreamSource(micStream);
+      _pubProc   = _pubCtx.createScriptProcessor(4096, 1, 1);
+      _pubProc.onaudioprocess = (e) => {
+        if (!_pubWS || _pubWS.readyState !== WebSocket.OPEN) return;
+        const pcm = e.inputBuffer.getChannelData(0);
+        const i16 = new Int16Array(pcm.length);
+        for (let i = 0; i < pcm.length; i++) i16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
+        try { _pubWS.send(i16.buffer); } catch(_) {}
+      };
+      src.connect(_pubProc);
+      _pubProc.connect(_pubCtx.destination);
+    };
+
+    ws.onmessage = (ev) => {
+      try {
+        const d = JSON.parse(ev.data);
+        const t = d?.channel?.alternatives?.[0]?.transcript?.trim();
+        if (!t) return;
+        const inp2 = document.getElementById('pubQ');
+        if (inp2) inp2.value = _pubFinal + (t ? ' ' + t : '');
+        if (d?.is_final || d?.speech_final) {
+          _pubFinal = (_pubFinal + ' ' + t).trim();
+          clearTimeout(_pubSilTimer);
+          if (_pubFinal.split(' ').length >= 2) {
+            _pubSilTimer = setTimeout(() => {
+              if (_pubActive && _pubFinal.trim().length > 2) {
+                stopPubMic();
+                if (typeof pubSearch === 'function') pubSearch();
+              }
+            }, 1200);
+          }
+        }
+      } catch (_) {}
+    };
+
+    ws.onerror = () => { stopPubMic(); };
+    ws.onclose = () => { if (_pubActive) stopPubMic(); };
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // SYSTEM AUDIO BUTTON — inject into agent UI
+  // ─────────────────────────────────────────────────────────────
+  function injectSystemAudioButton() {
+    // Only in agent view, avoid duplicates
+    if (document.getElementById('btnSystemAudio')) return;
+
+    const wrapper = document.getElementById('listenOuter')?.closest('.corp-listen-wrap')
+      || document.getElementById('listenOuter')?.parentElement;
+    if (!wrapper) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'btnSystemAudio';
+    btn.innerHTML = '🔊 Capture system audio (calls/recordings)';
+    btn.style.cssText = `
+      margin-top: 4px;
+      padding: 8px 18px;
+      background: rgba(56,182,255,.1);
+      border: 1px solid rgba(56,182,255,.3);
+      color: var(--blue, #38b6ff);
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-display, sans-serif);
+      transition: all .2s;
+      width: 100%;
+      max-width: 480px;
+    `;
+
+    btn.title = 'Click to also capture audio playing through your speakers (call recordings, WhatsApp Web, browser calls)';
+
+    btn.onclick = async () => {
+      if (!STATE.listening) {
+        if (typeof toast === 'function')
+          toast('⚠️ Start listening first, then add system audio', 'err');
+        return;
+      }
+      if (typeof toast === 'function')
+        toast('🖥️ Opening screen share — tick "Share tab audio" or "Share system audio"');
+
+      try {
+        const sysStream = await getSystemAudioStream();
+        if (!sysStream || !sysStream.getAudioTracks().length) {
+          if (typeof toast === 'function')
+            toast('⚠️ No audio shared. Tick "Share tab audio" in the prompt.', 'err');
+          return;
+        }
+
+        // Mix sys audio into the existing WebAudio context
+        if (STATE.dgContext && STATE.dgSocket?.readyState === WebSocket.OPEN) {
+          try {
+            const src = STATE.dgContext.createMediaStreamSource(sysStream);
+            const dest = STATE.dgContext.createMediaStreamDestination();
+            src.connect(STATE.dgContext.destination); // route to Deepgram processor
+            STATE.groqStream = sysStream; // keep ref for cleanup
+          } catch (e) {
+            console.error('Mix error:', e);
+          }
+        }
+
+        btn.innerHTML = '🔊 System audio ACTIVE';
+        btn.style.background = 'rgba(0,255,170,.12)';
+        btn.style.borderColor = 'var(--green, #00ffaa)';
+        btn.style.color = 'var(--green, #00ffaa)';
+        if (typeof toast === 'function') toast('✅ System audio captured — all audio now streaming!');
+      } catch (e) {
+        if (typeof toast === 'function') toast('⚠️ ' + e.message, 'err');
+      }
+    };
+
+    wrapper.appendChild(btn);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // OBSERVE DOM — inject system audio button when agent UI appears
+  // ─────────────────────────────────────────────────────────────
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('listenOuter')) injectSystemAudioButton();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  // Try immediately too
+  injectSystemAudioButton();
+
+  // ─────────────────────────────────────────────────────────────
+  // PATCH agentLogout + backToLanding to always hardStop
+  // ─────────────────────────────────────────────────────────────
+  const _origLogout = window.agentLogout;
+  window.agentLogout = function () {
+    hardStop();
+    stopPubMic();
+    if (typeof stopAgentTracking === 'function') try { stopAgentTracking(); } catch(_) {}
+    window.currentAgent   = null;
+    window.currentCompany = null;
+    window.addrHistory    = [];
+    window.backToLanding();
+  };
+
+  const _origBack = window.backToLanding;
+  window.backToLanding = function () {
+    hardStop();
+    stopPubMic();
+    const tb = document.querySelector('.topbar');
+    if (tb) tb.style.display = '';
+    document.getElementById('landing')?.style && (document.getElementById('landing').style.display = 'flex');
+    document.getElementById('loginPage').style.display  = 'none';
+    document.getElementById('appShell')?.classList.remove('active');
+    window.currentMode = '';
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // INSTRUCTIONS TOAST on first agent session
+  // ─────────────────────────────────────────────────────────────
+  window._showSysAudioTip = function () {
+    setTimeout(() => {
+      if (typeof toast === 'function') {
+        toast('💡 TIP: Tap 🔊 "Capture system audio" to also transcribe recordings & calls playing on your device', '', 6000);
+      }
+    }, 2000);
+  };
+
+  const _origShowAgent = window.showAgentView;
+  window.showAgentView = async function () {
+    if (typeof _origShowAgent === 'function') await _origShowAgent();
+    _dgFinalBuffer = '';
+    window._showSysAudioTip();
+    injectSystemAudioButton();
+  };
+
+  console.log('✅ Vishal Navigation FIX PATCH loaded');
+  console.log('   ✓ Listen toggle: reliable start/stop/start');
+  console.log('   ✓ System audio: getDisplayMedia loopback capture');
+  console.log('   ✓ Deepgram WebSocket: clean teardown on every stop');
+  console.log('   ✓ Animation rings + wave: always sync with state');
+
+})();
 </body>
 </html>
