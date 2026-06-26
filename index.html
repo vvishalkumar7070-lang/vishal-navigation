@@ -6813,5 +6813,309 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
   console.log('   ✓ Animation rings + wave: always sync with state');
 
 })();
+
+<script id="vn-final-fix">
+/* VISHAL NAVIGATION — FINAL FIX PATCH
+   1. GROQ key corrected
+   2. Address capture fires after ANY 5+ words (no keyword gate)
+   3. System audio popup removed from auto-start
+   4. Right panel: Live Feed + Smart Keyboard + Notes + Stats */
+(function() {
+'use strict';
+
+// FIX 1: Correct GROQ key
+window.GROQ_KEY = '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';
+
+// FIX 2: Relaxed capture — fires after 5+ words with 1.8s silence
+window._fixBuffer = '';
+window._fixSilTimer = null;
+
+window._fixedHandleDGMsg = function(raw) {
+  var data;
+  try { data = JSON.parse(raw); } catch(_) { return; }
+  var transcript = data && data.channel && data.channel.alternatives && data.channel.alternatives[0] && data.channel.alternatives[0].transcript;
+  if (!transcript) transcript = '';
+  transcript = transcript.trim();
+  var isFinal = data && data.is_final;
+  var speechEnd = data && data.speech_final;
+  if (!transcript) return;
+
+  if (typeof updateLayerUI === 'function') updateLayerUI(3);
+
+  var interim = window._fixBuffer + ' ' + transcript;
+
+  var box = document.getElementById('liveTranscriptBox');
+  if (box) {
+    box.innerHTML = '<span style="color:#5e6470">' + window._fixBuffer + '</span> <span style="color:#0d9354;font-weight:600">' + transcript + '</span>';
+    box.scrollTop = box.scrollHeight;
+  }
+  var oldBox = document.getElementById('agentTranscript');
+  if (oldBox) {
+    oldBox.classList.add('show');
+    oldBox.textContent = '🎙️ ' + interim.trim();
+  }
+
+  if (isFinal || speechEnd) {
+    window._fixBuffer = (window._fixBuffer + ' ' + transcript).trim();
+    window.currentTranscript = window._fixBuffer;
+    window.dgLiveTranscript  = window._fixBuffer;
+
+    var fired = (typeof checkAllTriggers === 'function') ? checkAllTriggers(window._fixBuffer) : new Set();
+    if (!window.strategiesFired) window.strategiesFired = new Set();
+    fired.forEach(function(s) { window.strategiesFired.add(s); });
+    if (typeof checkAgentQuestion === 'function' && checkAgentQuestion(window._fixBuffer))
+      window.strategiesFired.add('s1');
+    if (typeof updateStrategyUI === 'function') updateStrategyUI(window.strategiesFired);
+
+    var wordCount = window._fixBuffer.split(/\s+/).filter(Boolean).length;
+    if (typeof updateLayerUI === 'function') updateLayerUI(Math.min(wordCount, 10));
+
+    // KEY FIX: capture after 5+ words, no keyword gate
+    if (wordCount >= 5) {
+      clearTimeout(window._fixSilTimer);
+      window._fixSilTimer = setTimeout(function() {
+        if (!window._fixBuffer || window._fixBuffer.trim().length < 6) return;
+        if (typeof updateLayerUI === 'function') updateLayerUI(6);
+        if (typeof extractAndVerify === 'function') {
+          extractAndVerify(window._fixBuffer);
+        }
+        var pct = Math.min(30 + wordCount * 4, 80);
+        var fill = document.getElementById('confFillLive');
+        var pctEl = document.getElementById('confPctLive');
+        if (fill) { fill.style.width = pct + '%'; fill.style.background = '#0d9354'; }
+        if (pctEl) pctEl.textContent = pct + '%';
+      }, 1800);
+    }
+  }
+};
+
+// Intercept Deepgram WebSocket messages
+var _OrigWS = window.WebSocket;
+function PatchedWS(url, protocols) {
+  var ws = protocols ? new _OrigWS(url, protocols) : new _OrigWS(url);
+  if (url && url.indexOf('deepgram.com') !== -1) {
+    ws.addEventListener('message', function(evt) {
+      window._fixedHandleDGMsg(evt.data);
+    });
+  }
+  return ws;
+}
+PatchedWS.prototype = _OrigWS.prototype;
+PatchedWS.CONNECTING = _OrigWS.CONNECTING;
+PatchedWS.OPEN       = _OrigWS.OPEN;
+PatchedWS.CLOSING    = _OrigWS.CLOSING;
+PatchedWS.CLOSED     = _OrigWS.CLOSED;
+window.WebSocket = PatchedWS;
+
+// FIX 3: System audio opt-in only
+window._sysAudioEnabled = false;
+window.getSystemAudioStream = function() {
+  if (!window._sysAudioEnabled) return Promise.resolve(null);
+  return navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+};
+
+// FIX 4: Reset buffer + fields on new listen session
+var _lastToggleFix = window.toggleListen;
+window.toggleListen = async function() {
+  if (!window.isListening && !window.dgActive) {
+    window._fixBuffer = '';
+    clearTimeout(window._fixSilTimer);
+    ['lfv-name','lfv-phone','lfv-altphone','lfv-addrline','lfv-landmark','lfv-city','lfv-state','lfv-pincode'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('filled','verified'); }
+    });
+    var fill = document.getElementById('confFillLive');
+    var pct  = document.getElementById('confPctLive');
+    if (fill) { fill.style.width = '0%'; fill.style.background = ''; }
+    if (pct)  pct.textContent = '0%';
+    var box = document.getElementById('liveTranscriptBox');
+    if (box) box.innerHTML = '<span style="color:#94999f;font-style:italic">Transcript will appear here as the customer speaks\u2026</span>';
+  }
+  if (typeof _lastToggleFix === 'function') await _lastToggleFix();
+};
+
+// RIGHT PANEL
+function injectRightPanel() {
+  if (document.getElementById('vn-right-panel')) return;
+  var agentView = document.getElementById('agentView');
+  if (!agentView || !agentView.classList.contains('active')) return;
+
+  var panel = document.createElement('div');
+  panel.id = 'vn-right-panel';
+  panel.setAttribute('style', [
+    'width:340px','min-width:320px','max-width:360px',
+    'height:100%','overflow-y:auto',
+    'background:#f6f7f9','border-left:1px solid #e3e6eb',
+    'display:flex','flex-direction:column','flex-shrink:0',
+    'scrollbar-width:thin','scrollbar-color:#d1d6dd transparent'
+  ].join(';'));
+
+  panel.innerHTML = '<div style="padding:18px 20px 14px;border-bottom:1px solid #e3e6eb">'
+    + '<div style="font-size:11px;color:#94999f;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">Live capture feed <span id="feedCount" style="background:#e8f7ee;color:#0d9354;font-size:10px;padding:2px 9px;border-radius:10px;font-weight:700">0 saved</span></div>'
+    + '<div id="liveFeed" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto">'
+    + '<div data-empty="1" style="text-align:center;padding:24px 12px;color:#94999f;font-size:12px;line-height:1.7"><div style="font-size:24px;margin-bottom:8px">&#128203;</div>Captured addresses will appear here.<br>Tap \uD83C\uDFA4 and speak to start.</div>'
+    + '</div></div>'
+    + '<div style="padding:18px 20px 14px;border-bottom:1px solid #e3e6eb">'
+    + '<div style="font-size:11px;color:#94999f;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Smart keyboard</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px">'
+    + ['Sector','Colony','Nagar','Near','Plot No.','Flat No.','Gali','Road','Mohalla','Phase','Block','Township','Extension'].map(function(w) {
+        return '<span onclick="insertChip(this)" style="font-size:11px;padding:5px 12px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff;transition:all .15s">' + w + '</span>';
+      }).join('')
+    + '</div></div>'
+    + '<div style="padding:18px 20px 14px;border-bottom:1px solid #e3e6eb">'
+    + '<div style="font-size:11px;color:#94999f;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px">Call notes</div>'
+    + '<textarea id="callNotes" placeholder="Notes about this call..." rows="3" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px 13px;font-size:12px;color:#1a1d24;outline:none;resize:none;box-sizing:border-box;font-family:inherit;line-height:1.6;transition:border-color .15s" onfocus="this.style.borderColor=\'#3b5bdb\'" onblur="this.style.borderColor=\'#e3e6eb\'"></textarea>'
+    + '</div>'
+    + '<div style="padding:18px 20px 14px">'
+    + '<div style="font-size:11px;color:#94999f;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px">Session stats</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
+    + '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#0d9354" id="rp-saved">0</div><div style="font-size:10px;color:#94999f;margin-top:3px;font-weight:600">SAVED</div></div>'
+    + '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#b5740a" id="rp-drafts">0</div><div style="font-size:10px;color:#94999f;margin-top:3px;font-weight:600">DRAFTS</div></div>'
+    + '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#3b5bdb" id="rp-calls">0</div><div style="font-size:10px;color:#94999f;margin-top:3px;font-weight:600">CALLS</div></div>'
+    + '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:14px;font-weight:700;color:#1a1d24" id="rp-time">00:00</div><div style="font-size:10px;color:#94999f;margin-top:3px;font-weight:600">AVG TIME</div></div>'
+    + '</div>'
+    + '<button onclick="exportRightPanel()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px;font-size:12px;font-weight:600;color:#5e6470;cursor:pointer;font-family:inherit;transition:all .15s">&#128229; Export session CSV</button>'
+    + '</div>';
+
+  agentView.style.display = 'flex';
+  agentView.style.flexDirection = 'row';
+  agentView.appendChild(panel);
+}
+
+window.insertChip = function(el) {
+  var word = el.textContent.trim();
+  var target = document.activeElement;
+  var addrField = document.getElementById('lfv-addrline');
+  if (!target || ['lfv-addrline','lfv-landmark','lfv-city','lfv-state'].indexOf(target.id) === -1) target = addrField;
+  if (target) {
+    target.value = target.value ? target.value + ' ' + word : word;
+    target.focus();
+    target.classList.add('filled');
+    el.style.background = '#eef1fd';
+    el.style.borderColor = '#3b5bdb';
+    el.style.color = '#3b5bdb';
+    setTimeout(function() {
+      el.style.background = '#fff';
+      el.style.borderColor = '#e3e6eb';
+      el.style.color = '#5e6470';
+    }, 600);
+  }
+};
+
+var _rpSaved = 0, _rpDrafts = 0, _rpCalls = 0, _rpCallTimes = [];
+
+function addFeedCard() {
+  var feed = document.getElementById('liveFeed');
+  if (!feed) return;
+  var r = window.currentResult;
+  var addr = (r && r.rawAddress) || (document.getElementById('lfv-addrline') && document.getElementById('lfv-addrline').value) || 'Address captured';
+  var pin  = (r && r.pincode)     || (document.getElementById('lfv-pincode') && document.getElementById('lfv-pincode').value) || '';
+  var city = (r && r.city)        || (document.getElementById('lfv-city') && document.getElementById('lfv-city').value) || '';
+  var now  = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  var empty = feed.querySelector('[data-empty]');
+  if (empty) empty.remove();
+  var card = document.createElement('div');
+  card.setAttribute('style','background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:11px 13px;animation:vn-fadein .3s ease');
+  card.dataset.addr = addr;
+  card.dataset.pin  = pin;
+  card.dataset.city = city;
+  card.innerHTML = '<div style="font-size:12px;font-weight:600;color:#1a1d24;margin-bottom:5px;line-height:1.4">' + addr + '</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + (pin  ? '<span style="font-size:10px;background:#e8f7ee;color:#0d9354;padding:2px 8px;border-radius:8px;font-weight:700">&#128238; ' + pin + '</span>' : '')
+    + (city ? '<span style="font-size:10px;color:#5e6470">&#127961;&#65039; ' + city + '</span>' : '')
+    + '<span style="font-size:10px;color:#94999f;margin-left:auto">' + now + '</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:8px">'
+    + '<button onclick="copyFeedCard(this)" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:8px;background:#f6f7f9;color:#5e6470;cursor:pointer;font-family:inherit;font-weight:600">&#128203; Copy</button>'
+    + '<button onclick="sendWhatsApp(this)" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:8px;background:#f6f7f9;color:#5e6470;cursor:pointer;font-family:inherit;font-weight:600">&#128172; WhatsApp</button>'
+    + '</div>';
+  feed.insertBefore(card, feed.firstChild);
+  var fc = document.getElementById('feedCount');
+  if (fc) fc.textContent = _rpSaved + ' saved';
+}
+
+function updateRightPanelStats() {
+  var s = document.getElementById('rp-saved');
+  var d = document.getElementById('rp-drafts');
+  var c = document.getElementById('rp-calls');
+  var t = document.getElementById('rp-time');
+  if (s) s.textContent = _rpSaved;
+  if (d) d.textContent = _rpDrafts;
+  if (c) c.textContent = _rpCalls;
+  if (t && _rpCallTimes.length) {
+    var avg = Math.round(_rpCallTimes.reduce(function(a,b){return a+b;},0) / _rpCallTimes.length);
+    t.textContent = (Math.floor(avg/60)).toString().padStart(2,'0') + ':' + (avg%60).toString().padStart(2,'0');
+  }
+}
+
+var _origConfirmFix = window.confirmAddr;
+window.confirmAddr = function() {
+  if (typeof _origConfirmFix === 'function') _origConfirmFix();
+  _rpSaved++; _rpCalls++;
+  var dur = window.currentCallStart ? Math.round((Date.now()-window.currentCallStart)/1000) : 0;
+  if (dur>0) _rpCallTimes.push(dur);
+  addFeedCard(); updateRightPanelStats();
+};
+
+var _origStopSaveFix = window.stopAndSave;
+window.stopAndSave = function() {
+  if (typeof _origStopSaveFix === 'function') _origStopSaveFix();
+  _rpSaved++; _rpCalls++;
+  var dur = window.currentCallStart ? Math.round((Date.now()-window.currentCallStart)/1000) : 0;
+  if (dur>0) _rpCallTimes.push(dur);
+  addFeedCard(); updateRightPanelStats();
+};
+
+window.copyFeedCard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = (card.dataset.addr||'') + (card.dataset.pin ? ', ' + card.dataset.pin : '') + (card.dataset.city ? ', ' + card.dataset.city : '');
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = '✅ Copied';
+    setTimeout(function() { btn.innerHTML = '&#128203; Copy'; }, 1500);
+  });
+};
+
+window.sendWhatsApp = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = 'Address: ' + (card.dataset.addr||'') + (card.dataset.pin ? '\nPincode: '+card.dataset.pin : '') + (card.dataset.city ? '\nCity: '+card.dataset.city : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+};
+
+window.exportRightPanel = function() {
+  var feed = document.getElementById('liveFeed');
+  if (!feed) return;
+  var cards = Array.from(feed.querySelectorAll('[data-addr]'));
+  if (!cards.length) { if (typeof toast==='function') toast('No addresses yet','err'); return; }
+  var csv = 'Address,Pincode,City\n' + cards.map(function(c) {
+    return '"'+(c.dataset.addr||'')+'","'+(c.dataset.pin||'')+'","'+(c.dataset.city||'')+'"';
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'session_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+  if (typeof toast==='function') toast('📥 Exported!');
+};
+
+// Inject animation style
+var sty = document.createElement('style');
+sty.textContent = '@keyframes vn-fadein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}';
+document.head.appendChild(sty);
+
+// Watch for agent view activation
+var _obs = new MutationObserver(function() {
+  var av = document.getElementById('agentView');
+  if (av && av.classList.contains('active')) setTimeout(injectRightPanel, 150);
+});
+_obs.observe(document.body, {attributes:true, subtree:true, attributeFilter:['class']});
+
+var _origShowAgentFix = window.showAgentView;
+window.showAgentView = async function() {
+  if (typeof _origShowAgentFix === 'function') await _origShowAgentFix();
+  setTimeout(injectRightPanel, 200);
+};
+
+console.log('\u2705 VN Final Fix Patch: mic capture fixed, right panel injected');
+})();
+</script>
 </body>
 </html>
