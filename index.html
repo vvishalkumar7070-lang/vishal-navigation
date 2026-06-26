@@ -2366,7 +2366,8 @@ async function transcribeChunk(blob){
     updateLayerUI(4);
 
     // Determine if we should capture
-    const shouldCapture=strategiesFired.size>=2||(strategiesFired.has('s6'))||(strategiesFired.has('s1')&&strategiesFired.has('s2'));
+    const wordsSoFar=currentTranscript.split(' ').filter(Boolean).length;
+    const shouldCapture=wordsSoFar>=5||strategiesFired.size>=1||(strategiesFired.has('s6'))||(strategiesFired.has('s1')&&strategiesFired.has('s2'));
 
     if(shouldCapture&&!captureMode){
       captureMode=true;
@@ -2383,11 +2384,11 @@ async function transcribeChunk(blob){
           captureMode=false;
           processCapture(currentTranscript);
         }
-      },2500); // reduced to 2.5s for faster response
+      },1800); // 1.8s silence = faster capture
     }
 
     // Also auto-trigger if we hear enough words even without silence
-    if(!captureMode&&currentTranscript.split(' ').length>8){
+    if(!captureMode&&currentTranscript.split(' ').length>4){
       const newFiredNow=checkAllTriggers(currentTranscript);
       if(newFiredNow.size>=1){
         captureMode=true;
@@ -7118,5 +7119,4 @@ console.log('\u2705 VN Final Fix Patch: mic capture fixed, right panel injected'
 })();
 </script>
 </body>
-<!-- rebuild: 20260626100241 -->
 </html>
