@@ -4987,6 +4987,153 @@ function renderAgentView() {
     </div>
   `;
 
+  // Wrap in flex layout and add intel panel on the right
+  agentView.innerHTML = `
+    <div style="display:flex;height:100%;overflow:hidden">
+      <div style="flex:1;overflow-y:auto;min-width:0">` + agentView.innerHTML + `</div>
+      <div id="intelPanel" style="width:320px;min-width:300px;background:#f8f9fb;border-left:1px solid #e3e6eb;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0">
+
+        <!-- Intel Panel Tabs -->
+        <div style="display:flex;border-bottom:1px solid #e3e6eb;flex-shrink:0;background:#fff">
+          <div class="ip-tab active" onclick="switchIP('capture',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
+          <div class="ip-tab" onclick="switchIP('feed',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
+          <div class="ip-tab" onclick="switchIP('notes',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
+          <div class="ip-tab" onclick="switchIP('stats',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
+        </div>
+
+        <!-- CAPTURE PANE -->
+        <div id="ip-pane-capture" style="display:flex;flex-direction:column;flex:1;overflow-y:auto">
+
+          <!-- Live transcript -->
+          <div style="margin:12px;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:11px 13px;min-height:68px;max-height:110px;overflow-y:auto;font-size:11px;font-family:monospace;color:#5e6470;line-height:1.75;position:relative">
+            <span style="position:absolute;top:6px;right:9px;font-size:8px;color:#0d9354;letter-spacing:2px;font-weight:700">LIVE</span>
+            <div id="ip-transcript-box" style="color:#94999f;font-style:italic">Transcript appears here as customer speaks…</div>
+          </div>
+
+          <!-- Confidence bar -->
+          <div style="padding:0 12px;margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px">Confidence</span>
+              <span id="ip-conf-pct" style="font-size:12px;font-weight:700;color:#0d9354">0%</span>
+            </div>
+            <div style="height:5px;background:#e3e6eb;border-radius:3px;overflow:hidden">
+              <div id="ip-conf-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#0d9354,#34d399);border-radius:3px;transition:width .5s ease"></div>
+            </div>
+          </div>
+
+          <!-- Address fields -->
+          <div style="padding:0 12px;display:flex;flex-direction:column;gap:7px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+              <div class="ip-field" id="ipf-name">
+                <div class="ip-field-lbl">Customer Name</div>
+                <input class="ip-field-inp" id="ip-inp-name" placeholder="Rohit Kumar"/>
+              </div>
+              <div class="ip-field" id="ipf-phone">
+                <div class="ip-field-lbl">Phone</div>
+                <input class="ip-field-inp" id="ip-inp-phone" placeholder="98xxxxxxxx"/>
+              </div>
+            </div>
+            <div class="ip-field" id="ipf-addr" style="grid-column:1/-1">
+              <div class="ip-field-lbl">Address Line</div>
+              <input class="ip-field-inp" id="ip-inp-addr" placeholder="House no, street, area…"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+              <div class="ip-field" id="ipf-landmark">
+                <div class="ip-field-lbl">Landmark</div>
+                <input class="ip-field-inp" id="ip-inp-landmark" placeholder="Near…"/>
+              </div>
+              <div class="ip-field" id="ipf-pin">
+                <div class="ip-field-lbl">Pincode</div>
+                <input class="ip-field-inp" id="ip-inp-pin" placeholder="110001" maxlength="6"/>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+              <div class="ip-field" id="ipf-city">
+                <div class="ip-field-lbl">City</div>
+                <input class="ip-field-inp" id="ip-inp-city" placeholder="Delhi"/>
+              </div>
+              <div class="ip-field" id="ipf-state">
+                <div class="ip-field-lbl">State</div>
+                <input class="ip-field-inp" id="ip-inp-state" placeholder="Delhi"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart chips -->
+          <div style="padding:10px 12px;margin-top:6px;border-top:1px solid #e3e6eb">
+            <div style="font-size:8px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Quick Insert</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${['Sector','Colony','Nagar','Near','Plot No.','Flat No.','Gali','Road','Phase','Block','Vihar','Enclave'].map(w =>
+                '<span onclick="ipChip(\'' + w + '\')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:16px;cursor:pointer;color:#5e6470;background:#fff;transition:all .15s" onmouseover="this.style.borderColor=\'#3b5bdb\';this.style.color=\'#3b5bdb\'" onmouseout="this.style.borderColor=\'#e3e6eb\';this.style.color=\'#5e6470\'">' + w + '</span>'
+              ).join('')}
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px;border-top:1px solid #e3e6eb;flex-shrink:0">
+            <button id="ip-btn-save" onclick="ipSave()" disabled style="border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #d1e7dd;background:#e8f7ee;color:#0d9354;transition:all .2s">✅ Save</button>
+            <button id="ip-btn-wa" onclick="ipWhatsApp()" disabled style="border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #d1f0db;background:#e8f7ee;color:#25d366;transition:all .2s">💬 WhatsApp</button>
+            <button id="ip-btn-copy" onclick="ipCopy()" disabled style="border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #cce4f6;background:#e8f2fd;color:#1971c2;transition:all .2s">📋 Copy</button>
+            <button onclick="ipRetry()" style="border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid #e3e6eb;background:#fff;color:#5e6470;transition:all .2s">🔄 Re-extract</button>
+          </div>
+        </div>
+
+        <!-- FEED PANE -->
+        <div id="ip-pane-feed" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e3e6eb;flex-shrink:0">
+            <span style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px">Session Captures</span>
+            <span id="ip-feed-count" style="font-size:9px;background:#e8f7ee;color:#0d9354;padding:2px 8px;border-radius:8px;font-weight:700">0 saved</span>
+          </div>
+          <div id="ip-feed-list" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+            <div style="text-align:center;padding:32px 12px;color:#94999f;font-size:11px;line-height:1.9">📭<br>No addresses yet.<br>Start mic to capture.</div>
+          </div>
+          <div style="padding:8px 12px;border-top:1px solid #e3e6eb;flex-shrink:0">
+            <button onclick="ipExport()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:8px;font-size:10px;font-weight:600;color:#5e6470;cursor:pointer">📥 Export CSV</button>
+          </div>
+        </div>
+
+        <!-- NOTES PANE -->
+        <div id="ip-pane-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+          <textarea id="ip-notes-text" placeholder="Call notes…&#10;e.g. Evening delivery, Gate code: 1234" style="flex:1;margin:12px;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:11px 13px;font-size:12px;color:#1a1d24;font-family:inherit;resize:none;outline:none;line-height:1.7"></textarea>
+          <div style="padding:0 12px 10px;display:flex;gap:6px;flex-shrink:0">
+            <button onclick="document.getElementById('ip-notes-text').value=''" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:7px;font-size:10px;cursor:pointer;color:#5e6470">🗑️ Clear</button>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('ip-notes-text').value)" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:7px;font-size:10px;cursor:pointer;color:#5e6470">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- STATS PANE -->
+        <div id="ip-pane-stats" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px">
+            <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center">
+              <div id="ip-s-saved" style="font-size:22px;font-weight:700;color:#0d9354">0</div>
+              <div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Saved</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center">
+              <div id="ip-s-calls" style="font-size:22px;font-weight:700;color:#3b5bdb">0</div>
+              <div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Calls</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center">
+              <div id="ip-s-rate" style="font-size:22px;font-weight:700;color:#b5740a">0%</div>
+              <div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Success</div>
+            </div>
+            <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center">
+              <div id="ip-s-avg" style="font-size:16px;font-weight:700;color:#1a1d24">--:--</div>
+              <div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Avg Time</div>
+            </div>
+          </div>
+          <div style="padding:0 12px">
+            <button onclick="ipExport()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:10px;font-weight:600;color:#5e6470;cursor:pointer;margin-bottom:12px">📥 Export Session CSV</button>
+            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Recent</div>
+            <div id="ip-recent" style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#5e6470">
+              <div style="color:#94999f;font-style:italic">No captures yet</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
   syncListenButtons();
   renderPatchedRecordsTable();
   updatePatcherStats();
@@ -7634,6 +7781,293 @@ window.intelCopyNotes = function() {
 };
 
 console.log('✅ Intel Panel loaded');
+
+// ===== INTEL PANEL v2 — works with corp UI =====
+(function(){
+
+// Add CSS for ip-field elements
+var style = document.createElement('style');
+style.textContent = `
+  .ip-field{background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:8px 11px;transition:all .3s;position:relative;overflow:hidden}
+  .ip-field::after{content:'';position:absolute;bottom:0;left:0;width:0%;height:2px;background:#0d9354;transition:width .4s ease}
+  .ip-field.filling::after{width:60%;background:#f59f00}
+  .ip-field.filled::after{width:100%;background:#0d9354}
+  .ip-field.verified{border-color:#b2f2d0;background:#f0faf5}
+  .ip-field-lbl{font-size:8px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px}
+  .ip-field.filled .ip-field-lbl::after{content:' ✓';color:#0d9354}
+  .ip-field-inp{width:100%;background:transparent;border:none;outline:none;font-size:12px;font-weight:600;color:#1a1d24;font-family:inherit}
+  .ip-field-inp::placeholder{color:#c1c4cc;font-weight:400;font-size:11px}
+  .ip-tab.active{color:#3b5bdb!important;border-bottom-color:#3b5bdb!important}
+`;
+document.head.appendChild(style);
+
+// Tab switching
+window.switchIP = function(tab, el) {
+  document.querySelectorAll('.ip-tab').forEach(function(t) {
+    t.style.color = '#94999f';
+    t.style.borderBottomColor = 'transparent';
+    t.classList.remove('active');
+  });
+  if(el) { el.style.color = '#3b5bdb'; el.style.borderBottomColor = '#3b5bdb'; el.classList.add('active'); }
+  ['capture','feed','notes','stats'].forEach(function(p) {
+    var pane = document.getElementById('ip-pane-'+p);
+    if(pane) pane.style.display = p === tab ? 'flex' : 'none';
+  });
+  if(tab==='stats') ipUpdateStats();
+};
+
+// Quick insert chips
+window.ipChip = function(word) {
+  var target = document.activeElement;
+  var validIds = ['ip-inp-addr','ip-inp-landmark','ip-inp-city','ip-inp-state'];
+  if(!target || !validIds.includes(target.id)) target = document.getElementById('ip-inp-addr');
+  if(target) { target.value = (target.value ? target.value + ' ' : '') + word; target.focus(); ipMarkField(target.id); }
+};
+
+function ipMarkField(inpId) {
+  var fieldId = 'ipf-' + inpId.replace('ip-inp-','');
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('filled'); }
+}
+
+// Sync fields from main result
+function ipSync() {
+  var r = window.currentResult;
+
+  // Map from main corp fields
+  var map = {
+    'ip-inp-name':     document.getElementById('lfv-name')?.value || (r && r.name) || '',
+    'ip-inp-phone':    document.getElementById('lfv-phone')?.value || (r && r.phone) || '',
+    'ip-inp-addr':     document.getElementById('lfv-addrline')?.value || (r && (r.rawAddress||r.full_address)) || '',
+    'ip-inp-landmark': document.getElementById('lfv-landmark')?.value || (r && r.landmark) || '',
+    'ip-inp-pin':      document.getElementById('lfv-pincode')?.value || (r && r.pincode) || '',
+    'ip-inp-city':     document.getElementById('lfv-city')?.value || (r && r.city) || '',
+    'ip-inp-state':    document.getElementById('lfv-state')?.value || (r && r.state) || ''
+  };
+
+  var anyFilled = false;
+  Object.entries(map).forEach(function(entry) {
+    var inpId = entry[0], val = entry[1];
+    var inp = document.getElementById(inpId);
+    if(inp && val) {
+      inp.value = val;
+      var fieldId = 'ipf-' + inpId.replace('ip-inp-','');
+      var f = document.getElementById(fieldId);
+      if(f) { f.classList.remove('filling'); f.classList.add('filled','verified'); }
+      anyFilled = true;
+    }
+  });
+
+  // Sync confidence from corp UI
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+
+  if(anyFilled) {
+    ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+      var btn = document.getElementById(id);
+      if(btn) btn.disabled = false;
+    });
+  }
+}
+
+// Mirror live transcript
+function ipMirrorTranscript() {
+  var src = document.getElementById('liveTranscriptBox');
+  var dst = document.getElementById('ip-transcript-box');
+  if(src && dst && src.textContent.trim()) {
+    dst.innerHTML = src.innerHTML;
+    dst.style.color = '#1a1d24';
+    dst.style.fontStyle = 'normal';
+  }
+}
+
+// Poll for updates every 800ms when listening
+var _ipPollTimer = null;
+function ipStartPoll() {
+  if(_ipPollTimer) return;
+  _ipPollTimer = setInterval(function() {
+    ipMirrorTranscript();
+    // Sync confidence
+    var srcFill = document.getElementById('confFillLive');
+    var dstFill = document.getElementById('ip-conf-fill');
+    var srcPct = document.getElementById('confPctLive');
+    var dstPct = document.getElementById('ip-conf-pct');
+    if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+    if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+  }, 800);
+}
+function ipStopPoll() {
+  clearInterval(_ipPollTimer); _ipPollTimer = null;
+}
+
+// Hook toggleListen
+var _ipOrigToggle = window.toggleListen;
+window.toggleListen = async function() {
+  if(!window.isListening && !window.dgActive) {
+    // New call starting — reset fields
+    ['ip-inp-name','ip-inp-phone','ip-inp-addr','ip-inp-landmark','ip-inp-pin','ip-inp-city','ip-inp-state'].forEach(function(id) {
+      var el = document.getElementById(id); if(el) el.value = '';
+    });
+    ['ipf-name','ipf-phone','ipf-addr','ipf-landmark','ipf-pin','ipf-city','ipf-state'].forEach(function(id) {
+      var el = document.getElementById(id); if(el) el.classList.remove('filling','filled','verified');
+    });
+    var box = document.getElementById('ip-transcript-box');
+    if(box) { box.innerHTML = '<span style="color:#94999f;font-style:italic">Listening…</span>'; }
+    var dstFill = document.getElementById('ip-conf-fill');
+    var dstPct = document.getElementById('ip-conf-pct');
+    if(dstFill) dstFill.style.width = '0%';
+    if(dstPct) dstPct.textContent = '0%';
+    ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+      var btn = document.getElementById(id); if(btn) btn.disabled = true;
+    });
+    _ipCalls++; _ipAttempts++;
+    _ipCallStart = Date.now();
+    ipStartPoll();
+  } else {
+    ipStopPoll();
+    setTimeout(ipSync, 800);
+  }
+  if(typeof _ipOrigToggle === 'function') await _ipOrigToggle();
+};
+
+// Session data
+var _ipSaved = 0, _ipCalls = 0, _ipAttempts = 0, _ipCallTimes = [], _ipCaptures = [];
+var _ipCallStart = null;
+
+// Actions
+window.ipSave = function() {
+  ipSync();
+  var addr = document.getElementById('ip-inp-addr')?.value || '';
+  if(!addr) return;
+  var pin = document.getElementById('ip-inp-pin')?.value || '';
+  var city = document.getElementById('ip-inp-city')?.value || '';
+  var name = document.getElementById('ip-inp-name')?.value || '';
+  var now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  _ipSaved++; _ipCaptures.unshift({addr,pin,city,name,time:now});
+  if(_ipCallStart) { _ipCallTimes.push(Math.round((Date.now()-_ipCallStart)/1000)); _ipCallStart = null; }
+  ipAddToFeed(addr, pin, city, name, now);
+  ipUpdateStats();
+  if(typeof stopAndSave === 'function') stopAndSave();
+};
+
+window.ipCopy = function() {
+  var parts = [
+    document.getElementById('ip-inp-name')?.value,
+    document.getElementById('ip-inp-addr')?.value,
+    document.getElementById('ip-inp-landmark')?.value ? 'Near: '+document.getElementById('ip-inp-landmark').value : '',
+    document.getElementById('ip-inp-pin')?.value ? 'PIN: '+document.getElementById('ip-inp-pin').value : '',
+    document.getElementById('ip-inp-city')?.value,
+    document.getElementById('ip-inp-state')?.value
+  ].filter(Boolean);
+  navigator.clipboard.writeText(parts.join(', ')).then(function() {
+    var b = document.getElementById('ip-btn-copy');
+    if(b) { b.textContent = '✅ Copied!'; setTimeout(function(){ b.textContent='📋 Copy'; },1500); }
+  });
+};
+
+window.ipWhatsApp = function() {
+  var n = document.getElementById('ip-inp-name')?.value;
+  var ph = document.getElementById('ip-inp-phone')?.value;
+  var a = document.getElementById('ip-inp-addr')?.value || '';
+  var lm = document.getElementById('ip-inp-landmark')?.value;
+  var pin = document.getElementById('ip-inp-pin')?.value;
+  var ci = document.getElementById('ip-inp-city')?.value;
+  var st = document.getElementById('ip-inp-state')?.value;
+  var text = '📍 Address Details\n'
+    + (n ? '👤 '+n+'\n' : '')
+    + (ph ? '📞 '+ph+'\n' : '')
+    + '🏠 '+a+'\n'
+    + (lm ? '📌 Near: '+lm+'\n' : '')
+    + (pin ? '📮 PIN: '+pin+'\n' : '')
+    + (ci ? '🏙️ '+ci+(st?', '+st:'') : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+};
+
+window.ipRetry = function() {
+  var t = window.currentTranscript || window._fixBuffer || '';
+  if(t && typeof extractAndVerify === 'function') {
+    extractAndVerify(t);
+    setTimeout(ipSync, 1500);
+  }
+};
+
+function ipAddToFeed(addr, pin, city, name, now) {
+  var list = document.getElementById('ip-feed-list');
+  var count = document.getElementById('ip-feed-count');
+  if(!list) return;
+  var empty = list.querySelector('[style*="📭"]');
+  if(empty) empty.remove();
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:10px 12px;animation:vn-fadein .3s ease';
+  card.dataset.addr = addr; card.dataset.pin = pin; card.dataset.city = city;
+  card.innerHTML = '<div style="font-size:11px;font-weight:600;color:#1a1d24;margin-bottom:5px;line-height:1.5">'+(name?'<span style="font-size:10px;color:#0d9354">'+name+'</span><br>':'')+addr+'</div>'
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+    + (pin?'<span style="font-size:9px;background:#e8f7ee;color:#0d9354;padding:2px 7px;border-radius:8px;font-weight:700">📮 '+pin+'</span>':'')
+    + (city?'<span style="font-size:9px;color:#94999f">'+city+'</span>':'')
+    + '<span style="font-size:9px;color:#c1c4cc;margin-left:auto">'+now+'</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:5px;margin-top:7px">'
+    + '<button onclick="ipCopyCard(this)" style="font-size:9px;padding:3px 9px;border:1px solid #e3e6eb;border-radius:6px;background:#f6f7f9;color:#5e6470;cursor:pointer">📋 Copy</button>'
+    + '<button onclick="ipWACard(this)" style="font-size:9px;padding:3px 9px;border:1px solid #d1f0db;border-radius:6px;background:#f0faf5;color:#25d366;cursor:pointer">💬 WA</button>'
+    + '</div>';
+  list.insertBefore(card, list.firstChild);
+  if(count) count.textContent = _ipSaved + ' saved';
+  // Update recent in stats
+  var rec = document.getElementById('ip-recent');
+  if(rec) {
+    if(rec.querySelector('[style*="italic"]')) rec.innerHTML = '';
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:5px 0;border-bottom:1px solid #e3e6eb;line-height:1.5;font-size:10px';
+    item.innerHTML = '<span style="color:#0d9354">'+now+'</span> · '+(addr.substring(0,38))+(addr.length>38?'…':'');
+    rec.insertBefore(item, rec.firstChild);
+  }
+}
+
+window.ipCopyCard = function(btn) {
+  var c = btn.closest('[data-addr]');
+  var text = (c.dataset.addr||'')+(c.dataset.pin?', PIN: '+c.dataset.pin:'')+(c.dataset.city?', '+c.dataset.city:'');
+  navigator.clipboard.writeText(text).then(function(){ btn.textContent='✅'; setTimeout(function(){ btn.textContent='📋 Copy'; },1200); });
+};
+window.ipWACard = function(btn) {
+  var c = btn.closest('[data-addr]');
+  window.open('https://wa.me/?text='+encodeURIComponent('📍 '+(c.dataset.addr||'')+(c.dataset.pin?'\n📮 PIN: '+c.dataset.pin:'')+(c.dataset.city?'\n🏙️ '+c.dataset.city:'')),'_blank');
+};
+
+function ipUpdateStats() {
+  var s = document.getElementById('ip-s-saved'); if(s) s.textContent = _ipSaved;
+  var c = document.getElementById('ip-s-calls'); if(c) c.textContent = _ipCalls;
+  var r = document.getElementById('ip-s-rate'); if(r) r.textContent = _ipAttempts>0 ? Math.round((_ipSaved/_ipAttempts)*100)+'%' : '0%';
+  var a = document.getElementById('ip-s-avg');
+  if(a && _ipCallTimes.length) {
+    var avg = Math.round(_ipCallTimes.reduce(function(x,y){return x+y;},0)/_ipCallTimes.length);
+    a.textContent = Math.floor(avg/60).toString().padStart(2,'0')+':'+(avg%60).toString().padStart(2,'0');
+  }
+}
+window.ipUpdateStats = ipUpdateStats;
+
+window.ipExport = function() {
+  if(!_ipCaptures.length) { alert('No captures yet!'); return; }
+  var csv = 'Name,Address,Pincode,City,Time\n' + _ipCaptures.map(function(c) {
+    return '"'+(c.name||'')+'","'+(c.addr||'')+'","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+};
+
+// Hook stopAndSave and confirmAddr to auto-sync intel panel
+var _ipOrigStopSave = window.stopAndSave;
+window.stopAndSave = function() {
+  if(typeof _ipOrigStopSave === 'function') _ipOrigStopSave();
+  setTimeout(ipSync, 500);
+};
+
+console.log('✅ Intel Panel v2 loaded');
 })();
 </script>
 </body>
