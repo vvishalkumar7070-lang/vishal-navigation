@@ -199,7 +199,7 @@ body::after{
 
 /* Desktop layout */
 @media(min-width:800px){
-  #agentView{grid-template-columns:300px 1fr}
+  #agentView{grid-template-columns:280px 1fr 320px}
 }
 @media(max-width:799px){
   #agentView{grid-template-columns:1fr;grid-template-rows:1fr auto}
@@ -238,6 +238,86 @@ body::after{
 
 /* RIGHT PANEL - VOICE */
 .agent-right{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;gap:20px;overflow-y:auto;background:var(--card)}
+
+/* ===== RIGHT INTELLIGENCE PANEL ===== */
+.intel-panel{background:rgba(5,9,16,.97);border-left:1px solid rgba(0,255,170,.07);display:flex;flex-direction:column;overflow:hidden;height:100%}
+.intel-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.intel-tab{flex:1;padding:10px 4px;font-size:9px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--text3);cursor:pointer;text-align:center;border-bottom:2px solid transparent;transition:all .25s}
+.intel-tab.active{color:var(--green);border-bottom-color:var(--green);background:rgba(0,255,170,.03)}
+.intel-pane{display:none;flex:1;overflow-y:auto;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.intel-pane.active{display:flex;flex-direction:column}
+
+/* Live Transcript Box */
+.live-tx-box{margin:12px;background:rgba(3,6,12,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;min-height:72px;max-height:120px;overflow-y:auto;font-size:11px;font-family:var(--font-mono);color:var(--text2);line-height:1.75;position:relative;flex-shrink:0}
+.live-tx-box::after{content:'LIVE';position:absolute;top:7px;right:9px;font-size:8px;color:var(--green);letter-spacing:2px;opacity:.5;font-family:var(--font-mono)}
+
+/* Address Fields */
+.addr-fields{padding:0 12px;display:flex;flex-direction:column;gap:7px;flex-shrink:0}
+.af-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.af-field{background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:9px;padding:8px 11px;transition:all .3s;position:relative;overflow:hidden}
+.af-field::before{content:'';position:absolute;bottom:0;left:0;width:0%;height:2px;background:var(--green);transition:width .4s ease}
+.af-field.filling::before{width:60%;background:var(--amber)}
+.af-field.filled::before{width:100%;background:var(--green)}
+.af-field.full{grid-column:1/-1}
+.af-lbl{font-size:8px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px;display:flex;align-items:center;justify-content:space-between}
+.af-inp{width:100%;background:transparent;border:none;outline:none;font-size:12px;font-weight:600;color:var(--text);font-family:var(--font-body)}
+.af-inp::placeholder{color:var(--text3);font-weight:400;font-size:11px}
+.af-field.filled .af-lbl::after{content:'✓';color:var(--green);font-size:10px}
+.af-field.verified{border-color:rgba(0,255,170,.3);background:rgba(0,255,170,.04);box-shadow:0 0 12px rgba(0,255,170,.06)}
+
+/* Confidence meter */
+.conf-bar-wrap{margin:10px 12px 0;flex-shrink:0}
+.conf-bar-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.conf-bar-lbl{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.conf-bar-pct{font-size:13px;font-weight:700;font-family:var(--font-mono);color:var(--green);text-shadow:0 0 8px rgba(0,255,170,.4)}
+.conf-track2{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.conf-fill2{height:100%;width:0%;background:linear-gradient(90deg,var(--green2),var(--green));border-radius:3px;transition:width .5s ease;box-shadow:0 0 8px rgba(0,255,170,.4)}
+
+/* Action buttons */
+.intel-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px;flex-shrink:0;border-top:1px solid var(--border)}
+.ia-btn{border-radius:9px;padding:9px 6px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:5px;border:1px solid}
+.ia-btn.confirm{background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.08));border-color:rgba(0,255,170,.3);color:var(--green)}
+.ia-btn.confirm:hover{background:linear-gradient(135deg,rgba(0,255,170,.25),rgba(0,255,170,.12));box-shadow:0 0 16px rgba(0,255,170,.2)}
+.ia-btn.whatsapp{background:rgba(37,211,102,.08);border-color:rgba(37,211,102,.25);color:#25d366}
+.ia-btn.whatsapp:hover{background:rgba(37,211,102,.15);box-shadow:0 0 12px rgba(37,211,102,.2)}
+.ia-btn.copy{background:rgba(56,182,255,.06);border-color:rgba(56,182,255,.2);color:var(--blue)}
+.ia-btn.copy:hover{background:rgba(56,182,255,.12);box-shadow:0 0 12px rgba(56,182,255,.15)}
+.ia-btn.retry{background:rgba(176,140,255,.06);border-color:rgba(176,140,255,.2);color:var(--purple)}
+.ia-btn.retry:hover{background:rgba(176,140,255,.12)}
+.ia-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* Smart Chips */
+.chip-section{padding:10px 12px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.chip-title{font-size:8px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:10px;padding:4px 10px;border:1px solid var(--border2);border-radius:16px;cursor:pointer;color:var(--text2);background:rgba(7,13,20,.8);font-family:var(--font-body);transition:all .2s}
+.chip:hover{border-color:var(--green);color:var(--green);background:rgba(0,255,170,.06)}
+.chip:active{transform:scale(.95)}
+
+/* Session Feed */
+.feed-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:7px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+.feed-card{background:rgba(7,13,20,.9);border:1px solid var(--border);border-left:2px solid var(--green);border-radius:10px;padding:10px 12px;animation:msgIn .35s ease;position:relative}
+.feed-card-addr{font-size:11px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:5px}
+.feed-card-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.feed-pin{font-size:9px;background:rgba(0,255,170,.08);color:var(--green);padding:2px 7px;border-radius:8px;font-family:var(--font-mono);font-weight:700}
+.feed-city{font-size:9px;color:var(--text3)}
+.feed-time{font-size:9px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.feed-empty{text-align:center;padding:32px 16px;color:var(--text3);font-size:11px;line-height:1.8;font-family:var(--font-mono)}
+
+/* Notes */
+.notes-area{flex:1;margin:10px 12px;background:rgba(3,6,12,.8);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:12px;color:var(--text);font-family:var(--font-body);resize:none;outline:none;line-height:1.7}
+.notes-area:focus{border-color:rgba(0,255,170,.3);box-shadow:0 0 12px rgba(0,255,170,.06)}
+.notes-footer{padding:0 12px 10px;display:flex;gap:6px;flex-shrink:0}
+.notes-btn{flex:1;background:rgba(7,13,20,.9);border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:7px;font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .2s}
+.notes-btn:hover{border-color:var(--green);color:var(--green)}
+
+/* Stats mini */
+.mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px 12px;flex-shrink:0}
+.ms-box{background:rgba(7,13,20,.9);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.ms-val{font-size:20px;font-weight:700;font-family:var(--font-mono);color:var(--green);text-shadow:0 0 10px rgba(0,255,170,.3)}
+.ms-lbl{font-size:8px;color:var(--text3);margin-top:3px;font-family:var(--font-mono);letter-spacing:.5px;text-transform:uppercase}
+.ms-export{grid-column:1/-1;background:rgba(7,13,20,.9);border:1px solid var(--border2);color:var(--text2);border-radius:9px;padding:8px;font-size:10px;cursor:pointer;font-family:var(--font-mono);transition:all .2s}
+.ms-export:hover{border-color:var(--green);color:var(--green)}
 
 /* LISTEN BUTTON - MAXIMIZED */
 .listen-outer{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -845,6 +925,135 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
 
     </div>
+
+    <!-- RIGHT INTELLIGENCE PANEL -->
+    <div class="intel-panel" id="intelPanel">
+      <div class="intel-tabs">
+        <div class="intel-tab active" onclick="switchIntelTab('capture',this)">📋 Capture</div>
+        <div class="intel-tab" onclick="switchIntelTab('feed',this)">📡 Feed</div>
+        <div class="intel-tab" onclick="switchIntelTab('notes',this)">📝 Notes</div>
+        <div class="intel-tab" onclick="switchIntelTab('stats',this)">📊 Stats</div>
+      </div>
+
+      <!-- CAPTURE TAB -->
+      <div class="intel-pane active" id="ip-capture">
+        <!-- Live transcript -->
+        <div class="live-tx-box" id="ip-transcript">
+          <span style="color:var(--text3);font-style:italic">Transcript appears here as customer speaks…</span>
+        </div>
+        <!-- Confidence -->
+        <div class="conf-bar-wrap">
+          <div class="conf-bar-hdr">
+            <span class="conf-bar-lbl">Address Confidence</span>
+            <span class="conf-bar-pct" id="ip-conf-pct">0%</span>
+          </div>
+          <div class="conf-track2"><div class="conf-fill2" id="ip-conf-fill"></div></div>
+        </div>
+        <!-- Address fields -->
+        <div class="addr-fields" style="margin-top:10px">
+          <div class="af-row">
+            <div class="af-field" id="ipf-name">
+              <div class="af-lbl">Customer Name</div>
+              <input class="af-inp" id="ip-name" placeholder="Rohit Kumar"/>
+            </div>
+            <div class="af-field" id="ipf-phone">
+              <div class="af-lbl">Phone</div>
+              <input class="af-inp" id="ip-phone" placeholder="98xxxxxxxx"/>
+            </div>
+          </div>
+          <div class="af-field full" id="ipf-addr">
+            <div class="af-lbl">Address Line</div>
+            <input class="af-inp" id="ip-addr" placeholder="House no, street, area…"/>
+          </div>
+          <div class="af-row">
+            <div class="af-field" id="ipf-landmark">
+              <div class="af-lbl">Landmark</div>
+              <input class="af-inp" id="ip-landmark" placeholder="Near…"/>
+            </div>
+            <div class="af-field" id="ipf-pin">
+              <div class="af-lbl">Pincode</div>
+              <input class="af-inp" id="ip-pin" placeholder="110001" maxlength="6"/>
+            </div>
+          </div>
+          <div class="af-row">
+            <div class="af-field" id="ipf-city">
+              <div class="af-lbl">City</div>
+              <input class="af-inp" id="ip-city" placeholder="Delhi"/>
+            </div>
+            <div class="af-field" id="ipf-state">
+              <div class="af-lbl">State</div>
+              <input class="af-inp" id="ip-state" placeholder="Delhi"/>
+            </div>
+          </div>
+        </div>
+        <!-- Smart keyboard chips -->
+        <div class="chip-section" style="margin-top:10px">
+          <div class="chip-title">Quick Insert</div>
+          <div class="chips">
+            <span class="chip" onclick="insertIntelChip('Sector')">Sector</span>
+            <span class="chip" onclick="insertIntelChip('Colony')">Colony</span>
+            <span class="chip" onclick="insertIntelChip('Nagar')">Nagar</span>
+            <span class="chip" onclick="insertIntelChip('Near')">Near</span>
+            <span class="chip" onclick="insertIntelChip('Plot No.')">Plot No.</span>
+            <span class="chip" onclick="insertIntelChip('Flat No.')">Flat No.</span>
+            <span class="chip" onclick="insertIntelChip('Gali')">Gali</span>
+            <span class="chip" onclick="insertIntelChip('Road')">Road</span>
+            <span class="chip" onclick="insertIntelChip('Phase')">Phase</span>
+            <span class="chip" onclick="insertIntelChip('Block')">Block</span>
+            <span class="chip" onclick="insertIntelChip('Vihar')">Vihar</span>
+            <span class="chip" onclick="insertIntelChip('Enclave')">Enclave</span>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="intel-actions">
+          <button class="ia-btn confirm" id="ip-confirm-btn" onclick="intelConfirm()" disabled>✅ Save</button>
+          <button class="ia-btn whatsapp" id="ip-wa-btn" onclick="intelWhatsApp()" disabled>💬 WhatsApp</button>
+          <button class="ia-btn copy" id="ip-copy-btn" onclick="intelCopy()" disabled>📋 Copy</button>
+          <button class="ia-btn retry" onclick="intelRetry()">🔄 Re-extract</button>
+        </div>
+      </div>
+
+      <!-- FEED TAB -->
+      <div class="intel-pane" id="ip-feed">
+        <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:1px solid var(--border)">
+          <span style="font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase">Session Captures</span>
+          <span id="ip-feed-count" style="font-size:9px;background:rgba(0,255,170,.08);color:var(--green);padding:2px 8px;border-radius:8px;font-family:var(--font-mono);font-weight:700">0 saved</span>
+        </div>
+        <div class="feed-list" id="ip-feed-list">
+          <div class="feed-empty">📭<br>No addresses yet.<br>Start mic to capture.</div>
+        </div>
+        <div style="padding:8px 12px;border-top:1px solid var(--border);flex-shrink:0">
+          <button class="ms-export" onclick="intelExportCSV()">📥 Export Session CSV</button>
+        </div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="intel-pane" id="ip-notes">
+        <textarea class="notes-area" id="ip-notes-text" placeholder="Call notes, customer details, special instructions…&#10;&#10;e.g. Customer asked for evening delivery&#10;Gate code: 1234"></textarea>
+        <div class="notes-footer">
+          <button class="notes-btn" onclick="intelClearNotes()">🗑️ Clear</button>
+          <button class="notes-btn" onclick="intelCopyNotes()">📋 Copy Notes</button>
+        </div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div class="intel-pane" id="ip-stats">
+        <div class="mini-stats">
+          <div class="ms-box"><div class="ms-val" id="ip-s-saved">0</div><div class="ms-lbl">Saved</div></div>
+          <div class="ms-box"><div class="ms-val" id="ip-s-calls">0</div><div class="ms-lbl">Calls</div></div>
+          <div class="ms-box"><div class="ms-val" id="ip-s-rate" style="color:var(--blue)">0%</div><div class="ms-lbl">Success Rate</div></div>
+          <div class="ms-box"><div class="ms-val" id="ip-s-avg" style="font-size:15px;color:var(--amber)">--:--</div><div class="ms-lbl">Avg Time</div></div>
+          <button class="ms-export" onclick="intelExportCSV()">📥 Export CSV</button>
+        </div>
+        <div style="padding:0 12px;margin-top:4px;flex:1">
+          <div style="font-size:8px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">Recent</div>
+          <div id="ip-recent-list" style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:var(--text2);font-family:var(--font-mono)">
+            <div style="color:var(--text3);font-style:italic">No captures yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ADMIN VIEW -->
@@ -7116,6 +7325,315 @@ window.showAgentView = async function() {
 };
 
 console.log('\u2705 VN Final Fix Patch: mic capture fixed, right panel injected');
+console.log('✅ VN Final Fix Patch: mic capture fixed, right panel injected');
+})();
+
+// ===== INTEL PANEL LOGIC =====
+(function(){
+'use strict';
+
+// Tab switching
+window.switchIntelTab = function(tab, el) {
+  document.querySelectorAll('.intel-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.intel-pane').forEach(p => p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  var pane = document.getElementById('ip-' + tab);
+  if(pane) pane.classList.add('active');
+};
+
+// Chip insert
+window.insertIntelChip = function(word) {
+  var target = document.activeElement;
+  var fallback = document.getElementById('ip-addr');
+  var validIds = ['ip-addr','ip-landmark','ip-city','ip-state','ip-name'];
+  if(!target || !validIds.includes(target.id)) target = fallback;
+  if(target) {
+    target.value = target.value ? target.value + ' ' + word : word;
+    target.focus();
+    markFilled(target.id.replace('ip-','ipf-'));
+  }
+};
+
+function markFilled(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('filled'); }
+}
+function markFilling(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filled','verified'); f.classList.add('filling'); }
+}
+function markVerified(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('verified','filled'); }
+}
+
+// Sync with main result — hook into extractAndVerify output
+var _origExtract = window.extractAndVerify;
+window.extractAndVerify = async function(transcript) {
+  // Update live transcript in intel panel
+  var box = document.getElementById('ip-transcript');
+  if(box && transcript) {
+    box.innerHTML = '<span style="color:var(--text2)">' + transcript + '</span>';
+  }
+  if(typeof _origExtract === 'function') await _origExtract(transcript);
+  // After extraction, sync fields
+  setTimeout(syncIntelFields, 600);
+  setTimeout(syncIntelFields, 1500);
+};
+
+// Sync address fields from main result
+function syncIntelFields() {
+  var r = window.currentResult;
+  if(!r) return;
+
+  function setField(inpId, fieldId, val) {
+    var inp = document.getElementById(inpId);
+    if(inp && val && !inp.value) {
+      inp.value = val;
+      markVerified(fieldId);
+    } else if(inp && val) {
+      inp.value = val;
+      markFilled(fieldId);
+    }
+  }
+
+  // Try to get values from main live fields or result
+  var name = document.getElementById('lfv-name')?.value || r.name || '';
+  var phone = document.getElementById('lfv-phone')?.value || r.phone || '';
+  var addr = document.getElementById('lfv-addrline')?.value || r.rawAddress || r.full_address || '';
+  var landmark = document.getElementById('lfv-landmark')?.value || r.landmark || '';
+  var pin = document.getElementById('lfv-pincode')?.value || r.pincode || '';
+  var city = document.getElementById('lfv-city')?.value || r.city || '';
+  var state = document.getElementById('lfv-state')?.value || r.state || '';
+
+  setField('ip-name', 'ipf-name', name);
+  setField('ip-phone', 'ipf-phone', phone);
+  setField('ip-addr', 'ipf-addr', addr);
+  setField('ip-landmark', 'ipf-landmark', landmark);
+  setField('ip-pin', 'ipf-pin', pin);
+  setField('ip-city', 'ipf-city', city);
+  setField('ip-state', 'ipf-state', state);
+
+  // Update confidence
+  var conf = r.confidence || 0;
+  var fill = document.getElementById('ip-conf-fill');
+  var pct = document.getElementById('ip-conf-pct');
+  if(fill) fill.style.width = conf + '%';
+  if(pct) pct.textContent = conf + '%';
+
+  // Enable action buttons
+  ['ip-confirm-btn','ip-wa-btn','ip-copy-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if(btn && addr) btn.disabled = false;
+  });
+}
+
+// Also sync live transcript from Deepgram patch
+var _origDGMsg = window._fixedHandleDGMsg;
+window._fixedHandleDGMsg = function(raw) {
+  if(typeof _origDGMsg === 'function') _origDGMsg(raw);
+  // Mirror transcript to intel panel
+  var box = document.getElementById('ip-transcript');
+  var dgBox = document.getElementById('liveTranscriptBox');
+  if(box && dgBox) box.innerHTML = dgBox.innerHTML;
+  // Sync confidence
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+};
+
+// Session tracking
+var _ipSaved = 0, _ipCalls = 0, _ipAttempts = 0, _ipCallTimes = [], _ipCaptures = [];
+var _ipCallStart = null;
+
+// Track call start
+var _origToggle = window.toggleListen;
+window.toggleListen = async function() {
+  if(!window.isListening && !window.dgActive) {
+    _ipCallStart = Date.now();
+    _ipCalls++;
+    _ipAttempts++;
+    updateIntelStats();
+    // Clear fields for new call
+    ['ip-name','ip-phone','ip-addr','ip-landmark','ip-pin','ip-city','ip-state'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    ['ipf-name','ipf-phone','ipf-addr','ipf-landmark','ipf-pin','ipf-city','ipf-state'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el) el.classList.remove('filling','filled','verified');
+    });
+    var box = document.getElementById('ip-transcript');
+    if(box) box.innerHTML = '<span style="color:var(--text3);font-style:italic">Listening…</span>';
+    var fill = document.getElementById('ip-conf-fill');
+    var pct = document.getElementById('ip-conf-pct');
+    if(fill) fill.style.width = '0%';
+    if(pct) pct.textContent = '0%';
+    ['ip-confirm-btn','ip-wa-btn','ip-copy-btn'].forEach(function(id) {
+      var btn = document.getElementById(id); if(btn) btn.disabled = true;
+    });
+  }
+  if(typeof _origToggle === 'function') await _origToggle();
+};
+
+function addToFeed() {
+  var addr = document.getElementById('ip-addr')?.value || '';
+  var pin = document.getElementById('ip-pin')?.value || '';
+  var city = document.getElementById('ip-city')?.value || '';
+  var name = document.getElementById('ip-name')?.value || '';
+  if(!addr) return;
+
+  var now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  _ipCaptures.unshift({addr,pin,city,name,time:now});
+  _ipSaved++;
+
+  // Update feed
+  var list = document.getElementById('ip-feed-list');
+  var count = document.getElementById('ip-feed-count');
+  if(list) {
+    var empty = list.querySelector('.feed-empty');
+    if(empty) empty.remove();
+    var card = document.createElement('div');
+    card.className = 'feed-card';
+    card.dataset.addr = addr; card.dataset.pin = pin; card.dataset.city = city;
+    card.innerHTML = '<div class="feed-card-addr">' + (name ? '<span style="color:var(--green);font-size:10px">'+name+'</span><br>' : '') + addr + '</div>'
+      + '<div class="feed-card-meta">'
+      + (pin ? '<span class="feed-pin">📮 '+pin+'</span>' : '')
+      + (city ? '<span class="feed-city">'+city+'</span>' : '')
+      + '<span class="feed-time">'+now+'</span>'
+      + '</div>'
+      + '<div style="display:flex;gap:5px;margin-top:6px">'
+      + '<button onclick="intelCopyCard(this)" style="font-size:9px;padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-mono)">📋 Copy</button>'
+      + '<button onclick="intelWACard(this)" style="font-size:9px;padding:3px 8px;border:1px solid rgba(37,211,102,.2);border-radius:6px;background:transparent;color:#25d366;cursor:pointer;font-family:var(--font-mono)">💬 WA</button>'
+      + '</div>';
+    list.insertBefore(card, list.firstChild);
+  }
+  if(count) count.textContent = _ipSaved + ' saved';
+
+  // Update recent in stats
+  var recent = document.getElementById('ip-recent-list');
+  if(recent) {
+    if(recent.querySelector('[style*="italic"]')) recent.innerHTML = '';
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:5px 0;border-bottom:1px solid var(--border);line-height:1.5';
+    item.innerHTML = '<span style="color:var(--green)">'+now+'</span> · ' + addr.substring(0,35) + (addr.length>35?'…':'');
+    recent.insertBefore(item, recent.firstChild);
+  }
+
+  updateIntelStats();
+  if(_ipCallStart) {
+    _ipCallTimes.push(Math.round((Date.now()-_ipCallStart)/1000));
+    _ipCallStart = null;
+  }
+}
+
+function updateIntelStats() {
+  var s = document.getElementById('ip-s-saved'); if(s) s.textContent = _ipSaved;
+  var c = document.getElementById('ip-s-calls'); if(c) c.textContent = _ipCalls;
+  var r = document.getElementById('ip-s-rate');
+  if(r) r.textContent = _ipAttempts > 0 ? Math.round((_ipSaved/_ipAttempts)*100)+'%' : '0%';
+  var a = document.getElementById('ip-s-avg');
+  if(a && _ipCallTimes.length) {
+    var avg = Math.round(_ipCallTimes.reduce(function(x,y){return x+y;},0)/_ipCallTimes.length);
+    a.textContent = Math.floor(avg/60).toString().padStart(2,'0')+':'+( avg%60).toString().padStart(2,'0');
+  }
+}
+
+// Hook confirm
+var _origConfirm = window.confirmAddr;
+window.confirmAddr = function() {
+  if(typeof _origConfirm === 'function') _origConfirm();
+  syncIntelFields();
+  addToFeed();
+};
+
+// Intel panel actions
+window.intelConfirm = function() { syncIntelFields(); addToFeed(); if(typeof confirmAddr==='function') confirmAddr(); };
+
+window.intelCopy = function() {
+  var parts = [
+    document.getElementById('ip-name')?.value,
+    document.getElementById('ip-addr')?.value,
+    document.getElementById('ip-landmark')?.value ? 'Near: '+document.getElementById('ip-landmark').value : '',
+    document.getElementById('ip-pin')?.value ? 'PIN: '+document.getElementById('ip-pin').value : '',
+    document.getElementById('ip-city')?.value,
+    document.getElementById('ip-state')?.value
+  ].filter(Boolean);
+  navigator.clipboard.writeText(parts.join(', ')).then(function() {
+    var btn = document.getElementById('ip-copy-btn');
+    if(btn) { btn.textContent = '✅ Copied!'; setTimeout(function(){ btn.innerHTML='📋 Copy'; }, 1500); }
+  });
+};
+
+window.intelWhatsApp = function() {
+  var text = '📍 Address Details
+'
+    + (document.getElementById('ip-name')?.value ? '👤 ' + document.getElementById('ip-name').value + '
+' : '')
+    + (document.getElementById('ip-phone')?.value ? '📞 ' + document.getElementById('ip-phone').value + '
+' : '')
+    + '🏠 ' + (document.getElementById('ip-addr')?.value || '') + '
+'
+    + (document.getElementById('ip-landmark')?.value ? '📌 Near: ' + document.getElementById('ip-landmark').value + '
+' : '')
+    + (document.getElementById('ip-pin')?.value ? '📮 PIN: ' + document.getElementById('ip-pin').value + '
+' : '')
+    + (document.getElementById('ip-city')?.value ? '🏙️ ' + document.getElementById('ip-city').value : '')
+    + (document.getElementById('ip-state')?.value ? ', ' + document.getElementById('ip-state').value : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
+};
+
+window.intelRetry = function() {
+  var t = window.currentTranscript || window._fixBuffer || '';
+  if(t && typeof extractAndVerify === 'function') {
+    extractAndVerify(t);
+  } else {
+    var box = document.getElementById('ip-transcript');
+    if(box) box.innerHTML = '<span style="color:var(--amber)">No transcript yet — start mic first</span>';
+  }
+};
+
+window.intelCopyCard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = (card.dataset.addr||'') + (card.dataset.pin ? ', PIN: '+card.dataset.pin : '') + (card.dataset.city ? ', '+card.dataset.city : '');
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = '✅'; setTimeout(function(){ btn.textContent='📋 Copy'; }, 1200);
+  });
+};
+
+window.intelWACard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = '📍 ' + (card.dataset.addr||'') + (card.dataset.pin ? '
+📮 PIN: '+card.dataset.pin : '') + (card.dataset.city ? '
+🏙️ '+card.dataset.city : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
+};
+
+window.intelExportCSV = function() {
+  if(!_ipCaptures.length) return;
+  var csv = 'Name,Address,Landmark,Pincode,City,Time
+' + _ipCaptures.map(function(c) {
+    return '"'+(c.name||'')+'","'+(c.addr||'')+'","","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
+  }).join('
+');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+};
+
+window.intelClearNotes = function() {
+  var t = document.getElementById('ip-notes-text'); if(t) t.value = '';
+};
+window.intelCopyNotes = function() {
+  var t = document.getElementById('ip-notes-text');
+  if(t && t.value) navigator.clipboard.writeText(t.value).then(function(){ alert('Notes copied!'); });
+};
+
+console.log('✅ Intel Panel loaded');
 })();
 </script>
 </body>
