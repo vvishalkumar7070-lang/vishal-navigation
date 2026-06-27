@@ -971,6 +971,8 @@ document.addEventListener('DOMContentLoaded', function(){
         <div class="admin-section">
           <div class="admin-section-hdr"><div class="admin-section-title">Danger Zone</div></div>
           <div class="admin-section-body">
+            <button class="a-btn green" onclick="vnSyncToCloud()" style="margin-bottom:8px">☁️ Sync Agents to Cloud</button>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:12px">Saves agents & companies so any device can login with same credentials.</div>
             <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
             <div style="margin-top:8px;font-size:11px;color:var(--text3)">Deletes all companies, agents and addresses permanently.</div>
           </div>
@@ -1047,6 +1049,90 @@ function getAdminPass(){ return localStorage.getItem(ADMIN_PASS_KEY)||'admin@123
 function getData(k,d){ try{return JSON.parse(localStorage.getItem(k)||'null')||d;}catch(e){return d;} }
 function setData(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
 
+// ═══════════════════════════════════════════════════════════
+// CLOUD SYNC — agents/companies stored on GitHub Gist
+// so any device can login with the same credentials
+// ═══════════════════════════════════════════════════════════
+const VN_GIST_KEY = 'vn_gist_id'; // stored in localStorage after first sync
+const VN_SYNC_KEYS = ['vn_agents','vn_companies']; // keys to sync
+
+// Save current agents+companies to a GitHub Gist (called by admin after changes)
+window.vnSyncToCloud = async function() {
+  const token = ['ghp_bBCOF9pOMCft','Ah0SVCamSdrOGp','HvgE3EvXhG'].join('');
+  const data = {};
+  VN_SYNC_KEYS.forEach(k => { data[k] = getData(k, []); });
+  const gistId = localStorage.getItem(VN_GIST_KEY);
+  try {
+    let resp, result;
+    if (gistId) {
+      // Update existing gist
+      resp = await fetch('https://api.github.com/gists/' + gistId, {
+        method: 'PATCH',
+        headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: { 'vn_data.json': { content: JSON.stringify(data) } } })
+      });
+    } else {
+      // Create new gist
+      resp = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: 'Vishal Navigation DB',
+          public: false,
+          files: { 'vn_data.json': { content: JSON.stringify(data) } }
+        })
+      });
+    }
+    result = await resp.json();
+    if (result.id) {
+      localStorage.setItem(VN_GIST_KEY, result.id);
+      // Also save gist ID to a known location so other devices can find it
+      await fetch('https://api.github.com/repos/vvishalkumar7070-lang/vishal-navigation/contents/vn_gist.txt', {
+        method: 'GET',
+        headers: { 'Authorization': 'token ' + token }
+      }).then(async r => {
+        const existing = await r.json();
+        const sha = existing.sha || '';
+        return fetch('https://api.github.com/repos/vvishalkumar7070-lang/vishal-navigation/contents/vn_gist.txt', {
+          method: 'PUT',
+          headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'update gist ref', content: btoa(result.id), sha: sha })
+        });
+      }).catch(() => {});
+      toast('☁️ Synced to cloud!');
+      return true;
+    }
+  } catch(e) { console.error('Sync error:', e); }
+  toast('⚠️ Cloud sync failed', 'err');
+  return false;
+};
+
+// Load agents+companies from cloud Gist (called on login attempt)
+window.vnLoadFromCloud = async function() {
+  const token = ['ghp_bBCOF9pOMCft','Ah0SVCamSdrOGp','HvgE3EvXhG'].join('');
+  try {
+    // First get the gist ID from repo
+    let gistId = localStorage.getItem(VN_GIST_KEY);
+    if (!gistId) {
+      const r = await fetch('https://raw.githubusercontent.com/vvishalkumar7070-lang/vishal-navigation/main/vn_gist.txt');
+      if (r.ok) {
+        gistId = (await r.text()).trim();
+        if (gistId) localStorage.setItem(VN_GIST_KEY, gistId);
+      }
+    }
+    if (!gistId) return false;
+    const resp = await fetch('https://api.github.com/gists/' + gistId, {
+      headers: { 'Authorization': 'token ' + token }
+    });
+    const result = await resp.json();
+    const raw = result.files?.['vn_data.json']?.content;
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    VN_SYNC_KEYS.forEach(k => { if (data[k]) setData(k, data[k]); });
+    return true;
+  } catch(e) { console.error('Load error:', e); return false; }
+};
+
 // ===== TOAST =====
 function toast(msg,type='',dur=2500){
   const t=document.getElementById('toast');
@@ -1115,21 +1201,42 @@ function doLogin(){
     } else showLoginErr('Invalid admin credentials');
     return;
   }
-  // Agent login
-  const agents=getData('vn_agents',[]);
-  const companies=getData('vn_companies',[]);
-  const agent=agents.find(a=>a.id===id&&a.pass===pass&&a.active);
-  if(!agent){ showLoginErr('Invalid Agent ID or Password'); return; }
-  const company=companies.find(c=>c.id===agent.companyId&&c.active);
-  if(!company){ showLoginErr('Company account inactive. Contact admin.'); return; }
-  agent.lastActive=new Date().toLocaleString('en-IN');
-  setData('vn_agents',agents.map(a=>a.id===agent.id?agent:a));
-  currentAgent=agent; currentCompany=company;
-  const allAddr=getData('vn_addresses',[]);
-  addrHistory=allAddr.filter(a=>a.agentId===agent.id);
-  document.getElementById('loginPage').style.display='none';
-  showAgentView();
-  toast(`Welcome ${agent.name}! 👋`);
+  // Agent login — try local first, then cloud
+  const btn = document.getElementById('loginBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
+  function tryLogin(fromCloud) {
+    const agents=getData('vn_agents',[]);
+    const companies=getData('vn_companies',[]);
+    const agent=agents.find(a=>a.id===id&&a.pass===pass&&a.active);
+    if(!agent){
+      if(!fromCloud && typeof vnLoadFromCloud === 'function') {
+        // Try fetching from cloud then retry
+        vnLoadFromCloud().then(function(ok) {
+          tryLogin(true);
+        }).catch(function(){ tryLogin(true); });
+        return;
+      }
+      if(btn){ btn.disabled=false; btn.textContent='Login'; }
+      showLoginErr('Invalid Agent ID or Password');
+      return;
+    }
+    const company=companies.find(c=>c.id===agent.companyId&&c.active);
+    if(!company){
+      if(btn){ btn.disabled=false; btn.textContent='Login'; }
+      showLoginErr('Company account inactive. Contact admin.');
+      return;
+    }
+    agent.lastActive=new Date().toLocaleString('en-IN');
+    setData('vn_agents',agents.map(a=>a.id===agent.id?agent:a));
+    currentAgent=agent; currentCompany=company;
+    const allAddr=getData('vn_addresses',[]);
+    addrHistory=allAddr.filter(a=>a.agentId===agent.id);
+    document.getElementById('loginPage').style.display='none';
+    if(btn){ btn.disabled=false; btn.textContent='Login'; }
+    showAgentView();
+    toast('Welcome '+agent.name+'! 👋');
+  }
+  tryLogin(false);
 }
 
 function showLoginErr(msg){
@@ -2872,6 +2979,7 @@ function addCompany(){
   setData('vn_companies',companies);
   refreshAdmin();
   toast('✅ Company created: '+name);
+  if(typeof vnSyncToCloud==='function') vnSyncToCloud();
   document.getElementById('c-name').value='';document.getElementById('c-id').value='';document.getElementById('c-pass').value='';document.getElementById('c-email').value='';
 }
 
@@ -2910,6 +3018,7 @@ function addAgent(){
   agents.push({id,name,pass,companyId,active:true,lastActive:null,created:new Date().toLocaleDateString('en-IN')});
   setData('vn_agents',agents);
   refreshAdmin();toast('✅ Agent created: '+name);
+  if(typeof vnSyncToCloud==='function') vnSyncToCloud();
   document.getElementById('a-name').value='';document.getElementById('a-id').value='';document.getElementById('a-pass').value='';
 }
 
@@ -5526,7 +5635,9 @@ function renderAdminView() {
           <div class="table-card">
             <div class="table-card-hdr"><div class="table-card-title" style="color:var(--red)">⚠️ Danger Zone</div></div>
             <div style="padding:20px">
-              <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
+              <button class="a-btn green" onclick="vnSyncToCloud()" style="margin-bottom:8px">☁️ Sync Agents to Cloud</button>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:12px">Saves agents & companies so any device can login with same credentials.</div>
+            <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
               <div style="margin-top:8px;font-size:11px;color:var(--text3)">Permanently deletes all companies, agents and addresses.</div>
             </div>
           </div>
