@@ -1164,52 +1164,9 @@ function showLogin(type){
 }
 
 function doLogin(){
-  const id=document.getElementById('loginId').value.trim();
-  const pass=document.getElementById('loginPass').value;
-  if(currentMode==='admin'){
-    const user=document.getElementById('adminUser').value.trim();
-    if(user===ADMIN_USER&&pass===getAdminPass()){
-      document.getElementById('loginPage').style.display='none';
-      showAdminView();
-    } else showLoginErr('Invalid admin credentials');
-    return;
-  }
-  // Agent login — try local first, then cloud
-  const btn = document.getElementById('loginBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
-  function tryLogin(fromCloud) {
-    const agents=getData('vn_agents',[]);
-    const companies=getData('vn_companies',[]);
-    const agent=agents.find(a=>a.id===id&&a.pass===pass&&a.active);
-    if(!agent){
-      if(!fromCloud && typeof vnLoadFromCloud === 'function') {
-        // Try fetching from cloud then retry
-        vnLoadFromCloud().then(function(ok) {
-          tryLogin(true);
-        }).catch(function(){ tryLogin(true); });
-        return;
-      }
-      if(btn){ btn.disabled=false; btn.textContent='Login'; }
-      showLoginErr('Invalid Agent ID or Password');
-      return;
-    }
-    const company=companies.find(c=>c.id===agent.companyId&&c.active);
-    if(!company){
-      if(btn){ btn.disabled=false; btn.textContent='Login'; }
-      showLoginErr('Company account inactive. Contact admin.');
-      return;
-    }
-    agent.lastActive=new Date().toLocaleString('en-IN');
-    setData('vn_agents',agents.map(a=>a.id===agent.id?agent:a));
-    currentAgent=agent; currentCompany=company;
-    const allAddr=getData('vn_addresses',[]);
-    addrHistory=allAddr.filter(a=>a.agentId===agent.id);
-    document.getElementById('loginPage').style.display='none';
-    if(btn){ btn.disabled=false; btn.textContent='Login'; }
-    showAgentView();
-    toast('Welcome '+agent.name+'! 👋');
-  }
-  tryLogin(false);
+  // Handled by Supabase backend — see bottom of file
+  if(typeof window._sbDoLogin === 'function') { window._sbDoLogin(); return; }
+  showLoginErr('Loading... please try again in a moment.');
 }
 
 function showLoginErr(msg){
@@ -4165,7 +4122,7 @@ window.sbGetAddresses    = (agentId) => sbFetch('/rest/v1/addresses?select=*'+(a
 window.sbGetAllAddresses = () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
 
 // ── Override doLogin ──────────────────────────────────────────
-window.doLogin = async function() {
+window._sbDoLogin = window.doLogin = async function() {
   const id   = document.getElementById('loginId')?.value.trim();
   const pass = document.getElementById('loginPass')?.value;
   const mode = window.currentMode;
