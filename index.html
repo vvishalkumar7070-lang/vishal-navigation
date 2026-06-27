@@ -4095,7 +4095,8 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 </script>
 <!-- ═══════════════════════════════════════════════════════════════
      VISHAL NAVIGATION — AGENT + ADMIN UPGRADE PATCH
-     Paste this entire <script> block just before <script>
+     Paste this entire <script> block just before 
+<script>
 // ═══════════════════════════════════════════════════════════════
 // SUPABASE BACKEND — Real cloud database for Vishal Navigation
 // ═══════════════════════════════════════════════════════════════
@@ -4103,106 +4104,95 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 'use strict';
 
 const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
-const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9ub3' + 'FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI0Nn0' + '.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI';
 
-const sbHeaders = {
-  'apikey': SB_KEY,
-  'Authorization': 'Bearer ' + SB_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
-
-// ── Core fetch helper ──────────────────────────────────────────
-async function sbFetch(path, options={})) {
+async function sbFetch(path, opts) {
+  opts = opts || {};
   const resp = await fetch(SB_URL + path, {
-    ...options,
-    headers: { ...sbHeaders, ...(options.headers||{}) }
+    method: opts.method || 'GET',
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+      ...(opts.headers || {})
+    },
+    body: opts.body || undefined
   });
-  if (!resp.ok) {
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err.message || resp.statusText);
-  }
   if (resp.status === 204) return null;
-  return resp.json();
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.message || data.error_description || resp.statusText);
+  return data;
 }
 
-// ── COMPANIES ─────────────────────────────────────────────────
-window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
-window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
-window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
-window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
+// Companies
+window.sbGetCompanies = () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
+window.sbAddCompany   = (c) => sbFetch('/rest/v1/companies', {method:'POST', body:JSON.stringify(c)});
+window.sbDeleteCompany = async (id) => {
+  await sbFetch('/rest/v1/agents?company_id=eq.'+id, {method:'DELETE'});
+  return sbFetch('/rest/v1/companies?id=eq.'+id, {method:'DELETE'});
+};
+window.sbToggleCompany = (id, active) => sbFetch('/rest/v1/companies?id=eq.'+id, {method:'PATCH', body:JSON.stringify({active})});
 
-// ── AGENTS ────────────────────────────────────────────────────
-window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
-window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
-window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
-window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
+// Agents
+window.sbGetAgents  = () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
+window.sbAddAgent   = (a) => sbFetch('/rest/v1/agents', {method:'POST', body:JSON.stringify(a)});
+window.sbDeleteAgent = (id) => sbFetch('/rest/v1/agents?id=eq.'+id, {method:'DELETE'});
+window.sbResetPass  = (id, pass) => sbFetch('/rest/v1/agents?id=eq.'+id, {method:'PATCH', body:JSON.stringify({pass})});
 
-// ── LOGIN — fetch agent + company from Supabase ───────────────
+// Login
 window.sbLogin = async function(agentId, pass) {
-  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
+  const agents = await sbFetch('/rest/v1/agents?id=eq.'+encodeURIComponent(agentId)+'&pass=eq.'+encodeURIComponent(pass)+'&active=eq.true&select=*');
   if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
   const agent = agents[0];
-  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
+  const companies = await sbFetch('/rest/v1/companies?id=eq.'+encodeURIComponent(agent.company_id)+'&active=eq.true&select=*');
   if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
-  // Update last_active
-  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
-  return { agent, company: companies[0] };
+  sbFetch('/rest/v1/agents?id=eq.'+agent.id, {method:'PATCH', body:JSON.stringify({last_active: new Date().toISOString()})}).catch(()=>{});
+  return {agent, company: companies[0]};
 };
 
-// ── ADDRESSES ─────────────────────────────────────────────────
-window.sbSaveAddress = async function(entry) {
-  return sbFetch('/rest/v1/addresses', {
-    method: 'POST',
-    body: JSON.stringify({
-      agent_id: entry.agentId,
-      company_id: entry.companyId,
-      address: entry.address,
-      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
-      city: entry.district,
-      state: entry.state,
-      landmark: entry.landmark || null,
-      customer_name: entry.name || null,
-      customer_phone: entry.phone || null,
-      confidence: entry.confidence || 0,
-      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
-      duration: entry.duration || 0,
-      is_duplicate: entry.isDuplicate || false,
-      raw_transcript: entry.rawTranscript || null
-    })
-  });
-};
+// Addresses
+window.sbSaveAddress = (e) => sbFetch('/rest/v1/addresses', {method:'POST', body:JSON.stringify({
+  agent_id: e.agentId, company_id: e.companyId,
+  address: e.address, pincode: e.pincode==='N/A'?null:e.pincode,
+  city: e.district, state: e.state, landmark: e.landmark||null,
+  customer_name: e.name||null, customer_phone: e.phone||null,
+  confidence: e.confidence||0, status: (e.confidence||0)>=60?'patched':'draft',
+  duration: e.duration||0, is_duplicate: e.isDuplicate||false,
+  raw_transcript: e.rawTranscript||null
+})});
+window.sbGetAddresses    = (agentId) => sbFetch('/rest/v1/addresses?select=*'+(agentId?'&agent_id=eq.'+encodeURIComponent(agentId):'')+'&order=created_at.desc&limit=200');
+window.sbGetAllAddresses = () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
 
-window.sbGetAddresses = async (agentId) => {
-  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
-  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
-};
-
-window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
-
-// ── OVERRIDE doLogin to use Supabase ─────────────────────────
-const _origDoLogin = window.doLogin;
+// ── Override doLogin ──────────────────────────────────────────
 window.doLogin = async function() {
-  const id = document.getElementById('loginId')?.value.trim();
+  const id   = document.getElementById('loginId')?.value.trim();
   const pass = document.getElementById('loginPass')?.value;
   const mode = window.currentMode;
 
   // Admin login stays local
   if (mode === 'admin') {
-    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
+    const user = document.getElementById('adminUser')?.value.trim();
+    const adminPass = typeof getAdminPass === 'function' ? getAdminPass() : 'admin@1234';
+    const ADMIN_USER = window.ADMIN_USER || 'vishal_admin';
+    if (user === ADMIN_USER && pass === adminPass) {
+      document.getElementById('loginPage').style.display = 'none';
+      if (typeof showAdminView === 'function') showAdminView();
+    } else {
+      const err = document.getElementById('loginErr');
+      if (err) { err.textContent = 'Invalid admin credentials'; err.style.display = 'block'; }
+    }
+    return;
   }
 
   const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
   const err = document.getElementById('loginErr');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
   if (err) err.style.display = 'none';
 
   try {
-    const { agent, company } = await sbLogin(id, pass);
+    const {agent, company} = await sbLogin(id, pass);
 
-    // Map Supabase fields to app format
     window.currentAgent = {
       id: agent.id, name: agent.name, pass: agent.pass,
       companyId: agent.company_id, active: agent.active,
@@ -4214,24 +4204,19 @@ window.doLogin = async function() {
       created: company.created_at, renewsOn: company.renews_on
     };
 
-    // Load address history
     const addrs = await sbGetAddresses(agent.id).catch(() => []);
     window.addrHistory = (addrs || []).map(a => ({
-      address: a.address, pincode: a.pincode || 'N/A',
-      district: a.city, state: a.state, name: a.customer_name,
-      phone: a.customer_phone, confidence: a.confidence,
+      address: a.address, pincode: a.pincode||'N/A',
+      district: a.city, state: a.state,
+      name: a.customer_name, phone: a.customer_phone,
+      confidence: a.confidence,
       time: new Date(a.created_at).toLocaleString('en-IN'),
       agentId: a.agent_id, companyId: a.company_id,
-      isDuplicate: a.is_duplicate, duration: a.duration,
-      status: a.status
+      isDuplicate: a.is_duplicate, duration: a.duration, status: a.status
     }));
 
-    // Also cache in localStorage for offline fallback
-    setData('vn_agents', [window.currentAgent]);
-    setData('vn_companies', [window.currentCompany]);
-
-    document.getElementById('loginPage').style.display = 'none';
     if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    document.getElementById('loginPage').style.display = 'none';
     if (typeof showAgentView === 'function') showAgentView();
     if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
 
@@ -4241,50 +4226,47 @@ window.doLogin = async function() {
   }
 };
 
-// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
-const _origStopSave = window.stopAndSave;
+// ── Override stopAndSave ──────────────────────────────────────
+const _origStopSave2 = window.stopAndSave;
 window.stopAndSave = async function() {
   if (typeof stopListen === 'function') stopListen();
   if (typeof syncListenButtons === 'function') syncListenButtons();
 
-  const name = document.getElementById('lfv-name')?.value.trim() || '';
-  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
-  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
-  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
-  const city = document.getElementById('lfv-city')?.value.trim() || '';
-  const state = document.getElementById('lfv-state')?.value.trim() || '';
-  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
-  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+  const name    = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone   = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline= document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark= document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city    = document.getElementById('lfv-city')?.value.trim() || '';
+  const state   = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin     = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const fullAddr= [addrline, landmark, city, state].filter(Boolean).join(', ');
 
   if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
 
   const entry = {
     address: fullAddr || window.currentTranscript || 'Draft',
-    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
-    confidence: window.liveConfidence || 0,
+    pincode: pin||'N/A', district: city, state, name, phone, landmark,
+    confidence: window.liveConfidence||0,
     time: new Date().toLocaleString('en-IN'),
     agentId: window.currentAgent?.id || null,
     companyId: window.currentCompany?.id || null,
     isDuplicate: false,
-    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
-    rawTranscript: window.currentTranscript || ''
+    duration: window.currentCallStart ? Math.round((Date.now()-window.currentCallStart)/1000) : 0,
+    rawTranscript: window.currentTranscript||''
   };
 
-  // Save to Supabase
   try {
     await sbSaveAddress(entry);
-    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
+    if (typeof toast==='function') toast(entry.confidence>=60 ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft');
   } catch(e) {
-    console.error('Supabase save error:', e);
-    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
+    console.error('Supabase save:', e);
+    if (typeof toast==='function') toast('⚠️ Saved locally only','err');
   }
 
-  // Also save locally
   if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
-  const all = getData('vn_addresses', []);
+  const all = typeof getData==='function' ? getData('vn_addresses',[]) : [];
   all.push(entry);
-  setData('vn_addresses', all);
-
+  if (typeof setData==='function') setData('vn_addresses', all);
   if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
   if (typeof updatePatcherStats==='function') updatePatcherStats();
   if (typeof resetLiveFields==='function') resetLiveFields();
@@ -4293,106 +4275,90 @@ window.stopAndSave = async function() {
   document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
 };
 
-// ── OVERRIDE addCompany to save to Supabase ──────────────────
-const _origAddCompany = window.addCompany;
+// ── Override addCompany ───────────────────────────────────────
 window.addCompany = async function() {
   const name = document.getElementById('c-name')?.value.trim();
-  const id = document.getElementById('c-id')?.value.trim();
+  const id   = document.getElementById('c-id')?.value.trim();
   const pass = document.getElementById('c-pass')?.value;
-  const email = document.getElementById('c-email')?.value.trim();
+  const email= document.getElementById('c-email')?.value.trim();
   const plan = document.getElementById('c-plan')?.value || 'starter';
-  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
+  if (!name||!id||!pass) { if(typeof toast==='function') toast('Fill all required fields','err'); return; }
   try {
-    await sbAddCompany({ id, name, pass, email, plan, active: true });
-    toast('✅ Company created: ' + name);
+    await sbAddCompany({id, name, pass, email, plan, active: true});
+    if(typeof toast==='function') toast('✅ Company created: '+name);
     ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
     if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const cos = getData('vn_companies',[]);
-    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_companies', cos);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
+  } catch(e) { if(typeof toast==='function') toast('❌ '+e.message,'err'); }
 };
 
-// ── OVERRIDE addAgent to save to Supabase ────────────────────
-const _origAddAgent = window.addAgent;
+// ── Override addAgent ─────────────────────────────────────────
 window.addAgent = async function() {
-  const name = document.getElementById('a-name')?.value.trim();
-  const id = document.getElementById('a-id')?.value.trim();
-  const pass = document.getElementById('a-pass')?.value;
+  const name      = document.getElementById('a-name')?.value.trim();
+  const id        = document.getElementById('a-id')?.value.trim();
+  const pass      = document.getElementById('a-pass')?.value;
   const companyId = document.getElementById('a-company')?.value;
-  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
+  if (!name||!id||!pass||!companyId) { if(typeof toast==='function') toast('Fill all fields','err'); return; }
   try {
-    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
-    toast('✅ Agent created: ' + name);
+    await sbAddAgent({id, name, pass, company_id: companyId, active: true});
+    if(typeof toast==='function') toast('✅ Agent created: '+name);
     ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
     if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const ags = getData('vn_agents',[]);
-    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_agents', ags);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
+  } catch(e) { if(typeof toast==='function') toast('❌ '+e.message,'err'); }
 };
 
-// ── OVERRIDE deleteAgent ──────────────────────────────────────
-const _origDeleteAgent = window.deleteAgent;
+// ── Override deleteAgent ──────────────────────────────────────
 window.deleteAgent = async function(id) {
   if (!confirm('Delete this agent?')) return;
   try {
     await sbDeleteAgent(id);
-    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
-    setData('vn_agents', ags);
     if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Agent deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
+    if(typeof toast==='function') toast('🗑️ Agent deleted');
+  } catch(e) { if(typeof toast==='function') toast('❌ '+e.message,'err'); }
 };
 
-// ── OVERRIDE deleteCompany ────────────────────────────────────
-const _origDeleteCompany = window.deleteCompany;
+// ── Override deleteCompany ────────────────────────────────────
 window.deleteCompany = async function(id) {
   if (!confirm('Delete this company and all its agents?')) return;
   try {
     await sbDeleteCompany(id);
-    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
-    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
-    setData('vn_companies',cos); setData('vn_agents',ags);
     if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Company deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
+    if(typeof toast==='function') toast('🗑️ Company deleted');
+  } catch(e) { if(typeof toast==='function') toast('❌ '+e.message,'err'); }
 };
 
-// ── OVERRIDE resetPass ────────────────────────────────────────
+// ── Override resetPass ────────────────────────────────────────
 window.resetPass = async function(id) {
-  const p = prompt('New password for agent ' + id + ':');
+  const p = prompt('New password for agent '+id+':');
   if (!p) return;
   try {
     await sbResetPass(id, p);
-    const ags = getData('vn_agents',[]);
-    const a = ags.find(a=>a.id===id);
-    if (a) { a.pass=p; setData('vn_agents',ags); }
-    toast('✅ Password reset');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
+    if(typeof toast==='function') toast('✅ Password reset');
+  } catch(e) { if(typeof toast==='function') toast('❌ '+e.message,'err'); }
 };
 
-// ── Load companies+agents from Supabase into localStorage on admin login ──
-const _origShowAdmin = window.showAdminView;
+// ── Load from Supabase when admin opens ──────────────────────
+const _sbOrigShowAdmin = window.showAdminView;
 window.showAdminView = async function() {
   try {
-    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
-    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
-    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
-    const addrs = await sbGetAllAddresses().catch(()=>[]);
-    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
-  } catch(e) { console.warn('Supabase admin load:', e.message); }
-  if (typeof _origShowAdmin === 'function') _origShowAdmin();
+    const [cos, ags, addrs] = await Promise.all([
+      sbGetCompanies().catch(()=>[]),
+      sbGetAgents().catch(()=>[]),
+      sbGetAllAddresses().catch(()=>[])
+    ]);
+    if (cos && typeof setData==='function') setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+    if (ags && typeof setData==='function') setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+    if (addrs && typeof setData==='function') setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+  } catch(e) { console.warn('Supabase admin load error:', e.message); }
+  if (typeof _sbOrigShowAdmin === 'function') _sbOrigShowAdmin();
 };
 
-// Remove old cloud sync button/function
-window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
+window.vnSyncToCloud = function() { if(typeof toast==='function') toast('☁️ Using Supabase — auto synced!'); };
 
 console.log('✅ Supabase backend loaded');
 })();
-     <!-- It overrides: showAgentView(), showAdminView(), refreshAdmin()
+</script>
+</body>
+     It overrides: showAgentView(), showAdminView(), refreshAdmin()
      and adds all new UI components
      ═══════════════════════════════════════════════════════════════ -->
 
@@ -5166,11 +5132,10 @@ function renderAgentView() {
 
         <!-- Intel Panel Tabs -->
         <div style="display:flex;border-bottom:1px solid #e3e6eb;flex-shrink:0;background:#fff">
-          <div class="ip-tab active" data-tab="capture" onclick="switchIP('capture')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
-          <div class="ip-tab" data-tab="feed"    onclick="switchIP('feed')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
-          <div class="ip-tab" data-tab="notes"   onclick="switchIP('notes')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
-          <div class="ip-tab" data-tab="stats"   onclick="switchIP('stats')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
-          <div class="ip-tab" data-tab="upload" onclick="switchIP('upload')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Upload</div>
+          <div class="ip-tab active" onclick="switchIP('capture',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
+          <div class="ip-tab" onclick="switchIP('feed',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
+          <div class="ip-tab" onclick="switchIP('notes',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
+          <div class="ip-tab" onclick="switchIP('stats',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
         </div>
 
         <!-- CAPTURE PANE -->
@@ -5251,7 +5216,7 @@ function renderAgentView() {
         </div>
 
         <!-- FEED PANE -->
-        <div id="ip-pane-feed" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+        <div id="ip-pane-feed" style="display:none;flex-direction:column;flex:1;overflow:hidden">
           <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e3e6eb;flex-shrink:0">
             <span style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px">Session Captures</span>
             <span id="ip-feed-count" style="font-size:9px;background:#e8f7ee;color:#0d9354;padding:2px 8px;border-radius:8px;font-weight:700">0 saved</span>
@@ -5265,7 +5230,7 @@ function renderAgentView() {
         </div>
 
         <!-- NOTES PANE -->
-        <div id="ip-pane-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+        <div id="ip-pane-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden">
           <textarea id="ip-notes-text" placeholder="Call notes…&#10;e.g. Evening delivery, Gate code: 1234" style="flex:1;margin:12px;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:11px 13px;font-size:12px;color:#1a1d24;font-family:inherit;resize:none;outline:none;line-height:1.7"></textarea>
           <div style="padding:0 12px 10px;display:flex;gap:6px;flex-shrink:0">
             <button onclick="document.getElementById('ip-notes-text').value=''" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:7px;font-size:10px;cursor:pointer;color:#5e6470">🗑️ Clear</button>
@@ -5274,7 +5239,7 @@ function renderAgentView() {
         </div>
 
         <!-- STATS PANE -->
-        <div id="ip-pane-stats" style="display:none;flex-direction:column;flex:1;overflow-y:auto;min-height:0">
+        <div id="ip-pane-stats" style="display:none;flex-direction:column;flex:1;overflow-y:auto">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px">
             <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center">
               <div id="ip-s-saved" style="font-size:22px;font-weight:700;color:#0d9354">0</div>
@@ -5299,29 +5264,6 @@ function renderAgentView() {
             <div id="ip-recent" style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#5e6470">
               <div style="color:#94999f;font-style:italic">No captures yet</div>
             </div>
-          </div>
-        </div>
-
-
-        <!-- UPLOAD PANE -->
-        <div id="ip-pane-upload" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px;min-height:0">
-          <div style="font-size:12px;font-weight:700;color:#1a1d24">Upload Call Recording</div>
-          <div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file. Claude transcribes it and extracts the delivery address automatically.</div>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc">
-            <span style="font-size:28px">🎵</span>
-            <span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>
-            <span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM · max 25MB</span>
-            <input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>
-          </label>
-          <div id="rec-status" style="font-size:11px;min-height:18px;text-align:center"></div>
-          <div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
-            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>
-            <div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:120px;overflow-y:auto"></div>
-          </div>
-          <div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>
-          <div style="border-top:1px solid #e3e6eb;padding-top:12px;margin-top:auto">
-            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>
-            <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export CSV (Live + Recordings)</button>
           </div>
         </div>
 
@@ -5936,29 +5878,6 @@ function renderAdminView() {
           </div>
         </div>
 
-
-        <!-- UPLOAD PANE -->
-        <div id="ip-pane-upload" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px;min-height:0">
-          <div style="font-size:12px;font-weight:700;color:#1a1d24">Upload Call Recording</div>
-          <div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file. Claude transcribes it and extracts the delivery address automatically.</div>
-          <label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc">
-            <span style="font-size:28px">🎵</span>
-            <span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>
-            <span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM · max 25MB</span>
-            <input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>
-          </label>
-          <div id="rec-status" style="font-size:11px;min-height:18px;text-align:center"></div>
-          <div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
-            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>
-            <div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:120px;overflow-y:auto"></div>
-          </div>
-          <div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>
-          <div style="border-top:1px solid #e3e6eb;padding-top:12px;margin-top:auto">
-            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>
-            <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export CSV (Live + Recordings)</button>
-          </div>
-        </div>
-
       </div>
     </div>
   `;
@@ -6322,304 +6241,8 @@ console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
 </script>
 <!-- ═══════════════════════════════════════════════════════════
      VISHAL NAVIGATION — MASTER FIX
-     Paste this LAST, just before <script>
-// ═══════════════════════════════════════════════════════════════
-// SUPABASE BACKEND — Real cloud database for Vishal Navigation
-// ═══════════════════════════════════════════════════════════════
-(function() {
-'use strict';
-
-const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
-const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
-
-const sbHeaders = {
-  'apikey': SB_KEY,
-  'Authorization': 'Bearer ' + SB_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
-
-// ── Core fetch helper ──────────────────────────────────────────
-async function sbFetch(path, options={})) {
-  const resp = await fetch(SB_URL + path, {
-    ...options,
-    headers: { ...sbHeaders, ...(options.headers||{}) }
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err.message || resp.statusText);
-  }
-  if (resp.status === 204) return null;
-  return resp.json();
-}
-
-// ── COMPANIES ─────────────────────────────────────────────────
-window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
-window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
-window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
-window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
-
-// ── AGENTS ────────────────────────────────────────────────────
-window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
-window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
-window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
-window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
-
-// ── LOGIN — fetch agent + company from Supabase ───────────────
-window.sbLogin = async function(agentId, pass) {
-  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
-  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
-  const agent = agents[0];
-  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
-  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
-  // Update last_active
-  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
-  return { agent, company: companies[0] };
-};
-
-// ── ADDRESSES ─────────────────────────────────────────────────
-window.sbSaveAddress = async function(entry) {
-  return sbFetch('/rest/v1/addresses', {
-    method: 'POST',
-    body: JSON.stringify({
-      agent_id: entry.agentId,
-      company_id: entry.companyId,
-      address: entry.address,
-      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
-      city: entry.district,
-      state: entry.state,
-      landmark: entry.landmark || null,
-      customer_name: entry.name || null,
-      customer_phone: entry.phone || null,
-      confidence: entry.confidence || 0,
-      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
-      duration: entry.duration || 0,
-      is_duplicate: entry.isDuplicate || false,
-      raw_transcript: entry.rawTranscript || null
-    })
-  });
-};
-
-window.sbGetAddresses = async (agentId) => {
-  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
-  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
-};
-
-window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
-
-// ── OVERRIDE doLogin to use Supabase ─────────────────────────
-const _origDoLogin = window.doLogin;
-window.doLogin = async function() {
-  const id = document.getElementById('loginId')?.value.trim();
-  const pass = document.getElementById('loginPass')?.value;
-  const mode = window.currentMode;
-
-  // Admin login stays local
-  if (mode === 'admin') {
-    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
-  }
-
-  const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
-  const err = document.getElementById('loginErr');
-  if (err) err.style.display = 'none';
-
-  try {
-    const { agent, company } = await sbLogin(id, pass);
-
-    // Map Supabase fields to app format
-    window.currentAgent = {
-      id: agent.id, name: agent.name, pass: agent.pass,
-      companyId: agent.company_id, active: agent.active,
-      lastActive: agent.last_active, created: agent.created_at
-    };
-    window.currentCompany = {
-      id: company.id, name: company.name, pass: company.pass,
-      email: company.email, plan: company.plan, active: company.active,
-      created: company.created_at, renewsOn: company.renews_on
-    };
-
-    // Load address history
-    const addrs = await sbGetAddresses(agent.id).catch(() => []);
-    window.addrHistory = (addrs || []).map(a => ({
-      address: a.address, pincode: a.pincode || 'N/A',
-      district: a.city, state: a.state, name: a.customer_name,
-      phone: a.customer_phone, confidence: a.confidence,
-      time: new Date(a.created_at).toLocaleString('en-IN'),
-      agentId: a.agent_id, companyId: a.company_id,
-      isDuplicate: a.is_duplicate, duration: a.duration,
-      status: a.status
-    }));
-
-    // Also cache in localStorage for offline fallback
-    setData('vn_agents', [window.currentAgent]);
-    setData('vn_companies', [window.currentCompany]);
-
-    document.getElementById('loginPage').style.display = 'none';
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (typeof showAgentView === 'function') showAgentView();
-    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
-
-  } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (err) { err.textContent = e.message; err.style.display = 'block'; }
-  }
-};
-
-// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
-const _origStopSave = window.stopAndSave;
-window.stopAndSave = async function() {
-  if (typeof stopListen === 'function') stopListen();
-  if (typeof syncListenButtons === 'function') syncListenButtons();
-
-  const name = document.getElementById('lfv-name')?.value.trim() || '';
-  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
-  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
-  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
-  const city = document.getElementById('lfv-city')?.value.trim() || '';
-  const state = document.getElementById('lfv-state')?.value.trim() || '';
-  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
-  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
-
-  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
-
-  const entry = {
-    address: fullAddr || window.currentTranscript || 'Draft',
-    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
-    confidence: window.liveConfidence || 0,
-    time: new Date().toLocaleString('en-IN'),
-    agentId: window.currentAgent?.id || null,
-    companyId: window.currentCompany?.id || null,
-    isDuplicate: false,
-    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
-    rawTranscript: window.currentTranscript || ''
-  };
-
-  // Save to Supabase
-  try {
-    await sbSaveAddress(entry);
-    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
-  } catch(e) {
-    console.error('Supabase save error:', e);
-    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
-  }
-
-  // Also save locally
-  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
-  const all = getData('vn_addresses', []);
-  all.push(entry);
-  setData('vn_addresses', all);
-
-  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
-  if (typeof updatePatcherStats==='function') updatePatcherStats();
-  if (typeof resetLiveFields==='function') resetLiveFields();
-  window.currentCallStart = null;
-  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
-  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
-};
-
-// ── OVERRIDE addCompany to save to Supabase ──────────────────
-const _origAddCompany = window.addCompany;
-window.addCompany = async function() {
-  const name = document.getElementById('c-name')?.value.trim();
-  const id = document.getElementById('c-id')?.value.trim();
-  const pass = document.getElementById('c-pass')?.value;
-  const email = document.getElementById('c-email')?.value.trim();
-  const plan = document.getElementById('c-plan')?.value || 'starter';
-  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
-  try {
-    await sbAddCompany({ id, name, pass, email, plan, active: true });
-    toast('✅ Company created: ' + name);
-    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const cos = getData('vn_companies',[]);
-    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_companies', cos);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE addAgent to save to Supabase ────────────────────
-const _origAddAgent = window.addAgent;
-window.addAgent = async function() {
-  const name = document.getElementById('a-name')?.value.trim();
-  const id = document.getElementById('a-id')?.value.trim();
-  const pass = document.getElementById('a-pass')?.value;
-  const companyId = document.getElementById('a-company')?.value;
-  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
-  try {
-    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
-    toast('✅ Agent created: ' + name);
-    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const ags = getData('vn_agents',[]);
-    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_agents', ags);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE deleteAgent ──────────────────────────────────────
-const _origDeleteAgent = window.deleteAgent;
-window.deleteAgent = async function(id) {
-  if (!confirm('Delete this agent?')) return;
-  try {
-    await sbDeleteAgent(id);
-    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
-    setData('vn_agents', ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Agent deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE deleteCompany ────────────────────────────────────
-const _origDeleteCompany = window.deleteCompany;
-window.deleteCompany = async function(id) {
-  if (!confirm('Delete this company and all its agents?')) return;
-  try {
-    await sbDeleteCompany(id);
-    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
-    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
-    setData('vn_companies',cos); setData('vn_agents',ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Company deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE resetPass ────────────────────────────────────────
-window.resetPass = async function(id) {
-  const p = prompt('New password for agent ' + id + ':');
-  if (!p) return;
-  try {
-    await sbResetPass(id, p);
-    const ags = getData('vn_agents',[]);
-    const a = ags.find(a=>a.id===id);
-    if (a) { a.pass=p; setData('vn_agents',ags); }
-    toast('✅ Password reset');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── Load companies+agents from Supabase into localStorage on admin login ──
-const _origShowAdmin = window.showAdminView;
-window.showAdminView = async function() {
-  try {
-    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
-    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
-    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
-    const addrs = await sbGetAllAddresses().catch(()=>[]);
-    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
-  } catch(e) { console.warn('Supabase admin load:', e.message); }
-  if (typeof _origShowAdmin === 'function') _origShowAdmin();
-};
-
-// Remove old cloud sync button/function
-window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
-
-console.log('✅ Supabase backend loaded');
-})();
-
+     Paste this LAST, just before 
+</body>
      Fixes: agent form filling, strategy UI, listen toggle,
             plan enforcement, admin addCompany, corp-strat sync
      ═══════════════════════════════════════════════════════════ -->
@@ -6938,306 +6561,8 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 <script>
 // ═══════════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — CRITICAL FIX PATCH
-// Paste this entire block just before </script>
-<script>
-// ═══════════════════════════════════════════════════════════════
-// SUPABASE BACKEND — Real cloud database for Vishal Navigation
-// ═══════════════════════════════════════════════════════════════
-(function() {
-'use strict';
-
-const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
-const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
-
-const sbHeaders = {
-  'apikey': SB_KEY,
-  'Authorization': 'Bearer ' + SB_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
-
-// ── Core fetch helper ──────────────────────────────────────────
-async function sbFetch(path, options={})) {
-  const resp = await fetch(SB_URL + path, {
-    ...options,
-    headers: { ...sbHeaders, ...(options.headers||{}) }
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err.message || resp.statusText);
-  }
-  if (resp.status === 204) return null;
-  return resp.json();
-}
-
-// ── COMPANIES ─────────────────────────────────────────────────
-window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
-window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
-window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
-window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
-
-// ── AGENTS ────────────────────────────────────────────────────
-window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
-window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
-window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
-window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
-
-// ── LOGIN — fetch agent + company from Supabase ───────────────
-window.sbLogin = async function(agentId, pass) {
-  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
-  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
-  const agent = agents[0];
-  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
-  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
-  // Update last_active
-  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
-  return { agent, company: companies[0] };
-};
-
-// ── ADDRESSES ─────────────────────────────────────────────────
-window.sbSaveAddress = async function(entry) {
-  return sbFetch('/rest/v1/addresses', {
-    method: 'POST',
-    body: JSON.stringify({
-      agent_id: entry.agentId,
-      company_id: entry.companyId,
-      address: entry.address,
-      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
-      city: entry.district,
-      state: entry.state,
-      landmark: entry.landmark || null,
-      customer_name: entry.name || null,
-      customer_phone: entry.phone || null,
-      confidence: entry.confidence || 0,
-      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
-      duration: entry.duration || 0,
-      is_duplicate: entry.isDuplicate || false,
-      raw_transcript: entry.rawTranscript || null
-    })
-  });
-};
-
-window.sbGetAddresses = async (agentId) => {
-  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
-  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
-};
-
-window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
-
-// ── OVERRIDE doLogin to use Supabase ─────────────────────────
-const _origDoLogin = window.doLogin;
-window.doLogin = async function() {
-  const id = document.getElementById('loginId')?.value.trim();
-  const pass = document.getElementById('loginPass')?.value;
-  const mode = window.currentMode;
-
-  // Admin login stays local
-  if (mode === 'admin') {
-    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
-  }
-
-  const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
-  const err = document.getElementById('loginErr');
-  if (err) err.style.display = 'none';
-
-  try {
-    const { agent, company } = await sbLogin(id, pass);
-
-    // Map Supabase fields to app format
-    window.currentAgent = {
-      id: agent.id, name: agent.name, pass: agent.pass,
-      companyId: agent.company_id, active: agent.active,
-      lastActive: agent.last_active, created: agent.created_at
-    };
-    window.currentCompany = {
-      id: company.id, name: company.name, pass: company.pass,
-      email: company.email, plan: company.plan, active: company.active,
-      created: company.created_at, renewsOn: company.renews_on
-    };
-
-    // Load address history
-    const addrs = await sbGetAddresses(agent.id).catch(() => []);
-    window.addrHistory = (addrs || []).map(a => ({
-      address: a.address, pincode: a.pincode || 'N/A',
-      district: a.city, state: a.state, name: a.customer_name,
-      phone: a.customer_phone, confidence: a.confidence,
-      time: new Date(a.created_at).toLocaleString('en-IN'),
-      agentId: a.agent_id, companyId: a.company_id,
-      isDuplicate: a.is_duplicate, duration: a.duration,
-      status: a.status
-    }));
-
-    // Also cache in localStorage for offline fallback
-    setData('vn_agents', [window.currentAgent]);
-    setData('vn_companies', [window.currentCompany]);
-
-    document.getElementById('loginPage').style.display = 'none';
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (typeof showAgentView === 'function') showAgentView();
-    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
-
-  } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (err) { err.textContent = e.message; err.style.display = 'block'; }
-  }
-};
-
-// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
-const _origStopSave = window.stopAndSave;
-window.stopAndSave = async function() {
-  if (typeof stopListen === 'function') stopListen();
-  if (typeof syncListenButtons === 'function') syncListenButtons();
-
-  const name = document.getElementById('lfv-name')?.value.trim() || '';
-  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
-  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
-  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
-  const city = document.getElementById('lfv-city')?.value.trim() || '';
-  const state = document.getElementById('lfv-state')?.value.trim() || '';
-  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
-  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
-
-  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
-
-  const entry = {
-    address: fullAddr || window.currentTranscript || 'Draft',
-    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
-    confidence: window.liveConfidence || 0,
-    time: new Date().toLocaleString('en-IN'),
-    agentId: window.currentAgent?.id || null,
-    companyId: window.currentCompany?.id || null,
-    isDuplicate: false,
-    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
-    rawTranscript: window.currentTranscript || ''
-  };
-
-  // Save to Supabase
-  try {
-    await sbSaveAddress(entry);
-    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
-  } catch(e) {
-    console.error('Supabase save error:', e);
-    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
-  }
-
-  // Also save locally
-  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
-  const all = getData('vn_addresses', []);
-  all.push(entry);
-  setData('vn_addresses', all);
-
-  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
-  if (typeof updatePatcherStats==='function') updatePatcherStats();
-  if (typeof resetLiveFields==='function') resetLiveFields();
-  window.currentCallStart = null;
-  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
-  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
-};
-
-// ── OVERRIDE addCompany to save to Supabase ──────────────────
-const _origAddCompany = window.addCompany;
-window.addCompany = async function() {
-  const name = document.getElementById('c-name')?.value.trim();
-  const id = document.getElementById('c-id')?.value.trim();
-  const pass = document.getElementById('c-pass')?.value;
-  const email = document.getElementById('c-email')?.value.trim();
-  const plan = document.getElementById('c-plan')?.value || 'starter';
-  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
-  try {
-    await sbAddCompany({ id, name, pass, email, plan, active: true });
-    toast('✅ Company created: ' + name);
-    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const cos = getData('vn_companies',[]);
-    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_companies', cos);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE addAgent to save to Supabase ────────────────────
-const _origAddAgent = window.addAgent;
-window.addAgent = async function() {
-  const name = document.getElementById('a-name')?.value.trim();
-  const id = document.getElementById('a-id')?.value.trim();
-  const pass = document.getElementById('a-pass')?.value;
-  const companyId = document.getElementById('a-company')?.value;
-  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
-  try {
-    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
-    toast('✅ Agent created: ' + name);
-    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const ags = getData('vn_agents',[]);
-    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_agents', ags);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE deleteAgent ──────────────────────────────────────
-const _origDeleteAgent = window.deleteAgent;
-window.deleteAgent = async function(id) {
-  if (!confirm('Delete this agent?')) return;
-  try {
-    await sbDeleteAgent(id);
-    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
-    setData('vn_agents', ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Agent deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE deleteCompany ────────────────────────────────────
-const _origDeleteCompany = window.deleteCompany;
-window.deleteCompany = async function(id) {
-  if (!confirm('Delete this company and all its agents?')) return;
-  try {
-    await sbDeleteCompany(id);
-    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
-    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
-    setData('vn_companies',cos); setData('vn_agents',ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Company deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE resetPass ────────────────────────────────────────
-window.resetPass = async function(id) {
-  const p = prompt('New password for agent ' + id + ':');
-  if (!p) return;
-  try {
-    await sbResetPass(id, p);
-    const ags = getData('vn_agents',[]);
-    const a = ags.find(a=>a.id===id);
-    if (a) { a.pass=p; setData('vn_agents',ags); }
-    toast('✅ Password reset');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── Load companies+agents from Supabase into localStorage on admin login ──
-const _origShowAdmin = window.showAdminView;
-window.showAdminView = async function() {
-  try {
-    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
-    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
-    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
-    const addrs = await sbGetAllAddresses().catch(()=>[]);
-    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
-  } catch(e) { console.warn('Supabase admin load:', e.message); }
-  if (typeof _origShowAdmin === 'function') _origShowAdmin();
-};
-
-// Remove old cloud sync button/function
-window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
-
-console.log('✅ Supabase backend loaded');
-})();
-</script>
-, AFTER all existing scripts
+// Paste this entire block just before 
+</body>, AFTER all existing scripts
 //
 // Fixes:
 //   1. Listen button: toggle works reliably every click (start/stop/start/stop)
@@ -7973,307 +7298,6 @@ console.log('✅ Supabase backend loaded');
   console.log('   ✓ Animation rings + wave: always sync with state');
 
 })();
-
-</script>
-<script>
-// ═══════════════════════════════════════════════════════════════
-// SUPABASE BACKEND — Real cloud database for Vishal Navigation
-// ═══════════════════════════════════════════════════════════════
-(function() {
-'use strict';
-
-const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
-const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
-
-const sbHeaders = {
-  'apikey': SB_KEY,
-  'Authorization': 'Bearer ' + SB_KEY,
-  'Content-Type': 'application/json',
-  'Prefer': 'return=representation'
-};
-
-// ── Core fetch helper ──────────────────────────────────────────
-async function sbFetch(path, options={})) {
-  const resp = await fetch(SB_URL + path, {
-    ...options,
-    headers: { ...sbHeaders, ...(options.headers||{}) }
-  });
-  if (!resp.ok) {
-    const err = await resp.json().catch(()=>({}));
-    throw new Error(err.message || resp.statusText);
-  }
-  if (resp.status === 204) return null;
-  return resp.json();
-}
-
-// ── COMPANIES ─────────────────────────────────────────────────
-window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
-window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
-window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
-window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
-
-// ── AGENTS ────────────────────────────────────────────────────
-window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
-window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
-window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
-window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
-window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
-
-// ── LOGIN — fetch agent + company from Supabase ───────────────
-window.sbLogin = async function(agentId, pass) {
-  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
-  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
-  const agent = agents[0];
-  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
-  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
-  // Update last_active
-  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
-  return { agent, company: companies[0] };
-};
-
-// ── ADDRESSES ─────────────────────────────────────────────────
-window.sbSaveAddress = async function(entry) {
-  return sbFetch('/rest/v1/addresses', {
-    method: 'POST',
-    body: JSON.stringify({
-      agent_id: entry.agentId,
-      company_id: entry.companyId,
-      address: entry.address,
-      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
-      city: entry.district,
-      state: entry.state,
-      landmark: entry.landmark || null,
-      customer_name: entry.name || null,
-      customer_phone: entry.phone || null,
-      confidence: entry.confidence || 0,
-      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
-      duration: entry.duration || 0,
-      is_duplicate: entry.isDuplicate || false,
-      raw_transcript: entry.rawTranscript || null
-    })
-  });
-};
-
-window.sbGetAddresses = async (agentId) => {
-  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
-  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
-};
-
-window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
-
-// ── OVERRIDE doLogin to use Supabase ─────────────────────────
-const _origDoLogin = window.doLogin;
-window.doLogin = async function() {
-  const id = document.getElementById('loginId')?.value.trim();
-  const pass = document.getElementById('loginPass')?.value;
-  const mode = window.currentMode;
-
-  // Admin login stays local
-  if (mode === 'admin') {
-    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
-  }
-
-  const btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
-  const err = document.getElementById('loginErr');
-  if (err) err.style.display = 'none';
-
-  try {
-    const { agent, company } = await sbLogin(id, pass);
-
-    // Map Supabase fields to app format
-    window.currentAgent = {
-      id: agent.id, name: agent.name, pass: agent.pass,
-      companyId: agent.company_id, active: agent.active,
-      lastActive: agent.last_active, created: agent.created_at
-    };
-    window.currentCompany = {
-      id: company.id, name: company.name, pass: company.pass,
-      email: company.email, plan: company.plan, active: company.active,
-      created: company.created_at, renewsOn: company.renews_on
-    };
-
-    // Load address history
-    const addrs = await sbGetAddresses(agent.id).catch(() => []);
-    window.addrHistory = (addrs || []).map(a => ({
-      address: a.address, pincode: a.pincode || 'N/A',
-      district: a.city, state: a.state, name: a.customer_name,
-      phone: a.customer_phone, confidence: a.confidence,
-      time: new Date(a.created_at).toLocaleString('en-IN'),
-      agentId: a.agent_id, companyId: a.company_id,
-      isDuplicate: a.is_duplicate, duration: a.duration,
-      status: a.status
-    }));
-
-    // Also cache in localStorage for offline fallback
-    setData('vn_agents', [window.currentAgent]);
-    setData('vn_companies', [window.currentCompany]);
-
-    document.getElementById('loginPage').style.display = 'none';
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (typeof showAgentView === 'function') showAgentView();
-    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
-
-  } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
-    if (err) { err.textContent = e.message; err.style.display = 'block'; }
-  }
-};
-
-// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
-const _origStopSave = window.stopAndSave;
-window.stopAndSave = async function() {
-  if (typeof stopListen === 'function') stopListen();
-  if (typeof syncListenButtons === 'function') syncListenButtons();
-
-  const name = document.getElementById('lfv-name')?.value.trim() || '';
-  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
-  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
-  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
-  const city = document.getElementById('lfv-city')?.value.trim() || '';
-  const state = document.getElementById('lfv-state')?.value.trim() || '';
-  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
-  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
-
-  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
-
-  const entry = {
-    address: fullAddr || window.currentTranscript || 'Draft',
-    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
-    confidence: window.liveConfidence || 0,
-    time: new Date().toLocaleString('en-IN'),
-    agentId: window.currentAgent?.id || null,
-    companyId: window.currentCompany?.id || null,
-    isDuplicate: false,
-    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
-    rawTranscript: window.currentTranscript || ''
-  };
-
-  // Save to Supabase
-  try {
-    await sbSaveAddress(entry);
-    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
-  } catch(e) {
-    console.error('Supabase save error:', e);
-    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
-  }
-
-  // Also save locally
-  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
-  const all = getData('vn_addresses', []);
-  all.push(entry);
-  setData('vn_addresses', all);
-
-  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
-  if (typeof updatePatcherStats==='function') updatePatcherStats();
-  if (typeof resetLiveFields==='function') resetLiveFields();
-  window.currentCallStart = null;
-  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
-  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
-};
-
-// ── OVERRIDE addCompany to save to Supabase ──────────────────
-const _origAddCompany = window.addCompany;
-window.addCompany = async function() {
-  const name = document.getElementById('c-name')?.value.trim();
-  const id = document.getElementById('c-id')?.value.trim();
-  const pass = document.getElementById('c-pass')?.value;
-  const email = document.getElementById('c-email')?.value.trim();
-  const plan = document.getElementById('c-plan')?.value || 'starter';
-  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
-  try {
-    await sbAddCompany({ id, name, pass, email, plan, active: true });
-    toast('✅ Company created: ' + name);
-    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const cos = getData('vn_companies',[]);
-    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_companies', cos);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE addAgent to save to Supabase ────────────────────
-const _origAddAgent = window.addAgent;
-window.addAgent = async function() {
-  const name = document.getElementById('a-name')?.value.trim();
-  const id = document.getElementById('a-id')?.value.trim();
-  const pass = document.getElementById('a-pass')?.value;
-  const companyId = document.getElementById('a-company')?.value;
-  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
-  try {
-    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
-    toast('✅ Agent created: ' + name);
-    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    // Also update localStorage
-    const ags = getData('vn_agents',[]);
-    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
-    setData('vn_agents', ags);
-  } catch(e) { toast('❌ ' + e.message, 'err'); }
-};
-
-// ── OVERRIDE deleteAgent ──────────────────────────────────────
-const _origDeleteAgent = window.deleteAgent;
-window.deleteAgent = async function(id) {
-  if (!confirm('Delete this agent?')) return;
-  try {
-    await sbDeleteAgent(id);
-    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
-    setData('vn_agents', ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Agent deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE deleteCompany ────────────────────────────────────
-const _origDeleteCompany = window.deleteCompany;
-window.deleteCompany = async function(id) {
-  if (!confirm('Delete this company and all its agents?')) return;
-  try {
-    await sbDeleteCompany(id);
-    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
-    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
-    setData('vn_companies',cos); setData('vn_agents',ags);
-    if (typeof refreshAdmin==='function') refreshAdmin();
-    toast('🗑️ Company deleted');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── OVERRIDE resetPass ────────────────────────────────────────
-window.resetPass = async function(id) {
-  const p = prompt('New password for agent ' + id + ':');
-  if (!p) return;
-  try {
-    await sbResetPass(id, p);
-    const ags = getData('vn_agents',[]);
-    const a = ags.find(a=>a.id===id);
-    if (a) { a.pass=p; setData('vn_agents',ags); }
-    toast('✅ Password reset');
-  } catch(e) { toast('❌ ' + e.message,'err'); }
-};
-
-// ── Load companies+agents from Supabase into localStorage on admin login ──
-const _origShowAdmin = window.showAdminView;
-window.showAdminView = async function() {
-  try {
-    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
-    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
-    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
-    const addrs = await sbGetAllAddresses().catch(()=>[]);
-    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
-  } catch(e) { console.warn('Supabase admin load:', e.message); }
-  if (typeof _origShowAdmin === 'function') _origShowAdmin();
-};
-
-// Remove old cloud sync button/function
-window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
-
-console.log('✅ Supabase backend loaded');
-})();
-</script>
-
 
 <script id="vn-final-fix">
 /* VISHAL NAVIGATION — FINAL FIX PATCH
@@ -9108,354 +8132,6 @@ window.stopAndSave = function() {
 };
 
 console.log('✅ Intel Panel v2 loaded');
-})();
-</script>
-
-<script id="vn-tab-recording-fix">
-(function() {
-'use strict';
-
-// ═══════════════════════════════════════════════════════
-// FIX 1: Tab switching — proper display override
-// ═══════════════════════════════════════════════════════
-window.switchIP = function(tab) {
-  // Update tab buttons
-  document.querySelectorAll('.ip-tab').forEach(function(t) {
-    var isActive = t.dataset.tab === tab;
-    t.style.color = isActive ? '#3b5bdb' : '#94999f';
-    t.style.borderBottom = isActive ? '2px solid #3b5bdb' : '2px solid transparent';
-    t.style.fontWeight = isActive ? '700' : '600';
-  });
-  // Show/hide panes — must use display block/flex not empty string
-  var paneMap = {
-    'capture': 'flex',
-    'feed':    'flex',
-    'notes':   'flex',
-    'stats':   'flex',
-    'upload':  'flex'
-  };
-  Object.keys(paneMap).forEach(function(p) {
-    var pane = document.getElementById('ip-pane-' + p);
-    if (!pane) return;
-    if (p === tab) {
-      pane.style.setProperty('display', paneMap[p], 'important');
-      pane.style.flexDirection = 'column';
-      pane.style.flex = '1';
-      pane.style.overflow = p === 'feed' || p === 'stats' ? 'hidden' : 'auto';
-    } else {
-      pane.style.setProperty('display', 'none', 'important');
-    }
-  });
-  if (tab === 'stats') {
-    if (typeof ipUpdateStats === 'function') ipUpdateStats();
-    renderRecentInStats();
-  }
-};
-
-// ═══════════════════════════════════════════════════════
-// FIX 2: Inject tab data-attributes after renderAgentView
-// ═══════════════════════════════════════════════════════
-function fixTabAttributes() {
-  var tabNames = ['capture','feed','notes','stats','upload'];
-  var tabs = document.querySelectorAll('.ip-tab');
-  tabs.forEach(function(t, i) {
-    if (tabNames[i]) {
-      t.dataset.tab = tabNames[i];
-      t.onclick = function() { window.switchIP(tabNames[i]); };
-    }
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// FEATURE 1: Upload Recording → Transcribe → Extract Address
-// ═══════════════════════════════════════════════════════
-window.ipHandleRecordingUpload = function(input) {
-  var file = input.files && input.files[0];
-  if (!file) return;
-
-  var statusEl = document.getElementById('rec-status');
-  var resultEl = document.getElementById('rec-result');
-  var btnEl    = document.getElementById('rec-upload-btn');
-
-  var allowedTypes = ['audio/mp3','audio/mpeg','audio/wav','audio/ogg','audio/webm','audio/m4a','audio/mp4','video/mp4','video/webm'];
-  if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|webm|m4a|mp4|aac|flac)$/i)) {
-    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">⚠️ Please upload an audio file (MP3, WAV, M4A, OGG, WebM)</span>';
-    return;
-  }
-
-  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing recording… this may take a moment</span>';
-  if (resultEl) resultEl.style.display = 'none';
-  if (btnEl) btnEl.disabled = true;
-
-  var formData = new FormData();
-  formData.append('file', file, file.name);
-  formData.append('model', 'whisper-large-v3');
-  formData.append('response_format', 'json');
-  formData.append('language', 'hi');  // Hindi — will auto-detect if wrong
-
-  fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + (window.GROQ_KEY || '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')
-    },
-    body: formData
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var transcript = data.text || data.transcript || '';
-    if (!transcript) throw new Error(data.error && data.error.message || 'No transcript returned');
-
-    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting address…</span>';
-
-    // Store transcript for display
-    var transcriptEl = document.getElementById('rec-transcript-text');
-    if (transcriptEl) {
-      transcriptEl.textContent = transcript;
-      transcriptEl.parentElement.style.display = 'block';
-    }
-
-    // Now extract address using Claude API
-    return fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: 'Extract the complete delivery address from this call recording transcript. Return ONLY a JSON object with these fields: { "name": "", "phone": "", "address": "", "landmark": "", "city": "", "state": "", "pincode": "" }. If a field is not mentioned, leave it empty. Transcript: ' + transcript
-        }]
-      })
-    });
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var text = (data.content && data.content[0] && data.content[0].text) || '{}';
-    var clean = text.replace(/```json|```/g, '').trim();
-    var addr;
-    try { addr = JSON.parse(clean); } catch(e) { addr = {}; }
-
-    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Address extracted!</span>';
-    if (btnEl) btnEl.disabled = false;
-
-    // Show result card
-    if (resultEl) {
-      resultEl.style.display = 'block';
-      var fields = [
-        { lbl: 'Customer Name', val: addr.name,     id: 'rec-r-name' },
-        { lbl: 'Phone',         val: addr.phone,    id: 'rec-r-phone' },
-        { lbl: 'Address',       val: addr.address,  id: 'rec-r-addr' },
-        { lbl: 'Landmark',      val: addr.landmark, id: 'rec-r-landmark' },
-        { lbl: 'City',          val: addr.city,     id: 'rec-r-city' },
-        { lbl: 'State',         val: addr.state,    id: 'rec-r-state' },
-        { lbl: 'Pincode',       val: addr.pincode,  id: 'rec-r-pin' },
-      ];
-      var html = '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">';
-      fields.forEach(function(f) {
-        if (!f.val) return;
-        html += '<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:9px;font-weight:700;color:#94999f;min-width:72px;padding-top:2px;text-transform:uppercase">' + f.lbl + '</span>'
-              + '<span style="font-size:12px;color:#1a1d24;font-weight:600;flex:1">' + f.val + '</span></div>';
-      });
-      html += '</div>';
-      resultEl.innerHTML = html
-        + '<div style="display:flex;gap:6px">'
-        + '<button onclick="ipApplyFromRecording()" style="flex:1;background:#0d9354;color:#fff;border:none;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Apply to capture form</button>'
-        + '<button onclick="ipAddToFeed()" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📋 Add to feed</button>'
-        + '</div>';
-
-      // Store for apply/feed functions
-      window._lastRecordingAddr = addr;
-    }
-
-    // Also push to recordings log for CSV
-    if (!window._recordingsLog) window._recordingsLog = [];
-    window._recordingsLog.push({
-      file: (document.getElementById('rec-file-input') && document.getElementById('rec-file-input').files[0] && document.getElementById('rec-file-input').files[0].name) || 'recording',
-      name: addr.name || '',
-      phone: addr.phone || '',
-      address: addr.address || '',
-      landmark: addr.landmark || '',
-      city: addr.city || '',
-      state: addr.state || '',
-      pincode: addr.pincode || '',
-      time: new Date().toLocaleString('en-IN')
-    });
-  })
-  .catch(function(e) {
-    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">❌ Error: ' + e.message + '</span>';
-    if (btnEl) btnEl.disabled = false;
-  });
-};
-
-window.ipApplyFromRecording = function() {
-  var a = window._lastRecordingAddr;
-  if (!a) return;
-  var map = {
-    'ip-inp-name': a.name, 'ip-inp-phone': a.phone,
-    'ip-inp-addr': a.address, 'ip-inp-landmark': a.landmark,
-    'ip-inp-city': a.city, 'ip-inp-state': a.state, 'ip-inp-pin': a.pincode
-  };
-  Object.entries(map).forEach(function(e) {
-    var el = document.getElementById(e[0]);
-    if (el && e[1]) { el.value = e[1]; }
-  });
-  // Also fill main corp fields
-  var mainMap = {
-    'lfv-name': a.name, 'lfv-phone': a.phone,
-    'lfv-addrline': a.address, 'lfv-landmark': a.landmark,
-    'lfv-city': a.city, 'lfv-state': a.state, 'lfv-pincode': a.pincode
-  };
-  Object.entries(mainMap).forEach(function(e) {
-    var el = document.getElementById(e[0]);
-    if (el && e[1]) { el.value = e[1]; el.classList.add('filled'); }
-  });
-  // Enable save buttons
-  ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
-    var btn = document.getElementById(id);
-    if (btn) btn.disabled = false;
-  });
-  window.switchIP('capture');
-  if (typeof toast === 'function') toast('✅ Address applied to capture form!');
-};
-
-window.ipAddToFeed = function() {
-  var a = window._lastRecordingAddr || {};
-  if (!window._ipCaptures) window._ipCaptures = [];
-  window._ipCaptures.push({
-    name: a.name || '', addr: a.address || '',
-    pin: a.pincode || '', city: a.city || '',
-    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
-    source: '🎙️ Recording'
-  });
-  if (typeof ipRenderFeed === 'function') ipRenderFeed();
-  window.switchIP('feed');
-  if (typeof toast === 'function') toast('📋 Added to feed!');
-};
-
-// ═══════════════════════════════════════════════════════
-// FEATURE 2: Export CSV (captures + recordings)
-// ═══════════════════════════════════════════════════════
-window.ipExportAll = function() {
-  var rows = [];
-  // From captures
-  if (window._ipCaptures && window._ipCaptures.length) {
-    window._ipCaptures.forEach(function(c) {
-      rows.push([c.name||'', c.addr||'', c.pin||'', c.city||'', c.time||'', c.source||'Live']);
-    });
-  }
-  // From recordings
-  if (window._recordingsLog && window._recordingsLog.length) {
-    window._recordingsLog.forEach(function(c) {
-      rows.push([c.name||'', c.address||'', c.pincode||'', c.city||'', c.time||'', '🎙️ Recording: '+c.file]);
-    });
-  }
-  if (!rows.length) {
-    if (typeof toast === 'function') toast('No captures to export yet', 'err');
-    return;
-  }
-  var csv = 'Name,Address,Pincode,City,Time,Source
-'
-    + rows.map(function(r) { return r.map(function(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }).join(','); }).join('
-');
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = 'captures_' + new Date().toLocaleDateString('en-IN').replace(/\//g,'-') + '.csv';
-  a.click();
-  if (typeof toast === 'function') toast('📥 Exported ' + rows.length + ' records!');
-};
-
-// Recent captures in stats pane
-function renderRecentInStats() {
-  var el = document.getElementById('ip-recent');
-  if (!el) return;
-  var caps = window._ipCaptures || [];
-  if (!caps.length) { el.innerHTML = '<div style="color:#94999f;font-style:italic">No captures yet</div>'; return; }
-  el.innerHTML = caps.slice(-5).reverse().map(function(c) {
-    return '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px">'
-      + '<div style="font-size:11px;font-weight:600;color:#1a1d24">' + (c.addr||'—') + '</div>'
-      + '<div style="font-size:10px;color:#94999f;margin-top:2px">' + (c.city||'') + (c.pin?' · '+c.pin:'') + ' · ' + (c.time||'') + '</div>'
-      + '</div>';
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════
-// INJECT UPLOAD TAB into Intel Panel after renderAgentView
-// ═══════════════════════════════════════════════════════
-function injectUploadTab() {
-  var tabBar = document.querySelector('#intelPanel > div:first-child');
-  var intelPanel = document.getElementById('intelPanel');
-  if (!tabBar || !intelPanel) return;
-  if (document.getElementById('ip-pane-upload')) return; // already injected
-
-  // Add Upload tab button
-  var uploadTab = document.createElement('div');
-  uploadTab.className = 'ip-tab';
-  uploadTab.dataset.tab = 'upload';
-  uploadTab.onclick = function() { window.switchIP('upload'); };
-  uploadTab.setAttribute('style', 'flex:1;padding:10px 4px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s');
-  uploadTab.textContent = '🎙️ Upload';
-  tabBar.appendChild(uploadTab);
-
-  // Add Upload pane
-  var uploadPane = document.createElement('div');
-  uploadPane.id = 'ip-pane-upload';
-  uploadPane.setAttribute('style', 'display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px');
-  uploadPane.innerHTML = ''
-    + '<div style="font-size:11px;font-weight:700;color:#1a1d24">Upload Call Recording</div>'
-    + '<div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file from a customer call. Claude will transcribe it and automatically extract the delivery address.</div>'
-    
-    + '<label id="rec-upload-btn" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc;transition:all .2s" onmouseover="this.style.borderColor='#3b5bdb';this.style.background='#f0f3ff'" onmouseout="this.style.borderColor='#d1d6dd';this.style.background='#fafbfc'">'
-    + '<span style="font-size:28px">🎵</span>'
-    + '<span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>'
-    + '<span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM — max 25MB</span>'
-    + '<input id="rec-file-input" type="file" accept="audio/*,video/mp4,video/webm" style="display:none" onchange="ipHandleRecordingUpload(this)"/>'
-    + '</label>'
-
-    + '<div id="rec-status" style="font-size:11px;min-height:18px"></div>'
-
-    + '<div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">'
-    + '<div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>'
-    + '<div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:100px;overflow-y:auto"></div>'
-    + '</div>'
-
-    + '<div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>'
-
-    + '<div style="border-top:1px solid #e3e6eb;padding-top:12px">'
-    + '<div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>'
-    + '<button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470;transition:all .2s" onmouseover="this.style.borderColor='#3b5bdb';this.style.color='#3b5bdb'" onmouseout="this.style.borderColor='#e3e6eb';this.style.color='#5e6470'">📥 Export Live + Recording captures (CSV)</button>'
-    + '</div>';
-
-  // Insert pane before closing div of intel panel
-  intelPanel.appendChild(uploadPane);
-
-  // Fix all tab data attributes
-  fixTabAttributes();
-}
-
-// ═══════════════════════════════════════════════════════
-// Hook into showAgentView to always inject after render
-// ═══════════════════════════════════════════════════════
-var _prevShowAgent = window.showAgentView;
-window.showAgentView = async function() {
-  if (typeof _prevShowAgent === 'function') await _prevShowAgent();
-  setTimeout(function() {
-    injectUploadTab();
-    fixTabAttributes();
-    // Ensure capture pane is shown by default
-    window.switchIP('capture');
-  }, 300);
-};
-
-// Also fix on DOM ready in case already rendered
-if (document.getElementById('intelPanel')) {
-  setTimeout(function() {
-    injectUploadTab();
-    fixTabAttributes();
-    window.switchIP('capture');
-  }, 100);
-}
-
-console.log('✅ Tab fix + Recording upload + CSV export loaded');
 })();
 </script>
 
