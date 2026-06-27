@@ -5170,6 +5170,7 @@ function renderAgentView() {
           <div class="ip-tab" data-tab="feed"    onclick="switchIP('feed')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
           <div class="ip-tab" data-tab="notes"   onclick="switchIP('notes')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
           <div class="ip-tab" data-tab="stats"   onclick="switchIP('stats')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
+          <div class="ip-tab" data-tab="upload" onclick="switchIP('upload')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Upload</div>
         </div>
 
         <!-- CAPTURE PANE -->
@@ -5298,6 +5299,29 @@ function renderAgentView() {
             <div id="ip-recent" style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#5e6470">
               <div style="color:#94999f;font-style:italic">No captures yet</div>
             </div>
+          </div>
+        </div>
+
+
+        <!-- UPLOAD PANE -->
+        <div id="ip-pane-upload" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px;min-height:0">
+          <div style="font-size:12px;font-weight:700;color:#1a1d24">Upload Call Recording</div>
+          <div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file. Claude transcribes it and extracts the delivery address automatically.</div>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc">
+            <span style="font-size:28px">🎵</span>
+            <span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>
+            <span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM · max 25MB</span>
+            <input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>
+          </label>
+          <div id="rec-status" style="font-size:11px;min-height:18px;text-align:center"></div>
+          <div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>
+            <div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:120px;overflow-y:auto"></div>
+          </div>
+          <div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>
+          <div style="border-top:1px solid #e3e6eb;padding-top:12px;margin-top:auto">
+            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>
+            <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export CSV (Live + Recordings)</button>
           </div>
         </div>
 
@@ -5909,6 +5933,29 @@ function renderAdminView() {
             <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
               <div style="margin-top:8px;font-size:11px;color:var(--text3)">Permanently deletes all companies, agents and addresses.</div>
             </div>
+          </div>
+        </div>
+
+
+        <!-- UPLOAD PANE -->
+        <div id="ip-pane-upload" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px;min-height:0">
+          <div style="font-size:12px;font-weight:700;color:#1a1d24">Upload Call Recording</div>
+          <div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file. Claude transcribes it and extracts the delivery address automatically.</div>
+          <label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc">
+            <span style="font-size:28px">🎵</span>
+            <span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>
+            <span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM · max 25MB</span>
+            <input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>
+          </label>
+          <div id="rec-status" style="font-size:11px;min-height:18px;text-align:center"></div>
+          <div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>
+            <div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:120px;overflow-y:auto"></div>
+          </div>
+          <div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>
+          <div style="border-top:1px solid #e3e6eb;padding-top:12px;margin-top:auto">
+            <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>
+            <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export CSV (Live + Recordings)</button>
           </div>
         </div>
 
