@@ -1728,20 +1728,21 @@ async function analyzePhoto(){
   document.getElementById('photoAnalyzeBtn').textContent='🔍 Analyzing...';
   document.getElementById('photoAnalyzeBtn').disabled=true;
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const GROQ = window.GROQ_KEY || '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';
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
       body:JSON.stringify({
-        model:'claude-opus-4-20250514',
+        model:'meta-llama/llama-4-scout-17b-16e-instruct',
         max_tokens:400,
         messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:photoBase64}},
+          {type:'image_url',image_url:{url:'data:image/jpeg;base64,'+photoBase64}},
           {type:'text',text:'Look at this photo. Extract any visible address, location name, shop name, building name, street, area, city, or any text that could help identify the location in India. Return ONLY a location search query I can use to find this address, nothing else.'}
         ]}]
       })
     });
     const data = await res.json();
-    const extracted = data.content?.[0]?.text || '';
+    const extracted = data.choices?.[0]?.message?.content || '';
     if(extracted){
       document.getElementById('photoModal').style.display='none';
       document.getElementById('pubQ').value = extracted;
