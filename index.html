@@ -1163,10 +1163,62 @@ function showLogin(type){
   document.getElementById('loginPass').value='';
 }
 
-function doLogin(){
-  // Handled by Supabase backend — see bottom of file
-  if(typeof window._sbDoLogin === 'function') { window._sbDoLogin(); return; }
-  showLoginErr('Loading... please try again in a moment.');
+async function doLogin(){
+  const id   = document.getElementById('loginId')?.value.trim();
+  const pass = document.getElementById('loginPass')?.value;
+
+  // Admin login
+  if(currentMode==='admin'){
+    const user = document.getElementById('adminUser')?.value.trim();
+    if(user===ADMIN_USER&&pass===getAdminPass()){
+      document.getElementById('loginPage').style.display='none';
+      showAdminView();
+    } else showLoginErr('Invalid admin credentials');
+    return;
+  }
+
+  // Agent login via Supabase
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
+  if(err) err.style.display='none';
+
+  const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9ub3' +
+                 'FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI0Nn0' +
+                 '.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI';
+  const headers = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+  try {
+    const ar = await fetch(SB_URL+'/rest/v1/agents?id=eq.'+encodeURIComponent(id)+'&pass=eq.'+encodeURIComponent(pass)+'&active=eq.true&select=*',{headers});
+    const agents = await ar.json();
+    if(!agents||!agents.length) throw new Error('Invalid Agent ID or Password');
+    const agent = agents[0];
+
+    const cr = await fetch(SB_URL+'/rest/v1/companies?id=eq.'+encodeURIComponent(agent.company_id)+'&active=eq.true&select=*',{headers});
+    const companies = await cr.json();
+    if(!companies||!companies.length) throw new Error('Company account inactive. Contact admin.');
+    const company = companies[0];
+
+    // Update last active
+    fetch(SB_URL+'/rest/v1/agents?id=eq.'+agent.id,{method:'PATCH',headers:{...headers,'Prefer':'return=minimal'},body:JSON.stringify({last_active:new Date().toISOString()})}).catch(()=>{});
+
+    window.currentAgent   = {id:agent.id,name:agent.name,pass:agent.pass,companyId:agent.company_id,active:agent.active};
+    window.currentCompany = {id:company.id,name:company.name,pass:company.pass,email:company.email,plan:company.plan,active:company.active};
+
+    const adr = await fetch(SB_URL+'/rest/v1/addresses?select=*&agent_id=eq.'+encodeURIComponent(agent.id)+'&order=created_at.desc&limit=200',{headers});
+    const addrs = await adr.json();
+    window.addrHistory = (addrs||[]).map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status}));
+
+    if(btn){btn.disabled=false;btn.textContent='Login';}
+    document.getElementById('loginPage').style.display='none';
+    showAgentView();
+    toast('Welcome '+agent.name+'! 👋');
+
+  } catch(e) {
+    if(btn){btn.disabled=false;btn.textContent='Login';}
+    showLoginErr(e.message);
+  }
 }
 
 function showLoginErr(msg){
