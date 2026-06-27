@@ -9063,5 +9063,354 @@ window.stopAndSave = function() {
 console.log('✅ Intel Panel v2 loaded');
 })();
 </script>
+
+<script id="vn-tab-recording-fix">
+(function() {
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// FIX 1: Tab switching — proper display override
+// ═══════════════════════════════════════════════════════
+window.switchIP = function(tab) {
+  // Update tab buttons
+  document.querySelectorAll('.ip-tab').forEach(function(t) {
+    var isActive = t.dataset.tab === tab;
+    t.style.color = isActive ? '#3b5bdb' : '#94999f';
+    t.style.borderBottom = isActive ? '2px solid #3b5bdb' : '2px solid transparent';
+    t.style.fontWeight = isActive ? '700' : '600';
+  });
+  // Show/hide panes — must use display block/flex not empty string
+  var paneMap = {
+    'capture': 'flex',
+    'feed':    'flex',
+    'notes':   'flex',
+    'stats':   'flex',
+    'upload':  'flex'
+  };
+  Object.keys(paneMap).forEach(function(p) {
+    var pane = document.getElementById('ip-pane-' + p);
+    if (!pane) return;
+    if (p === tab) {
+      pane.style.setProperty('display', paneMap[p], 'important');
+      pane.style.flexDirection = 'column';
+      pane.style.flex = '1';
+      pane.style.overflow = p === 'feed' || p === 'stats' ? 'hidden' : 'auto';
+    } else {
+      pane.style.setProperty('display', 'none', 'important');
+    }
+  });
+  if (tab === 'stats') {
+    if (typeof ipUpdateStats === 'function') ipUpdateStats();
+    renderRecentInStats();
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// FIX 2: Inject tab data-attributes after renderAgentView
+// ═══════════════════════════════════════════════════════
+function fixTabAttributes() {
+  var tabNames = ['capture','feed','notes','stats','upload'];
+  var tabs = document.querySelectorAll('.ip-tab');
+  tabs.forEach(function(t, i) {
+    if (tabNames[i]) {
+      t.dataset.tab = tabNames[i];
+      t.onclick = function() { window.switchIP(tabNames[i]); };
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// FEATURE 1: Upload Recording → Transcribe → Extract Address
+// ═══════════════════════════════════════════════════════
+window.ipHandleRecordingUpload = function(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+
+  var statusEl = document.getElementById('rec-status');
+  var resultEl = document.getElementById('rec-result');
+  var btnEl    = document.getElementById('rec-upload-btn');
+
+  var allowedTypes = ['audio/mp3','audio/mpeg','audio/wav','audio/ogg','audio/webm','audio/m4a','audio/mp4','video/mp4','video/webm'];
+  if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|ogg|webm|m4a|mp4|aac|flac)$/i)) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">⚠️ Please upload an audio file (MP3, WAV, M4A, OGG, WebM)</span>';
+    return;
+  }
+
+  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing recording… this may take a moment</span>';
+  if (resultEl) resultEl.style.display = 'none';
+  if (btnEl) btnEl.disabled = true;
+
+  var formData = new FormData();
+  formData.append('file', file, file.name);
+  formData.append('model', 'whisper-large-v3');
+  formData.append('response_format', 'json');
+  formData.append('language', 'hi');  // Hindi — will auto-detect if wrong
+
+  fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + (window.GROQ_KEY || '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')
+    },
+    body: formData
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var transcript = data.text || data.transcript || '';
+    if (!transcript) throw new Error(data.error && data.error.message || 'No transcript returned');
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting address…</span>';
+
+    // Store transcript for display
+    var transcriptEl = document.getElementById('rec-transcript-text');
+    if (transcriptEl) {
+      transcriptEl.textContent = transcript;
+      transcriptEl.parentElement.style.display = 'block';
+    }
+
+    // Now extract address using Claude API
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: 'Extract the complete delivery address from this call recording transcript. Return ONLY a JSON object with these fields: { "name": "", "phone": "", "address": "", "landmark": "", "city": "", "state": "", "pincode": "" }. If a field is not mentioned, leave it empty. Transcript: ' + transcript
+        }]
+      })
+    });
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var text = (data.content && data.content[0] && data.content[0].text) || '{}';
+    var clean = text.replace(/```json|```/g, '').trim();
+    var addr;
+    try { addr = JSON.parse(clean); } catch(e) { addr = {}; }
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Address extracted!</span>';
+    if (btnEl) btnEl.disabled = false;
+
+    // Show result card
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      var fields = [
+        { lbl: 'Customer Name', val: addr.name,     id: 'rec-r-name' },
+        { lbl: 'Phone',         val: addr.phone,    id: 'rec-r-phone' },
+        { lbl: 'Address',       val: addr.address,  id: 'rec-r-addr' },
+        { lbl: 'Landmark',      val: addr.landmark, id: 'rec-r-landmark' },
+        { lbl: 'City',          val: addr.city,     id: 'rec-r-city' },
+        { lbl: 'State',         val: addr.state,    id: 'rec-r-state' },
+        { lbl: 'Pincode',       val: addr.pincode,  id: 'rec-r-pin' },
+      ];
+      var html = '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">';
+      fields.forEach(function(f) {
+        if (!f.val) return;
+        html += '<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:9px;font-weight:700;color:#94999f;min-width:72px;padding-top:2px;text-transform:uppercase">' + f.lbl + '</span>'
+              + '<span style="font-size:12px;color:#1a1d24;font-weight:600;flex:1">' + f.val + '</span></div>';
+      });
+      html += '</div>';
+      resultEl.innerHTML = html
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="ipApplyFromRecording()" style="flex:1;background:#0d9354;color:#fff;border:none;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Apply to capture form</button>'
+        + '<button onclick="ipAddToFeed()" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📋 Add to feed</button>'
+        + '</div>';
+
+      // Store for apply/feed functions
+      window._lastRecordingAddr = addr;
+    }
+
+    // Also push to recordings log for CSV
+    if (!window._recordingsLog) window._recordingsLog = [];
+    window._recordingsLog.push({
+      file: (document.getElementById('rec-file-input') && document.getElementById('rec-file-input').files[0] && document.getElementById('rec-file-input').files[0].name) || 'recording',
+      name: addr.name || '',
+      phone: addr.phone || '',
+      address: addr.address || '',
+      landmark: addr.landmark || '',
+      city: addr.city || '',
+      state: addr.state || '',
+      pincode: addr.pincode || '',
+      time: new Date().toLocaleString('en-IN')
+    });
+  })
+  .catch(function(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">❌ Error: ' + e.message + '</span>';
+    if (btnEl) btnEl.disabled = false;
+  });
+};
+
+window.ipApplyFromRecording = function() {
+  var a = window._lastRecordingAddr;
+  if (!a) return;
+  var map = {
+    'ip-inp-name': a.name, 'ip-inp-phone': a.phone,
+    'ip-inp-addr': a.address, 'ip-inp-landmark': a.landmark,
+    'ip-inp-city': a.city, 'ip-inp-state': a.state, 'ip-inp-pin': a.pincode
+  };
+  Object.entries(map).forEach(function(e) {
+    var el = document.getElementById(e[0]);
+    if (el && e[1]) { el.value = e[1]; }
+  });
+  // Also fill main corp fields
+  var mainMap = {
+    'lfv-name': a.name, 'lfv-phone': a.phone,
+    'lfv-addrline': a.address, 'lfv-landmark': a.landmark,
+    'lfv-city': a.city, 'lfv-state': a.state, 'lfv-pincode': a.pincode
+  };
+  Object.entries(mainMap).forEach(function(e) {
+    var el = document.getElementById(e[0]);
+    if (el && e[1]) { el.value = e[1]; el.classList.add('filled'); }
+  });
+  // Enable save buttons
+  ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) btn.disabled = false;
+  });
+  window.switchIP('capture');
+  if (typeof toast === 'function') toast('✅ Address applied to capture form!');
+};
+
+window.ipAddToFeed = function() {
+  var a = window._lastRecordingAddr || {};
+  if (!window._ipCaptures) window._ipCaptures = [];
+  window._ipCaptures.push({
+    name: a.name || '', addr: a.address || '',
+    pin: a.pincode || '', city: a.city || '',
+    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
+    source: '🎙️ Recording'
+  });
+  if (typeof ipRenderFeed === 'function') ipRenderFeed();
+  window.switchIP('feed');
+  if (typeof toast === 'function') toast('📋 Added to feed!');
+};
+
+// ═══════════════════════════════════════════════════════
+// FEATURE 2: Export CSV (captures + recordings)
+// ═══════════════════════════════════════════════════════
+window.ipExportAll = function() {
+  var rows = [];
+  // From captures
+  if (window._ipCaptures && window._ipCaptures.length) {
+    window._ipCaptures.forEach(function(c) {
+      rows.push([c.name||'', c.addr||'', c.pin||'', c.city||'', c.time||'', c.source||'Live']);
+    });
+  }
+  // From recordings
+  if (window._recordingsLog && window._recordingsLog.length) {
+    window._recordingsLog.forEach(function(c) {
+      rows.push([c.name||'', c.address||'', c.pincode||'', c.city||'', c.time||'', '🎙️ Recording: '+c.file]);
+    });
+  }
+  if (!rows.length) {
+    if (typeof toast === 'function') toast('No captures to export yet', 'err');
+    return;
+  }
+  var csv = 'Name,Address,Pincode,City,Time,Source
+'
+    + rows.map(function(r) { return r.map(function(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }).join(','); }).join('
+');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = 'captures_' + new Date().toLocaleDateString('en-IN').replace(/\//g,'-') + '.csv';
+  a.click();
+  if (typeof toast === 'function') toast('📥 Exported ' + rows.length + ' records!');
+};
+
+// Recent captures in stats pane
+function renderRecentInStats() {
+  var el = document.getElementById('ip-recent');
+  if (!el) return;
+  var caps = window._ipCaptures || [];
+  if (!caps.length) { el.innerHTML = '<div style="color:#94999f;font-style:italic">No captures yet</div>'; return; }
+  el.innerHTML = caps.slice(-5).reverse().map(function(c) {
+    return '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px">'
+      + '<div style="font-size:11px;font-weight:600;color:#1a1d24">' + (c.addr||'—') + '</div>'
+      + '<div style="font-size:10px;color:#94999f;margin-top:2px">' + (c.city||'') + (c.pin?' · '+c.pin:'') + ' · ' + (c.time||'') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// INJECT UPLOAD TAB into Intel Panel after renderAgentView
+// ═══════════════════════════════════════════════════════
+function injectUploadTab() {
+  var tabBar = document.querySelector('#intelPanel > div:first-child');
+  var intelPanel = document.getElementById('intelPanel');
+  if (!tabBar || !intelPanel) return;
+  if (document.getElementById('ip-pane-upload')) return; // already injected
+
+  // Add Upload tab button
+  var uploadTab = document.createElement('div');
+  uploadTab.className = 'ip-tab';
+  uploadTab.dataset.tab = 'upload';
+  uploadTab.onclick = function() { window.switchIP('upload'); };
+  uploadTab.setAttribute('style', 'flex:1;padding:10px 4px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s');
+  uploadTab.textContent = '🎙️ Upload';
+  tabBar.appendChild(uploadTab);
+
+  // Add Upload pane
+  var uploadPane = document.createElement('div');
+  uploadPane.id = 'ip-pane-upload';
+  uploadPane.setAttribute('style', 'display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px');
+  uploadPane.innerHTML = ''
+    + '<div style="font-size:11px;font-weight:700;color:#1a1d24">Upload Call Recording</div>'
+    + '<div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file from a customer call. Claude will transcribe it and automatically extract the delivery address.</div>'
+    
+    + '<label id="rec-upload-btn" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc;transition:all .2s" onmouseover="this.style.borderColor='#3b5bdb';this.style.background='#f0f3ff'" onmouseout="this.style.borderColor='#d1d6dd';this.style.background='#fafbfc'">'
+    + '<span style="font-size:28px">🎵</span>'
+    + '<span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>'
+    + '<span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM — max 25MB</span>'
+    + '<input id="rec-file-input" type="file" accept="audio/*,video/mp4,video/webm" style="display:none" onchange="ipHandleRecordingUpload(this)"/>'
+    + '</label>'
+
+    + '<div id="rec-status" style="font-size:11px;min-height:18px"></div>'
+
+    + '<div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">'
+    + '<div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>'
+    + '<div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:100px;overflow-y:auto"></div>'
+    + '</div>'
+
+    + '<div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>'
+
+    + '<div style="border-top:1px solid #e3e6eb;padding-top:12px">'
+    + '<div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Export All Captures</div>'
+    + '<button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470;transition:all .2s" onmouseover="this.style.borderColor='#3b5bdb';this.style.color='#3b5bdb'" onmouseout="this.style.borderColor='#e3e6eb';this.style.color='#5e6470'">📥 Export Live + Recording captures (CSV)</button>'
+    + '</div>';
+
+  // Insert pane before closing div of intel panel
+  intelPanel.appendChild(uploadPane);
+
+  // Fix all tab data attributes
+  fixTabAttributes();
+}
+
+// ═══════════════════════════════════════════════════════
+// Hook into showAgentView to always inject after render
+// ═══════════════════════════════════════════════════════
+var _prevShowAgent = window.showAgentView;
+window.showAgentView = async function() {
+  if (typeof _prevShowAgent === 'function') await _prevShowAgent();
+  setTimeout(function() {
+    injectUploadTab();
+    fixTabAttributes();
+    // Ensure capture pane is shown by default
+    window.switchIP('capture');
+  }, 300);
+};
+
+// Also fix on DOM ready in case already rendered
+if (document.getElementById('intelPanel')) {
+  setTimeout(function() {
+    injectUploadTab();
+    fixTabAttributes();
+    window.switchIP('capture');
+  }, 100);
+}
+
+console.log('✅ Tab fix + Recording upload + CSV export loaded');
+})();
+</script>
+
 </body>
 </html>
