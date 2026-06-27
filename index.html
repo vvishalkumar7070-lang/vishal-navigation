@@ -1050,85 +1050,58 @@ function getData(k,d){ try{return JSON.parse(localStorage.getItem(k)||'null')||d
 function setData(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
 
 // ═══════════════════════════════════════════════════════════
-// CLOUD SYNC — agents/companies stored on GitHub Gist
+// CLOUD SYNC — agents/companies stored in repo as vn_db.json
 // so any device can login with the same credentials
 // ═══════════════════════════════════════════════════════════
-const VN_GIST_KEY = 'vn_gist_id'; // stored in localStorage after first sync
-const VN_SYNC_KEYS = ['vn_agents','vn_companies']; // keys to sync
+const VN_SYNC_KEYS = ['vn_agents','vn_companies'];
+const VN_DB_FILE = 'vn_db.json';
+const VN_REPO = 'vvishalkumar7070-lang/vishal-navigation';
 
-// Save current agents+companies to a GitHub Gist (called by admin after changes)
 window.vnSyncToCloud = async function() {
-  const token = ['ghp_bBCOF9pOMCft','Ah0SVCamSdrOGp','HvgE3EvXhG'].join('');
+  const tk = ['ghp_bBCOF9pOMCft','Ah0SVCamSdrOGp','HvgE3EvXhG'].join('');
   const data = {};
   VN_SYNC_KEYS.forEach(k => { data[k] = getData(k, []); });
-  const gistId = localStorage.getItem(VN_GIST_KEY);
+  const json = JSON.stringify(data, null, 2);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
   try {
-    let resp, result;
-    if (gistId) {
-      // Update existing gist
-      resp = await fetch('https://api.github.com/gists/' + gistId, {
-        method: 'PATCH',
-        headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: { 'vn_data.json': { content: JSON.stringify(data) } } })
-      });
-    } else {
-      // Create new gist
-      resp = await fetch('https://api.github.com/gists', {
-        method: 'POST',
-        headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          description: 'Vishal Navigation DB',
-          public: false,
-          files: { 'vn_data.json': { content: JSON.stringify(data) } }
-        })
-      });
+    // Get current file SHA if it exists
+    let sha = '';
+    const check = await fetch('https://api.github.com/repos/'+VN_REPO+'/contents/'+VN_DB_FILE, {
+      headers: { 'Authorization': 'token '+tk }
+    });
+    if (check.ok) {
+      const existing = await check.json();
+      sha = existing.sha || '';
     }
-    result = await resp.json();
-    if (result.id) {
-      localStorage.setItem(VN_GIST_KEY, result.id);
-      // Also save gist ID to a known location so other devices can find it
-      await fetch('https://api.github.com/repos/vvishalkumar7070-lang/vishal-navigation/contents/vn_gist.txt', {
-        method: 'GET',
-        headers: { 'Authorization': 'token ' + token }
-      }).then(async r => {
-        const existing = await r.json();
-        const sha = existing.sha || '';
-        return fetch('https://api.github.com/repos/vvishalkumar7070-lang/vishal-navigation/contents/vn_gist.txt', {
-          method: 'PUT',
-          headers: { 'Authorization': 'token ' + token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: 'update gist ref', content: btoa(result.id), sha: sha })
-        });
-      }).catch(() => {});
-      toast('☁️ Synced to cloud!');
+    // Push updated file
+    const resp = await fetch('https://api.github.com/repos/'+VN_REPO+'/contents/'+VN_DB_FILE, {
+      method: 'PUT',
+      headers: { 'Authorization': 'token '+tk, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: 'sync: update agent/company database',
+        content: encoded,
+        ...(sha ? { sha } : {})
+      })
+    });
+    const result = await resp.json();
+    if (result.commit) {
+      toast('☁️ Synced to cloud! Agents can now login from any device.');
       return true;
+    } else {
+      console.error('Sync failed:', result);
     }
   } catch(e) { console.error('Sync error:', e); }
-  toast('⚠️ Cloud sync failed', 'err');
+  toast('⚠️ Cloud sync failed — check console', 'err');
   return false;
 };
 
-// Load agents+companies from cloud Gist (called on login attempt)
 window.vnLoadFromCloud = async function() {
-  const token = ['ghp_bBCOF9pOMCft','Ah0SVCamSdrOGp','HvgE3EvXhG'].join('');
   try {
-    // First get the gist ID from repo
-    let gistId = localStorage.getItem(VN_GIST_KEY);
-    if (!gistId) {
-      const r = await fetch('https://raw.githubusercontent.com/vvishalkumar7070-lang/vishal-navigation/main/vn_gist.txt');
-      if (r.ok) {
-        gistId = (await r.text()).trim();
-        if (gistId) localStorage.setItem(VN_GIST_KEY, gistId);
-      }
-    }
-    if (!gistId) return false;
-    const resp = await fetch('https://api.github.com/gists/' + gistId, {
-      headers: { 'Authorization': 'token ' + token }
-    });
-    const result = await resp.json();
-    const raw = result.files?.['vn_data.json']?.content;
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    VN_SYNC_KEYS.forEach(k => { if (data[k]) setData(k, data[k]); });
+    // Use raw URL — no auth needed for public repo
+    const r = await fetch('https://raw.githubusercontent.com/'+VN_REPO+'/main/'+VN_DB_FILE+'?t='+Date.now());
+    if (!r.ok) return false;
+    const data = await r.json();
+    VN_SYNC_KEYS.forEach(k => { if (data[k] && data[k].length) setData(k, data[k]); });
     return true;
   } catch(e) { console.error('Load error:', e); return false; }
 };
@@ -4122,7 +4095,305 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 </script>
 <!-- ═══════════════════════════════════════════════════════════════
      VISHAL NAVIGATION — AGENT + ADMIN UPGRADE PATCH
-     Paste this entire <script> block just before </body>
+     Paste this entire <script> block just before <script>
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE BACKEND — Real cloud database for Vishal Navigation
+// ═══════════════════════════════════════════════════════════════
+(function() {
+'use strict';
+
+const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
+const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
+
+const sbHeaders = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+// ── Core fetch helper ──────────────────────────────────────────
+async function sbFetch(path, options={})) {
+  const resp = await fetch(SB_URL + path, {
+    ...options,
+    headers: { ...sbHeaders, ...(options.headers||{}) }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(()=>({}));
+    throw new Error(err.message || resp.statusText);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────
+window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
+window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
+window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
+window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
+
+// ── AGENTS ────────────────────────────────────────────────────
+window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
+window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
+window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
+window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
+
+// ── LOGIN — fetch agent + company from Supabase ───────────────
+window.sbLogin = async function(agentId, pass) {
+  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
+  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
+  const agent = agents[0];
+  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
+  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
+  // Update last_active
+  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
+  return { agent, company: companies[0] };
+};
+
+// ── ADDRESSES ─────────────────────────────────────────────────
+window.sbSaveAddress = async function(entry) {
+  return sbFetch('/rest/v1/addresses', {
+    method: 'POST',
+    body: JSON.stringify({
+      agent_id: entry.agentId,
+      company_id: entry.companyId,
+      address: entry.address,
+      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
+      city: entry.district,
+      state: entry.state,
+      landmark: entry.landmark || null,
+      customer_name: entry.name || null,
+      customer_phone: entry.phone || null,
+      confidence: entry.confidence || 0,
+      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
+      duration: entry.duration || 0,
+      is_duplicate: entry.isDuplicate || false,
+      raw_transcript: entry.rawTranscript || null
+    })
+  });
+};
+
+window.sbGetAddresses = async (agentId) => {
+  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
+  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
+};
+
+window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
+
+// ── OVERRIDE doLogin to use Supabase ─────────────────────────
+const _origDoLogin = window.doLogin;
+window.doLogin = async function() {
+  const id = document.getElementById('loginId')?.value.trim();
+  const pass = document.getElementById('loginPass')?.value;
+  const mode = window.currentMode;
+
+  // Admin login stays local
+  if (mode === 'admin') {
+    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
+  }
+
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const err = document.getElementById('loginErr');
+  if (err) err.style.display = 'none';
+
+  try {
+    const { agent, company } = await sbLogin(id, pass);
+
+    // Map Supabase fields to app format
+    window.currentAgent = {
+      id: agent.id, name: agent.name, pass: agent.pass,
+      companyId: agent.company_id, active: agent.active,
+      lastActive: agent.last_active, created: agent.created_at
+    };
+    window.currentCompany = {
+      id: company.id, name: company.name, pass: company.pass,
+      email: company.email, plan: company.plan, active: company.active,
+      created: company.created_at, renewsOn: company.renews_on
+    };
+
+    // Load address history
+    const addrs = await sbGetAddresses(agent.id).catch(() => []);
+    window.addrHistory = (addrs || []).map(a => ({
+      address: a.address, pincode: a.pincode || 'N/A',
+      district: a.city, state: a.state, name: a.customer_name,
+      phone: a.customer_phone, confidence: a.confidence,
+      time: new Date(a.created_at).toLocaleString('en-IN'),
+      agentId: a.agent_id, companyId: a.company_id,
+      isDuplicate: a.is_duplicate, duration: a.duration,
+      status: a.status
+    }));
+
+    // Also cache in localStorage for offline fallback
+    setData('vn_agents', [window.currentAgent]);
+    setData('vn_companies', [window.currentCompany]);
+
+    document.getElementById('loginPage').style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (typeof showAgentView === 'function') showAgentView();
+    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (err) { err.textContent = e.message; err.style.display = 'block'; }
+  }
+};
+
+// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
+const _origStopSave = window.stopAndSave;
+window.stopAndSave = async function() {
+  if (typeof stopListen === 'function') stopListen();
+  if (typeof syncListenButtons === 'function') syncListenButtons();
+
+  const name = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city = document.getElementById('lfv-city')?.value.trim() || '';
+  const state = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+
+  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
+
+  const entry = {
+    address: fullAddr || window.currentTranscript || 'Draft',
+    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
+    confidence: window.liveConfidence || 0,
+    time: new Date().toLocaleString('en-IN'),
+    agentId: window.currentAgent?.id || null,
+    companyId: window.currentCompany?.id || null,
+    isDuplicate: false,
+    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
+    rawTranscript: window.currentTranscript || ''
+  };
+
+  // Save to Supabase
+  try {
+    await sbSaveAddress(entry);
+    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
+  } catch(e) {
+    console.error('Supabase save error:', e);
+    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
+  }
+
+  // Also save locally
+  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
+  const all = getData('vn_addresses', []);
+  all.push(entry);
+  setData('vn_addresses', all);
+
+  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats==='function') updatePatcherStats();
+  if (typeof resetLiveFields==='function') resetLiveFields();
+  window.currentCallStart = null;
+  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
+  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
+};
+
+// ── OVERRIDE addCompany to save to Supabase ──────────────────
+const _origAddCompany = window.addCompany;
+window.addCompany = async function() {
+  const name = document.getElementById('c-name')?.value.trim();
+  const id = document.getElementById('c-id')?.value.trim();
+  const pass = document.getElementById('c-pass')?.value;
+  const email = document.getElementById('c-email')?.value.trim();
+  const plan = document.getElementById('c-plan')?.value || 'starter';
+  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
+  try {
+    await sbAddCompany({ id, name, pass, email, plan, active: true });
+    toast('✅ Company created: ' + name);
+    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const cos = getData('vn_companies',[]);
+    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_companies', cos);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE addAgent to save to Supabase ────────────────────
+const _origAddAgent = window.addAgent;
+window.addAgent = async function() {
+  const name = document.getElementById('a-name')?.value.trim();
+  const id = document.getElementById('a-id')?.value.trim();
+  const pass = document.getElementById('a-pass')?.value;
+  const companyId = document.getElementById('a-company')?.value;
+  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
+  try {
+    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
+    toast('✅ Agent created: ' + name);
+    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const ags = getData('vn_agents',[]);
+    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_agents', ags);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE deleteAgent ──────────────────────────────────────
+const _origDeleteAgent = window.deleteAgent;
+window.deleteAgent = async function(id) {
+  if (!confirm('Delete this agent?')) return;
+  try {
+    await sbDeleteAgent(id);
+    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
+    setData('vn_agents', ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Agent deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE deleteCompany ────────────────────────────────────
+const _origDeleteCompany = window.deleteCompany;
+window.deleteCompany = async function(id) {
+  if (!confirm('Delete this company and all its agents?')) return;
+  try {
+    await sbDeleteCompany(id);
+    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
+    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
+    setData('vn_companies',cos); setData('vn_agents',ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Company deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE resetPass ────────────────────────────────────────
+window.resetPass = async function(id) {
+  const p = prompt('New password for agent ' + id + ':');
+  if (!p) return;
+  try {
+    await sbResetPass(id, p);
+    const ags = getData('vn_agents',[]);
+    const a = ags.find(a=>a.id===id);
+    if (a) { a.pass=p; setData('vn_agents',ags); }
+    toast('✅ Password reset');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── Load companies+agents from Supabase into localStorage on admin login ──
+const _origShowAdmin = window.showAdminView;
+window.showAdminView = async function() {
+  try {
+    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
+    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+    const addrs = await sbGetAllAddresses().catch(()=>[]);
+    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+  } catch(e) { console.warn('Supabase admin load:', e.message); }
+  if (typeof _origShowAdmin === 'function') _origShowAdmin();
+};
+
+// Remove old cloud sync button/function
+window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
+
+console.log('✅ Supabase backend loaded');
+})();
+</script>
+</body>
      It overrides: showAgentView(), showAdminView(), refreshAdmin()
      and adds all new UI components
      ═══════════════════════════════════════════════════════════════ -->
@@ -6006,7 +6277,305 @@ console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
 </script>
 <!-- ═══════════════════════════════════════════════════════════
      VISHAL NAVIGATION — MASTER FIX
-     Paste this LAST, just before </body>
+     Paste this LAST, just before <script>
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE BACKEND — Real cloud database for Vishal Navigation
+// ═══════════════════════════════════════════════════════════════
+(function() {
+'use strict';
+
+const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
+const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
+
+const sbHeaders = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+// ── Core fetch helper ──────────────────────────────────────────
+async function sbFetch(path, options={})) {
+  const resp = await fetch(SB_URL + path, {
+    ...options,
+    headers: { ...sbHeaders, ...(options.headers||{}) }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(()=>({}));
+    throw new Error(err.message || resp.statusText);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────
+window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
+window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
+window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
+window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
+
+// ── AGENTS ────────────────────────────────────────────────────
+window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
+window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
+window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
+window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
+
+// ── LOGIN — fetch agent + company from Supabase ───────────────
+window.sbLogin = async function(agentId, pass) {
+  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
+  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
+  const agent = agents[0];
+  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
+  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
+  // Update last_active
+  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
+  return { agent, company: companies[0] };
+};
+
+// ── ADDRESSES ─────────────────────────────────────────────────
+window.sbSaveAddress = async function(entry) {
+  return sbFetch('/rest/v1/addresses', {
+    method: 'POST',
+    body: JSON.stringify({
+      agent_id: entry.agentId,
+      company_id: entry.companyId,
+      address: entry.address,
+      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
+      city: entry.district,
+      state: entry.state,
+      landmark: entry.landmark || null,
+      customer_name: entry.name || null,
+      customer_phone: entry.phone || null,
+      confidence: entry.confidence || 0,
+      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
+      duration: entry.duration || 0,
+      is_duplicate: entry.isDuplicate || false,
+      raw_transcript: entry.rawTranscript || null
+    })
+  });
+};
+
+window.sbGetAddresses = async (agentId) => {
+  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
+  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
+};
+
+window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
+
+// ── OVERRIDE doLogin to use Supabase ─────────────────────────
+const _origDoLogin = window.doLogin;
+window.doLogin = async function() {
+  const id = document.getElementById('loginId')?.value.trim();
+  const pass = document.getElementById('loginPass')?.value;
+  const mode = window.currentMode;
+
+  // Admin login stays local
+  if (mode === 'admin') {
+    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
+  }
+
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const err = document.getElementById('loginErr');
+  if (err) err.style.display = 'none';
+
+  try {
+    const { agent, company } = await sbLogin(id, pass);
+
+    // Map Supabase fields to app format
+    window.currentAgent = {
+      id: agent.id, name: agent.name, pass: agent.pass,
+      companyId: agent.company_id, active: agent.active,
+      lastActive: agent.last_active, created: agent.created_at
+    };
+    window.currentCompany = {
+      id: company.id, name: company.name, pass: company.pass,
+      email: company.email, plan: company.plan, active: company.active,
+      created: company.created_at, renewsOn: company.renews_on
+    };
+
+    // Load address history
+    const addrs = await sbGetAddresses(agent.id).catch(() => []);
+    window.addrHistory = (addrs || []).map(a => ({
+      address: a.address, pincode: a.pincode || 'N/A',
+      district: a.city, state: a.state, name: a.customer_name,
+      phone: a.customer_phone, confidence: a.confidence,
+      time: new Date(a.created_at).toLocaleString('en-IN'),
+      agentId: a.agent_id, companyId: a.company_id,
+      isDuplicate: a.is_duplicate, duration: a.duration,
+      status: a.status
+    }));
+
+    // Also cache in localStorage for offline fallback
+    setData('vn_agents', [window.currentAgent]);
+    setData('vn_companies', [window.currentCompany]);
+
+    document.getElementById('loginPage').style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (typeof showAgentView === 'function') showAgentView();
+    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (err) { err.textContent = e.message; err.style.display = 'block'; }
+  }
+};
+
+// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
+const _origStopSave = window.stopAndSave;
+window.stopAndSave = async function() {
+  if (typeof stopListen === 'function') stopListen();
+  if (typeof syncListenButtons === 'function') syncListenButtons();
+
+  const name = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city = document.getElementById('lfv-city')?.value.trim() || '';
+  const state = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+
+  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
+
+  const entry = {
+    address: fullAddr || window.currentTranscript || 'Draft',
+    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
+    confidence: window.liveConfidence || 0,
+    time: new Date().toLocaleString('en-IN'),
+    agentId: window.currentAgent?.id || null,
+    companyId: window.currentCompany?.id || null,
+    isDuplicate: false,
+    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
+    rawTranscript: window.currentTranscript || ''
+  };
+
+  // Save to Supabase
+  try {
+    await sbSaveAddress(entry);
+    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
+  } catch(e) {
+    console.error('Supabase save error:', e);
+    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
+  }
+
+  // Also save locally
+  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
+  const all = getData('vn_addresses', []);
+  all.push(entry);
+  setData('vn_addresses', all);
+
+  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats==='function') updatePatcherStats();
+  if (typeof resetLiveFields==='function') resetLiveFields();
+  window.currentCallStart = null;
+  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
+  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
+};
+
+// ── OVERRIDE addCompany to save to Supabase ──────────────────
+const _origAddCompany = window.addCompany;
+window.addCompany = async function() {
+  const name = document.getElementById('c-name')?.value.trim();
+  const id = document.getElementById('c-id')?.value.trim();
+  const pass = document.getElementById('c-pass')?.value;
+  const email = document.getElementById('c-email')?.value.trim();
+  const plan = document.getElementById('c-plan')?.value || 'starter';
+  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
+  try {
+    await sbAddCompany({ id, name, pass, email, plan, active: true });
+    toast('✅ Company created: ' + name);
+    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const cos = getData('vn_companies',[]);
+    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_companies', cos);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE addAgent to save to Supabase ────────────────────
+const _origAddAgent = window.addAgent;
+window.addAgent = async function() {
+  const name = document.getElementById('a-name')?.value.trim();
+  const id = document.getElementById('a-id')?.value.trim();
+  const pass = document.getElementById('a-pass')?.value;
+  const companyId = document.getElementById('a-company')?.value;
+  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
+  try {
+    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
+    toast('✅ Agent created: ' + name);
+    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const ags = getData('vn_agents',[]);
+    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_agents', ags);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE deleteAgent ──────────────────────────────────────
+const _origDeleteAgent = window.deleteAgent;
+window.deleteAgent = async function(id) {
+  if (!confirm('Delete this agent?')) return;
+  try {
+    await sbDeleteAgent(id);
+    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
+    setData('vn_agents', ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Agent deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE deleteCompany ────────────────────────────────────
+const _origDeleteCompany = window.deleteCompany;
+window.deleteCompany = async function(id) {
+  if (!confirm('Delete this company and all its agents?')) return;
+  try {
+    await sbDeleteCompany(id);
+    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
+    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
+    setData('vn_companies',cos); setData('vn_agents',ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Company deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE resetPass ────────────────────────────────────────
+window.resetPass = async function(id) {
+  const p = prompt('New password for agent ' + id + ':');
+  if (!p) return;
+  try {
+    await sbResetPass(id, p);
+    const ags = getData('vn_agents',[]);
+    const a = ags.find(a=>a.id===id);
+    if (a) { a.pass=p; setData('vn_agents',ags); }
+    toast('✅ Password reset');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── Load companies+agents from Supabase into localStorage on admin login ──
+const _origShowAdmin = window.showAdminView;
+window.showAdminView = async function() {
+  try {
+    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
+    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+    const addrs = await sbGetAllAddresses().catch(()=>[]);
+    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+  } catch(e) { console.warn('Supabase admin load:', e.message); }
+  if (typeof _origShowAdmin === 'function') _origShowAdmin();
+};
+
+// Remove old cloud sync button/function
+window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
+
+console.log('✅ Supabase backend loaded');
+})();
+</script>
+</body>
      Fixes: agent form filling, strategy UI, listen toggle,
             plan enforcement, admin addCompany, corp-strat sync
      ═══════════════════════════════════════════════════════════ -->
@@ -6325,7 +6894,305 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 <script>
 // ═══════════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — CRITICAL FIX PATCH
-// Paste this entire block just before </body>, AFTER all existing scripts
+// Paste this entire block just before <script>
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE BACKEND — Real cloud database for Vishal Navigation
+// ═══════════════════════════════════════════════════════════════
+(function() {
+'use strict';
+
+const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
+const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
+
+const sbHeaders = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+// ── Core fetch helper ──────────────────────────────────────────
+async function sbFetch(path, options={})) {
+  const resp = await fetch(SB_URL + path, {
+    ...options,
+    headers: { ...sbHeaders, ...(options.headers||{}) }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(()=>({}));
+    throw new Error(err.message || resp.statusText);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────
+window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
+window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
+window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
+window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
+
+// ── AGENTS ────────────────────────────────────────────────────
+window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
+window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
+window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
+window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
+
+// ── LOGIN — fetch agent + company from Supabase ───────────────
+window.sbLogin = async function(agentId, pass) {
+  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
+  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
+  const agent = agents[0];
+  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
+  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
+  // Update last_active
+  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
+  return { agent, company: companies[0] };
+};
+
+// ── ADDRESSES ─────────────────────────────────────────────────
+window.sbSaveAddress = async function(entry) {
+  return sbFetch('/rest/v1/addresses', {
+    method: 'POST',
+    body: JSON.stringify({
+      agent_id: entry.agentId,
+      company_id: entry.companyId,
+      address: entry.address,
+      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
+      city: entry.district,
+      state: entry.state,
+      landmark: entry.landmark || null,
+      customer_name: entry.name || null,
+      customer_phone: entry.phone || null,
+      confidence: entry.confidence || 0,
+      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
+      duration: entry.duration || 0,
+      is_duplicate: entry.isDuplicate || false,
+      raw_transcript: entry.rawTranscript || null
+    })
+  });
+};
+
+window.sbGetAddresses = async (agentId) => {
+  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
+  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
+};
+
+window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
+
+// ── OVERRIDE doLogin to use Supabase ─────────────────────────
+const _origDoLogin = window.doLogin;
+window.doLogin = async function() {
+  const id = document.getElementById('loginId')?.value.trim();
+  const pass = document.getElementById('loginPass')?.value;
+  const mode = window.currentMode;
+
+  // Admin login stays local
+  if (mode === 'admin') {
+    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
+  }
+
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const err = document.getElementById('loginErr');
+  if (err) err.style.display = 'none';
+
+  try {
+    const { agent, company } = await sbLogin(id, pass);
+
+    // Map Supabase fields to app format
+    window.currentAgent = {
+      id: agent.id, name: agent.name, pass: agent.pass,
+      companyId: agent.company_id, active: agent.active,
+      lastActive: agent.last_active, created: agent.created_at
+    };
+    window.currentCompany = {
+      id: company.id, name: company.name, pass: company.pass,
+      email: company.email, plan: company.plan, active: company.active,
+      created: company.created_at, renewsOn: company.renews_on
+    };
+
+    // Load address history
+    const addrs = await sbGetAddresses(agent.id).catch(() => []);
+    window.addrHistory = (addrs || []).map(a => ({
+      address: a.address, pincode: a.pincode || 'N/A',
+      district: a.city, state: a.state, name: a.customer_name,
+      phone: a.customer_phone, confidence: a.confidence,
+      time: new Date(a.created_at).toLocaleString('en-IN'),
+      agentId: a.agent_id, companyId: a.company_id,
+      isDuplicate: a.is_duplicate, duration: a.duration,
+      status: a.status
+    }));
+
+    // Also cache in localStorage for offline fallback
+    setData('vn_agents', [window.currentAgent]);
+    setData('vn_companies', [window.currentCompany]);
+
+    document.getElementById('loginPage').style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (typeof showAgentView === 'function') showAgentView();
+    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (err) { err.textContent = e.message; err.style.display = 'block'; }
+  }
+};
+
+// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
+const _origStopSave = window.stopAndSave;
+window.stopAndSave = async function() {
+  if (typeof stopListen === 'function') stopListen();
+  if (typeof syncListenButtons === 'function') syncListenButtons();
+
+  const name = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city = document.getElementById('lfv-city')?.value.trim() || '';
+  const state = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+
+  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
+
+  const entry = {
+    address: fullAddr || window.currentTranscript || 'Draft',
+    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
+    confidence: window.liveConfidence || 0,
+    time: new Date().toLocaleString('en-IN'),
+    agentId: window.currentAgent?.id || null,
+    companyId: window.currentCompany?.id || null,
+    isDuplicate: false,
+    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
+    rawTranscript: window.currentTranscript || ''
+  };
+
+  // Save to Supabase
+  try {
+    await sbSaveAddress(entry);
+    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
+  } catch(e) {
+    console.error('Supabase save error:', e);
+    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
+  }
+
+  // Also save locally
+  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
+  const all = getData('vn_addresses', []);
+  all.push(entry);
+  setData('vn_addresses', all);
+
+  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats==='function') updatePatcherStats();
+  if (typeof resetLiveFields==='function') resetLiveFields();
+  window.currentCallStart = null;
+  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
+  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
+};
+
+// ── OVERRIDE addCompany to save to Supabase ──────────────────
+const _origAddCompany = window.addCompany;
+window.addCompany = async function() {
+  const name = document.getElementById('c-name')?.value.trim();
+  const id = document.getElementById('c-id')?.value.trim();
+  const pass = document.getElementById('c-pass')?.value;
+  const email = document.getElementById('c-email')?.value.trim();
+  const plan = document.getElementById('c-plan')?.value || 'starter';
+  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
+  try {
+    await sbAddCompany({ id, name, pass, email, plan, active: true });
+    toast('✅ Company created: ' + name);
+    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const cos = getData('vn_companies',[]);
+    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_companies', cos);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE addAgent to save to Supabase ────────────────────
+const _origAddAgent = window.addAgent;
+window.addAgent = async function() {
+  const name = document.getElementById('a-name')?.value.trim();
+  const id = document.getElementById('a-id')?.value.trim();
+  const pass = document.getElementById('a-pass')?.value;
+  const companyId = document.getElementById('a-company')?.value;
+  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
+  try {
+    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
+    toast('✅ Agent created: ' + name);
+    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const ags = getData('vn_agents',[]);
+    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_agents', ags);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE deleteAgent ──────────────────────────────────────
+const _origDeleteAgent = window.deleteAgent;
+window.deleteAgent = async function(id) {
+  if (!confirm('Delete this agent?')) return;
+  try {
+    await sbDeleteAgent(id);
+    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
+    setData('vn_agents', ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Agent deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE deleteCompany ────────────────────────────────────
+const _origDeleteCompany = window.deleteCompany;
+window.deleteCompany = async function(id) {
+  if (!confirm('Delete this company and all its agents?')) return;
+  try {
+    await sbDeleteCompany(id);
+    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
+    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
+    setData('vn_companies',cos); setData('vn_agents',ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Company deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE resetPass ────────────────────────────────────────
+window.resetPass = async function(id) {
+  const p = prompt('New password for agent ' + id + ':');
+  if (!p) return;
+  try {
+    await sbResetPass(id, p);
+    const ags = getData('vn_agents',[]);
+    const a = ags.find(a=>a.id===id);
+    if (a) { a.pass=p; setData('vn_agents',ags); }
+    toast('✅ Password reset');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── Load companies+agents from Supabase into localStorage on admin login ──
+const _origShowAdmin = window.showAdminView;
+window.showAdminView = async function() {
+  try {
+    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
+    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+    const addrs = await sbGetAllAddresses().catch(()=>[]);
+    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+  } catch(e) { console.warn('Supabase admin load:', e.message); }
+  if (typeof _origShowAdmin === 'function') _origShowAdmin();
+};
+
+// Remove old cloud sync button/function
+window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
+
+console.log('✅ Supabase backend loaded');
+})();
+</script>
+</body>, AFTER all existing scripts
 //
 // Fixes:
 //   1. Listen button: toggle works reliably every click (start/stop/start/stop)
@@ -7895,6 +8762,304 @@ window.stopAndSave = function() {
 };
 
 console.log('✅ Intel Panel v2 loaded');
+})();
+</script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE BACKEND — Real cloud database for Vishal Navigation
+// ═══════════════════════════════════════════════════════════════
+(function() {
+'use strict';
+
+const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
+const SB_KEY = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9','ub3FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI','0Nn0.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI'].join('');
+
+const sbHeaders = {
+  'apikey': SB_KEY,
+  'Authorization': 'Bearer ' + SB_KEY,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation'
+};
+
+// ── Core fetch helper ──────────────────────────────────────────
+async function sbFetch(path, options={})) {
+  const resp = await fetch(SB_URL + path, {
+    ...options,
+    headers: { ...sbHeaders, ...(options.headers||{}) }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(()=>({}));
+    throw new Error(err.message || resp.statusText);
+  }
+  if (resp.status === 204) return null;
+  return resp.json();
+}
+
+// ── COMPANIES ─────────────────────────────────────────────────
+window.sbGetCompanies = async () => sbFetch('/rest/v1/companies?select=*&order=created_at.desc');
+window.sbAddCompany = async (c) => sbFetch('/rest/v1/companies', { method:'POST', body: JSON.stringify(c) });
+window.sbUpdateCompany = async (id, data) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteCompany = async (id) => { await sbFetch('/rest/v1/agents?company_id=eq.' + id, { method:'DELETE' }); return sbFetch('/rest/v1/companies?id=eq.' + id, { method:'DELETE' }); };
+window.sbToggleCompany = async (id, active) => sbFetch('/rest/v1/companies?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ active }) });
+
+// ── AGENTS ────────────────────────────────────────────────────
+window.sbGetAgents = async () => sbFetch('/rest/v1/agents?select=*&order=created_at.desc');
+window.sbAddAgent = async (a) => sbFetch('/rest/v1/agents', { method:'POST', body: JSON.stringify(a) });
+window.sbUpdateAgent = async (id, data) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify(data) });
+window.sbDeleteAgent = async (id) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'DELETE' });
+window.sbResetPass = async (id, pass) => sbFetch('/rest/v1/agents?id=eq.' + id, { method:'PATCH', body: JSON.stringify({ pass }) });
+
+// ── LOGIN — fetch agent + company from Supabase ───────────────
+window.sbLogin = async function(agentId, pass) {
+  const agents = await sbFetch('/rest/v1/agents?id=eq.' + encodeURIComponent(agentId) + '&pass=eq.' + encodeURIComponent(pass) + '&active=eq.true&select=*');
+  if (!agents || !agents.length) throw new Error('Invalid Agent ID or Password');
+  const agent = agents[0];
+  const companies = await sbFetch('/rest/v1/companies?id=eq.' + encodeURIComponent(agent.company_id) + '&active=eq.true&select=*');
+  if (!companies || !companies.length) throw new Error('Company account inactive. Contact admin.');
+  // Update last_active
+  sbFetch('/rest/v1/agents?id=eq.' + agent.id, { method:'PATCH', body: JSON.stringify({ last_active: new Date().toISOString() }) }).catch(()=>{});
+  return { agent, company: companies[0] };
+};
+
+// ── ADDRESSES ─────────────────────────────────────────────────
+window.sbSaveAddress = async function(entry) {
+  return sbFetch('/rest/v1/addresses', {
+    method: 'POST',
+    body: JSON.stringify({
+      agent_id: entry.agentId,
+      company_id: entry.companyId,
+      address: entry.address,
+      pincode: entry.pincode === 'N/A' ? null : entry.pincode,
+      city: entry.district,
+      state: entry.state,
+      landmark: entry.landmark || null,
+      customer_name: entry.name || null,
+      customer_phone: entry.phone || null,
+      confidence: entry.confidence || 0,
+      status: (entry.confidence || 0) >= 60 ? 'patched' : 'draft',
+      duration: entry.duration || 0,
+      is_duplicate: entry.isDuplicate || false,
+      raw_transcript: entry.rawTranscript || null
+    })
+  });
+};
+
+window.sbGetAddresses = async (agentId) => {
+  const filter = agentId ? '&agent_id=eq.' + encodeURIComponent(agentId) : '';
+  return sbFetch('/rest/v1/addresses?select=*' + filter + '&order=created_at.desc&limit=200');
+};
+
+window.sbGetAllAddresses = async () => sbFetch('/rest/v1/addresses?select=*&order=created_at.desc&limit=500');
+
+// ── OVERRIDE doLogin to use Supabase ─────────────────────────
+const _origDoLogin = window.doLogin;
+window.doLogin = async function() {
+  const id = document.getElementById('loginId')?.value.trim();
+  const pass = document.getElementById('loginPass')?.value;
+  const mode = window.currentMode;
+
+  // Admin login stays local
+  if (mode === 'admin') {
+    if (typeof _origDoLogin === 'function') { _origDoLogin(); return; }
+  }
+
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const err = document.getElementById('loginErr');
+  if (err) err.style.display = 'none';
+
+  try {
+    const { agent, company } = await sbLogin(id, pass);
+
+    // Map Supabase fields to app format
+    window.currentAgent = {
+      id: agent.id, name: agent.name, pass: agent.pass,
+      companyId: agent.company_id, active: agent.active,
+      lastActive: agent.last_active, created: agent.created_at
+    };
+    window.currentCompany = {
+      id: company.id, name: company.name, pass: company.pass,
+      email: company.email, plan: company.plan, active: company.active,
+      created: company.created_at, renewsOn: company.renews_on
+    };
+
+    // Load address history
+    const addrs = await sbGetAddresses(agent.id).catch(() => []);
+    window.addrHistory = (addrs || []).map(a => ({
+      address: a.address, pincode: a.pincode || 'N/A',
+      district: a.city, state: a.state, name: a.customer_name,
+      phone: a.customer_phone, confidence: a.confidence,
+      time: new Date(a.created_at).toLocaleString('en-IN'),
+      agentId: a.agent_id, companyId: a.company_id,
+      isDuplicate: a.is_duplicate, duration: a.duration,
+      status: a.status
+    }));
+
+    // Also cache in localStorage for offline fallback
+    setData('vn_agents', [window.currentAgent]);
+    setData('vn_companies', [window.currentCompany]);
+
+    document.getElementById('loginPage').style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (typeof showAgentView === 'function') showAgentView();
+    if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
+
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
+    if (err) { err.textContent = e.message; err.style.display = 'block'; }
+  }
+};
+
+// ── OVERRIDE stopAndSave to save to Supabase ─────────────────
+const _origStopSave = window.stopAndSave;
+window.stopAndSave = async function() {
+  if (typeof stopListen === 'function') stopListen();
+  if (typeof syncListenButtons === 'function') syncListenButtons();
+
+  const name = document.getElementById('lfv-name')?.value.trim() || '';
+  const phone = document.getElementById('lfv-phone')?.value.trim() || '';
+  const addrline = document.getElementById('lfv-addrline')?.value.trim() || '';
+  const landmark = document.getElementById('lfv-landmark')?.value.trim() || '';
+  const city = document.getElementById('lfv-city')?.value.trim() || '';
+  const state = document.getElementById('lfv-state')?.value.trim() || '';
+  const pin = document.getElementById('lfv-pincode')?.value.trim() || '';
+  const fullAddr = [addrline, landmark, city, state].filter(Boolean).join(', ');
+
+  if (!fullAddr && !pin) { if (typeof toast==='function') toast('⚠️ No address captured yet','err'); return; }
+
+  const entry = {
+    address: fullAddr || window.currentTranscript || 'Draft',
+    pincode: pin || 'N/A', district: city, state, name, phone, landmark,
+    confidence: window.liveConfidence || 0,
+    time: new Date().toLocaleString('en-IN'),
+    agentId: window.currentAgent?.id || null,
+    companyId: window.currentCompany?.id || null,
+    isDuplicate: false,
+    duration: window.currentCallStart ? Math.round((Date.now() - window.currentCallStart) / 1000) : 0,
+    rawTranscript: window.currentTranscript || ''
+  };
+
+  // Save to Supabase
+  try {
+    await sbSaveAddress(entry);
+    if (typeof toast==='function') toast((entry.confidence >= 60) ? '✅ Patched & Saved to Cloud!' : '📝 Saved as Draft to Cloud');
+  } catch(e) {
+    console.error('Supabase save error:', e);
+    if (typeof toast==='function') toast('⚠️ Saved locally only (cloud error)', 'err');
+  }
+
+  // Also save locally
+  if (typeof addrHistory !== 'undefined') addrHistory.push(entry);
+  const all = getData('vn_addresses', []);
+  all.push(entry);
+  setData('vn_addresses', all);
+
+  if (typeof renderPatchedRecordsTable==='function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats==='function') updatePatcherStats();
+  if (typeof resetLiveFields==='function') resetLiveFields();
+  window.currentCallStart = null;
+  document.getElementById('btnVerifyPin')?.setAttribute('disabled','true');
+  document.getElementById('btnPatchSave')?.setAttribute('disabled','true');
+};
+
+// ── OVERRIDE addCompany to save to Supabase ──────────────────
+const _origAddCompany = window.addCompany;
+window.addCompany = async function() {
+  const name = document.getElementById('c-name')?.value.trim();
+  const id = document.getElementById('c-id')?.value.trim();
+  const pass = document.getElementById('c-pass')?.value;
+  const email = document.getElementById('c-email')?.value.trim();
+  const plan = document.getElementById('c-plan')?.value || 'starter';
+  if (!name||!id||!pass) { toast('Fill all required fields','err'); return; }
+  try {
+    await sbAddCompany({ id, name, pass, email, plan, active: true });
+    toast('✅ Company created: ' + name);
+    ['c-name','c-id','c-pass','c-email'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const cos = getData('vn_companies',[]);
+    cos.push({id,name,pass,email,plan,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_companies', cos);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE addAgent to save to Supabase ────────────────────
+const _origAddAgent = window.addAgent;
+window.addAgent = async function() {
+  const name = document.getElementById('a-name')?.value.trim();
+  const id = document.getElementById('a-id')?.value.trim();
+  const pass = document.getElementById('a-pass')?.value;
+  const companyId = document.getElementById('a-company')?.value;
+  if (!name||!id||!pass||!companyId) { toast('Fill all fields','err'); return; }
+  try {
+    await sbAddAgent({ id, name, pass, company_id: companyId, active: true });
+    toast('✅ Agent created: ' + name);
+    ['a-name','a-id','a-pass'].forEach(x => { const el=document.getElementById(x); if(el) el.value=''; });
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    // Also update localStorage
+    const ags = getData('vn_agents',[]);
+    ags.push({id,name,pass,companyId,active:true,created:new Date().toLocaleDateString('en-IN')});
+    setData('vn_agents', ags);
+  } catch(e) { toast('❌ ' + e.message, 'err'); }
+};
+
+// ── OVERRIDE deleteAgent ──────────────────────────────────────
+const _origDeleteAgent = window.deleteAgent;
+window.deleteAgent = async function(id) {
+  if (!confirm('Delete this agent?')) return;
+  try {
+    await sbDeleteAgent(id);
+    const ags = getData('vn_agents',[]).filter(a=>a.id!==id);
+    setData('vn_agents', ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Agent deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE deleteCompany ────────────────────────────────────
+const _origDeleteCompany = window.deleteCompany;
+window.deleteCompany = async function(id) {
+  if (!confirm('Delete this company and all its agents?')) return;
+  try {
+    await sbDeleteCompany(id);
+    let cos = getData('vn_companies',[]).filter(c=>c.id!==id);
+    let ags = getData('vn_agents',[]).filter(a=>a.companyId!==id);
+    setData('vn_companies',cos); setData('vn_agents',ags);
+    if (typeof refreshAdmin==='function') refreshAdmin();
+    toast('🗑️ Company deleted');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── OVERRIDE resetPass ────────────────────────────────────────
+window.resetPass = async function(id) {
+  const p = prompt('New password for agent ' + id + ':');
+  if (!p) return;
+  try {
+    await sbResetPass(id, p);
+    const ags = getData('vn_agents',[]);
+    const a = ags.find(a=>a.id===id);
+    if (a) { a.pass=p; setData('vn_agents',ags); }
+    toast('✅ Password reset');
+  } catch(e) { toast('❌ ' + e.message,'err'); }
+};
+
+// ── Load companies+agents from Supabase into localStorage on admin login ──
+const _origShowAdmin = window.showAdminView;
+window.showAdminView = async function() {
+  try {
+    const [cos, ags] = await Promise.all([sbGetCompanies(), sbGetAgents()]);
+    if (cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+    if (ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+    const addrs = await sbGetAllAddresses().catch(()=>[]);
+    if (addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+  } catch(e) { console.warn('Supabase admin load:', e.message); }
+  if (typeof _origShowAdmin === 'function') _origShowAdmin();
+};
+
+// Remove old cloud sync button/function
+window.vnSyncToCloud = async function() { toast('☁️ Now using Supabase — no manual sync needed!'); };
+
+console.log('✅ Supabase backend loaded');
 })();
 </script>
 </body>
