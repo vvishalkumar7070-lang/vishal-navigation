@@ -2661,11 +2661,27 @@ function rejectAddr(){
   setStatus('👂 Listening for address keywords...','listening','');
 }
 
+function showInlineMap(lat, lon, label) {
+  // Show inline OpenStreetMap preview
+  var existing = document.getElementById('inlineMapFrame');
+  if(existing) existing.remove();
+  var container = document.getElementById('result-card') || document.getElementById('pubResult');
+  if(!container || !lat || !lon) return;
+  var frame = document.createElement('div');
+  frame.id = 'inlineMapFrame';
+  frame.style.cssText = 'margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid var(--border2)';
+  frame.innerHTML = '<iframe width="100%" height="200" frameborder="0" scrolling="no" '
+    + 'src="https://www.openstreetmap.org/export/embed.html?bbox='+(lon-0.01)+','+(lat-0.01)+','+(lon+0.01)+','+(lat+0.01)+'&layer=mapnik&marker='+lat+','+lon+'" '
+    + 'style="border:none;border-radius:12px"></iframe>'
+    + '<div style="text-align:right;padding:4px 8px;font-size:10px;color:var(--text3)">'
+    + '<a href="https://www.google.com/maps?q='+lat+','+lon+'" target="_blank" style="color:var(--blue)">Open in Google Maps ↗</a></div>';
+  container.appendChild(frame);
+}
+
 function openMaps(){
   if(!currentResult) return;
   let url;
   if(currentResult.coords){
-    // Open exact coordinates on map
     url=`https://www.google.com/maps/@${currentResult.coords.lat},${currentResult.coords.lon},17z`;
   } else {
     url=`https://www.google.com/maps/search/${encodeURIComponent(currentResult.rawAddress+', '+( currentResult.district||'')+', '+(currentResult.state||'')+', India')}`;
@@ -4595,11 +4611,14 @@ function injectUploadTab() {
 var _prevShowAgentRecording = window.showAgentView;
 window.showAgentView = async function() {
   if (typeof _prevShowAgentRecording === 'function') await _prevShowAgentRecording();
-  setTimeout(function() {
-    injectUploadTab();
-    fixTabAttributes();
-    window.switchIP('capture');
-  }, 400);
+  // Use requestAnimationFrame instead of setTimeout for reliable DOM injection
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      injectUploadTab();
+      fixTabAttributes();
+      window.switchIP('capture');
+    });
+  });
 };
 
 if (document.getElementById('intelPanel')) {
@@ -5519,7 +5538,7 @@ function renderAgentView() {
           </div>
         </div>
 
-      </div>
+\n\n        <!-- UPLOAD PANE -->\n        <div id=\"ip-pane-upload\" style=\"display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px\">\n          <div style=\"font-size:12px;font-weight:700;color:#1a1d24\">Upload Call Recording</div>\n          <div style=\"font-size:11px;color:#5e6470;line-height:1.6\">Upload any audio file. AI will transcribe and extract the delivery address.</div>\n          <label style=\"display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc\">\n            <span style=\"font-size:28px\">🎵</span>\n            <span style=\"font-size:12px;font-weight:600;color:#3b5bdb\">Click to upload audio</span>\n            <span style=\"font-size:10px;color:#94999f\">MP3 WAV M4A OGG WebM</span>\n            <input id=\"rec-file-input\" type=\"file\" accept=\"audio/*\" style=\"display:none\" onchange=\"ipHandleRecordingUpload(this)\"/>\n          </label>\n          <div id=\"rec-status\" style=\"font-size:11px;min-height:18px;text-align:center\"></div>\n          <div id=\"rec-transcript-box\" style=\"display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px\">\n            <div style=\"font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px\">Transcript</div>\n            <div id=\"rec-transcript-text\" style=\"font-size:11px;color:#1a1d24;line-height:1.7;max-height:100px;overflow-y:auto\"></div>\n          </div>\n          <div id=\"rec-result\" style=\"display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px\"></div>\n          <button onclick=\"ipExportAll()\" style=\"width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;color:#5e6470;margin-top:auto\">📥 Export All Captures CSV</button>\n        </div>      </div>
     </div>
   `;
 
@@ -7834,15 +7853,47 @@ function markVerified(fieldId) {
 // Sync with main result — hook into extractAndVerify output
 var _origExtract = window.extractAndVerify;
 window.extractAndVerify = async function(transcript) {
-  // Update live transcript in intel panel
-  var box = document.getElementById('ip-transcript');
-  if(box && transcript) {
-    box.innerHTML = '<span style="color:var(--text2)">' + transcript + '</span>';
-  }
   if(typeof _origExtract === 'function') await _origExtract(transcript);
-  // After extraction, sync fields
-  setTimeout(syncIntelFields, 600);
-  setTimeout(syncIntelFields, 1500);
+  // Mirror transcript to corp intel panel
+  var box = document.getElementById('ip-transcript-box');
+  if(box && transcript) {
+    box.innerHTML = transcript;
+    box.style.color = '#1a1d24';
+    box.style.fontStyle = 'normal';
+  }
+  // Sync confidence
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct  = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct  = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct)   dstPct.textContent  = srcPct.textContent;
+  // Sync address fields after delay
+  setTimeout(function() {
+    var r = window.currentResult;
+    if(!r) return;
+    var map = {
+      'ip-inp-name':r.name||'', 'ip-inp-phone':r.phone||'',
+      'ip-inp-addr':r.rawAddress||r.full_address||'',
+      'ip-inp-landmark':r.landmark||'', 'ip-inp-pin':r.pincode||'',
+      'ip-inp-city':r.district||r.city||'', 'ip-inp-state':r.state||''
+    };
+    var anyFilled = false;
+    Object.keys(map).forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el && map[id]) { el.value = map[id]; anyFilled = true; }
+    });
+    if(anyFilled) {
+      var conf = r.confidence || 0;
+      var f = document.getElementById('ip-conf-fill');
+      var p = document.getElementById('ip-conf-pct');
+      if(f) f.style.width = conf+'%';
+      if(p) p.textContent = conf+'%';
+      ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+        var btn = document.getElementById(id); if(btn) btn.disabled = false;
+      });
+    }
+  }, 800);
 };
 
 // Sync address fields from main result
