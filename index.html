@@ -847,6 +847,133 @@ document.addEventListener('DOMContentLoaded', function(){
 
     </div>
 
+    <!-- INTEL PANEL — right side -->
+    <div id="intelPanel" style="width:340px;min-width:320px;height:100%;overflow:hidden;background:#f6f7f9;border-left:1px solid #e3e6eb;display:flex;flex-direction:column;flex-shrink:0">
+
+      <!-- Tab bar -->
+      <div style="display:flex;border-bottom:1px solid #e3e6eb;flex-shrink:0;background:#fff">
+        <div class="ip-tab" data-tab="capture" onclick="switchIP('capture')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#3b5bdb;border-bottom:2px solid #3b5bdb;transition:all .2s">Capture</div>
+        <div class="ip-tab" data-tab="feed"    onclick="switchIP('feed')"    style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Feed</div>
+        <div class="ip-tab" data-tab="notes"   onclick="switchIP('notes')"   style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Notes</div>
+        <div class="ip-tab" data-tab="stats"   onclick="switchIP('stats')"   style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Stats</div>
+        <div class="ip-tab" data-tab="upload"  onclick="switchIP('upload')"  style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s">Upload</div>
+      </div>
+
+      <!-- CAPTURE PANE -->
+      <div id="ip-pane-capture" style="display:flex;flex-direction:column;flex:1;overflow-y:auto;padding:12px;gap:10px;min-height:0">
+
+        <!-- Live transcript -->
+        <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:11px 13px;min-height:54px;position:relative">
+          <span style="position:absolute;top:6px;right:9px;font-size:8px;color:#0d9354;letter-spacing:2px;font-weight:700;text-transform:uppercase">LIVE</span>
+          <div id="ip-transcript-box" style="color:#94999f;font-style:italic;font-size:12px;line-height:1.6">Transcript appears here as customer speaks…</div>
+        </div>
+
+        <!-- Language detected -->
+        <div id="ip-lang-badge" style="display:none;font-size:9px;background:#e8f0fe;color:#3b5bdb;padding:2px 8px;border-radius:8px;font-weight:700;align-self:flex-start"></div>
+
+        <!-- Confidence bar -->
+        <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px 13px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:.5px">Confidence</span>
+            <span id="ip-conf-pct" style="font-size:12px;font-weight:700;color:#94999f">0%</span>
+          </div>
+          <div style="height:6px;background:#f0f2f5;border-radius:4px;overflow:hidden">
+            <div id="ip-conf-fill" style="height:100%;width:0%;background:#0d9354;border-radius:4px;transition:width .4s"></div>
+          </div>
+        </div>
+
+        <!-- Address fields -->
+        <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Extracted Address</div>
+          <input id="ip-inp-name"     placeholder="Customer Name"  style="width:100%;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+          <input id="ip-inp-phone"    placeholder="Phone"          style="width:100%;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+          <input id="ip-inp-addr"     placeholder="Full Address"   style="width:100%;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+          <input id="ip-inp-landmark" placeholder="Landmark"       style="width:100%;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+          <div style="display:flex;gap:8px">
+            <input id="ip-inp-city"   placeholder="City"    style="flex:1;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+            <input id="ip-inp-state"  placeholder="State"   style="flex:1;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+            <input id="ip-inp-pin"    placeholder="Pincode" style="width:90px;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"/>
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:8px">
+          <button id="ip-btn-save" onclick="ipSaveCapture()" style="flex:1;background:#0d9354;color:#fff;border:none;border-radius:9px;padding:10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Save</button>
+          <button id="ip-btn-wa"   onclick="ipWhatsApp()"    style="flex:1;background:#25D366;color:#fff;border:none;border-radius:9px;padding:10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">💬 WA</button>
+          <button id="ip-btn-copy" onclick="ipCopy()"        style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📋 Copy</button>
+        </div>
+
+        <!-- Smart keyboard chips -->
+        <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
+          <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Quick Insert</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Sector</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Colony</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Nagar</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Gali</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Near</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Plot No.</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Flat No.</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Block</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Phase</span>
+            <span onclick="ipChip(this,'ip-inp-addr')" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:20px;cursor:pointer;color:#5e6470;background:#fff">Road</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FEED PANE -->
+      <div id="ip-pane-feed" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+        <div style="padding:12px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:#1a1d24">Capture Feed</span>
+          <span id="ip-feed-count" style="font-size:10px;background:#e8f7ee;color:#0d9354;padding:2px 8px;border-radius:10px;font-weight:700">0 saved</span>
+        </div>
+        <div id="ip-feed-list" style="flex:1;overflow-y:auto;padding:0 12px 12px;display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;padding:24px 12px;color:#94999f;font-size:12px;line-height:1.7"><div style="font-size:24px;margin-bottom:8px">📋</div>Saved addresses appear here.<br>Tap mic and speak to start.</div>
+        </div>
+      </div>
+
+      <!-- NOTES PANE -->
+      <div id="ip-pane-notes" style="display:none;flex-direction:column;flex:1;overflow:hidden;padding:12px;gap:10px">
+        <div style="font-size:11px;font-weight:700;color:#1a1d24">Call Notes</div>
+        <textarea id="ip-notes-box" placeholder="Type notes about this call..." style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px 13px;font-size:12px;color:#1a1d24;outline:none;resize:none;font-family:inherit;line-height:1.6;min-height:0" onfocus="this.style.borderColor='#3b5bdb'" onblur="this.style.borderColor='#e3e6eb'"></textarea>
+        <button onclick="ipClearNotes()" style="background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">🗑️ Clear Notes</button>
+      </div>
+
+      <!-- STATS PANE -->
+      <div id="ip-pane-stats" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:12px;gap:10px">
+        <div style="font-size:11px;font-weight:700;color:#1a1d24">Session Stats</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#0d9354" id="ip-s-saved">0</div><div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:700;text-transform:uppercase">Saved</div></div>
+          <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#b5740a" id="ip-s-calls">0</div><div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:700;text-transform:uppercase">Calls</div></div>
+          <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:22px;font-weight:700;color:#3b5bdb" id="ip-s-recs">0</div><div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:700;text-transform:uppercase">Recordings</div></div>
+          <div style="background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:14px;text-align:center"><div style="font-size:14px;font-weight:700;color:#1a1d24" id="ip-s-lang">—</div><div style="font-size:9px;color:#94999f;margin-top:3px;font-weight:700;text-transform:uppercase">Language</div></div>
+        </div>
+        <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:10px;padding:10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export CSV (Live + Recordings)</button>
+      </div>
+
+      <!-- UPLOAD PANE -->
+      <div id="ip-pane-upload" style="display:none;flex-direction:column;flex:1;overflow-y:auto;padding:12px;gap:10px">
+        <div style="font-size:11px;font-weight:700;color:#1a1d24">🎵 Upload Call Recording</div>
+        <div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file — Claude transcribes it and extracts the delivery address automatically. Supports Hindi, Hinglish &amp; all Indian languages.</div>
+        <label style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc;transition:all .2s" onmouseover="this.style.borderColor='#3b5bdb'" onmouseout="this.style.borderColor='#d1d6dd'">
+          <span style="font-size:28px">🎵</span>
+          <span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>
+          <span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM · max 25MB</span>
+          <input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>
+        </label>
+        <div id="rec-status" style="font-size:11px;min-height:18px;text-align:center"></div>
+        <div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">
+          <div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>
+          <div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:120px;overflow-y:auto"></div>
+        </div>
+        <div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>
+        <div style="border-top:1px solid #e3e6eb;padding-top:12px;margin-top:auto">
+          <button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📥 Export all captures (CSV)</button>
+        </div>
+      </div>
+
+    </div>
 
   </div>
 
@@ -5074,6 +5201,90 @@ console.log('✅ Supabase backend loaded');
 
 
 
+
+
+<script>
+/* Intel Panel helpers */
+window.ipChip = function(el, targetId) {
+  var word = el.textContent.trim();
+  var inp = document.getElementById(targetId) || document.getElementById('ip-inp-addr');
+  if (inp) { inp.value = inp.value ? inp.value + ' ' + word : word; inp.focus(); }
+  el.style.background = '#eef1fd'; el.style.color = '#3b5bdb'; el.style.borderColor = '#3b5bdb';
+  setTimeout(function() { el.style.background = '#fff'; el.style.color = '#5e6470'; el.style.borderColor = '#e3e6eb'; }, 600);
+};
+
+window.ipSaveCapture = function() {
+  var addr = document.getElementById('ip-inp-addr') && document.getElementById('ip-inp-addr').value;
+  var pin  = document.getElementById('ip-inp-pin')  && document.getElementById('ip-inp-pin').value;
+  var city = document.getElementById('ip-inp-city') && document.getElementById('ip-inp-city').value;
+  var name = document.getElementById('ip-inp-name') && document.getElementById('ip-inp-name').value;
+  if (!addr) { typeof toast === 'function' && toast('Fill address first', 'err'); return; }
+  if (!window._ipCaptures) window._ipCaptures = [];
+  var now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  window._ipCaptures.push({ name: name||'', addr: addr||'', pin: pin||'', city: city||'', time: now, source: '🎙️ Live' });
+  ipRenderFeed();
+  var cnt = document.getElementById('ip-s-saved');
+  if (cnt) cnt.textContent = window._ipCaptures.length;
+  if (typeof confirmAddr === 'function') confirmAddr();
+  typeof toast === 'function' && toast('✅ Saved to feed!');
+};
+
+window.ipWhatsApp = function() {
+  var addr  = document.getElementById('ip-inp-addr')  && document.getElementById('ip-inp-addr').value;
+  var pin   = document.getElementById('ip-inp-pin')   && document.getElementById('ip-inp-pin').value;
+  var city  = document.getElementById('ip-inp-city')  && document.getElementById('ip-inp-city').value;
+  var name  = document.getElementById('ip-inp-name')  && document.getElementById('ip-inp-name').value;
+  var phone = document.getElementById('ip-inp-phone') && document.getElementById('ip-inp-phone').value;
+  var txt = 'Delivery Address:
+Name: '+(name||'—')+'
+Phone: '+(phone||'—')+'
+Address: '+(addr||'—')+(pin?'
+Pincode: '+pin:'')+(city?'
+City: '+city:'');
+  window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+};
+
+window.ipCopy = function() {
+  var addr  = document.getElementById('ip-inp-addr')  && document.getElementById('ip-inp-addr').value;
+  var pin   = document.getElementById('ip-inp-pin')   && document.getElementById('ip-inp-pin').value;
+  var city  = document.getElementById('ip-inp-city')  && document.getElementById('ip-inp-city').value;
+  var txt = addr + (pin ? ', ' + pin : '') + (city ? ', ' + city : '');
+  navigator.clipboard.writeText(txt).then(function() { typeof toast === 'function' && toast('📋 Copied!'); });
+};
+
+window.ipClearNotes = function() {
+  var el = document.getElementById('ip-notes-box');
+  if (el) el.value = '';
+};
+
+window.ipRenderFeed = function() {
+  var list = document.getElementById('ip-feed-list');
+  var cnt  = document.getElementById('ip-feed-count');
+  if (!list) return;
+  var caps = window._ipCaptures || [];
+  if (cnt) cnt.textContent = caps.length + ' saved';
+  if (!caps.length) {
+    list.innerHTML = '<div style="text-align:center;padding:24px 12px;color:#94999f;font-size:12px;line-height:1.7"><div style="font-size:24px;margin-bottom:8px">📋</div>Saved addresses appear here.</div>';
+    return;
+  }
+  list.innerHTML = caps.slice().reverse().map(function(c) {
+    return '<div style="background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:10px 12px">'
+      + '<div style="font-size:12px;font-weight:600;color:#1a1d24;margin-bottom:4px">' + (c.addr || '—') + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+      + (c.pin  ? '<span style="font-size:10px;background:#e8f7ee;color:#0d9354;padding:1px 7px;border-radius:8px;font-weight:700">📮 '+c.pin+'</span>' : '')
+      + (c.city ? '<span style="font-size:10px;color:#5e6470">🏙️ '+c.city+'</span>' : '')
+      + (c.source ? '<span style="font-size:10px;color:#94999f">'+c.source+'</span>' : '')
+      + '<span style="font-size:10px;color:#94999f;margin-left:auto">' + c.time + '</span>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;margin-top:7px">'
+      + '<button onclick="navigator.clipboard.writeText('' + (c.addr||'').replace(/'/g,"\'") + (c.pin?', '+c.pin:'') + (c.city?', '+c.city:'') + '')" style="font-size:10px;padding:3px 9px;border:1px solid #e3e6eb;border-radius:7px;background:#f6f7f9;cursor:pointer;font-family:inherit">📋 Copy</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+};
+
+console.log('✅ Intel Panel helpers loaded');
+</script>
 
 </body>
 </html>
