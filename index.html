@@ -4639,7 +4639,7 @@ if (document.getElementById('intelPanel')) {
 console.log('✅ Tab fix + Recording upload + CSV export loaded');
 })();
 </script>
-</body>
+
 
 <style id="vn-upgrade-styles">
 /* ── AGENT UPGRADE ─────────────────────────────────────── */
@@ -5411,11 +5411,11 @@ function renderAgentView() {
 
         <!-- Intel Panel Tabs -->
         <div style="display:flex;border-bottom:1px solid #e3e6eb;flex-shrink:0;background:#fff">
-          <div class="ip-tab active" onclick="switchIP('capture',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
-          <div class="ip-tab" onclick="switchIP('feed',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
-          <div class="ip-tab" onclick="switchIP('notes',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
-          <div class="ip-tab" onclick="switchIP('stats',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
-          <div class="ip-tab" onclick="switchIP('upload',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">🎙️ Upload</div>
+          <div class="ip-tab active" onclick="switchIP('capture')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
+          <div class="ip-tab" onclick="switchIP('feed')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
+          <div class="ip-tab" onclick="switchIP('notes')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
+          <div class="ip-tab" onclick="switchIP('stats')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
+          <div class="ip-tab" onclick="switchIP('upload')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">🎙️ Upload</div>
         </div>
 
         <!-- CAPTURE PANE -->
@@ -6522,7 +6522,7 @@ console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
 <!-- ═══════════════════════════════════════════════════════════
      VISHAL NAVIGATION — MASTER FIX
      Paste this LAST, just before 
-</body>
+
      Fixes: agent form filling, strategy UI, listen toggle,
             plan enforcement, admin addCompany, corp-strat sync
      ═══════════════════════════════════════════════════════════ -->
@@ -6842,7 +6842,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 // ═══════════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — CRITICAL FIX PATCH
 // Paste this entire block just before 
-</body>, AFTER all existing scripts
+, AFTER all existing scripts
 //
 // Fixes:
 //   1. Listen button: toggle works reliably every click (start/stop/start/stop)
@@ -7580,6 +7580,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 
 })();
 
+</script>
 <script id="vn-final-fix">
 /* VISHAL NAVIGATION — FINAL FIX PATCH
    1. GROQ key corrected
