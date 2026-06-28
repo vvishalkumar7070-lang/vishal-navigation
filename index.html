@@ -509,6 +509,7 @@ body.light-mode .lcard{background:#fff}
 </head>
 <body>
 <script>
+/* ═══ SECTION 1: CONSTANTS ═══ */
 window.GROQ_KEY = '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';
 // Show landing immediately before heavy PIN_DB loads
 window.onload = function(){
@@ -4082,9 +4083,6 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
   console.log('✅ Patch Fix 2: Agent auto-stop + auto-confirm wired');
 })();
 </script>
-<!-- ═══════════════════════════════════════════════════════════════
-     VISHAL NAVIGATION — AGENT + ADMIN UPGRADE PATCH
-     Paste this entire <script> block just before 
 <script>
 // ═══════════════════════════════════════════════════════════════
 // SUPABASE BACKEND — Real cloud database for Vishal Navigation
@@ -8418,6 +8416,7 @@ function ipUpdateStats() {
 window.ipUpdateStats = ipUpdateStats;
 
 window.ipExport = function() {
+  if(typeof ipExportAll==='function'){ipExportAll();return;}
   if(!_ipCaptures.length) { alert('No captures yet!'); return; }
   var csv = 'Name,Address,Pincode,City,Time\n' + _ipCaptures.map(function(c) {
     return '"'+(c.name||'')+'","'+(c.addr||'')+'","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
