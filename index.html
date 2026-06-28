@@ -4206,6 +4206,19 @@ window._sbDoLogin = window.doLogin = async function() {
     document.getElementById('loginPage').style.display = 'none';
     if (typeof showAgentView === 'function') showAgentView();
     if (typeof toast === 'function') toast('Welcome ' + agent.name + '! 👋');
+    // Silent Groq health check
+    setTimeout(function() {
+      fetch('https://api.groq.com/openai/v1/models', {
+        headers: { 'Authorization': 'Bearer ' + window.GROQ_KEY }
+      }).then(function(r) {
+        if(!r.ok) {
+          console.warn('Groq API issue:', r.status);
+          if(typeof toast === 'function') toast('⚠️ Groq API key invalid — mic & upload may not work', 'err');
+        } else {
+          console.log('✅ Groq API healthy');
+        }
+      }).catch(function(e) { console.warn('Groq check failed:', e.message); });
+    }, 2000);
 
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = 'Login'; }
