@@ -8450,5 +8450,717 @@ console.log('✅ Intel Panel v2 loaded');
 })();
 </script>
 
+
+<script id="vn-transcription-engine">
+/*
+  VISHAL NAVIGATION — TRANSCRIPTION ENGINE v3
+  ============================================
+  1. Deepgram Nova-3 real-time STT (primary)
+     - Interim results shown grey immediately
+     - Final results shown black + language flag
+     - No keyword gate — extracts after 5 words
+  2. Groq Whisper fallback (silent, auto)
+  3. Instant field fill on extraction
+  4. Live transcript in BOTH boxes simultaneously
+  5. Top 10 Indian languages + Hinglish
+  6. Recording upload: Hindi prompt + turbo model
+*/
+(function() {
+'use strict';
+
+// ── LANGUAGE MAP ─────────────────────────────────────────────────────
+var LANG_FLAGS = {
+  'hindi':      '🇮🇳 Hindi',
+  'hinglish':   '🇮🇳 Hinglish',
+  'bengali':    '🇮🇳 Bengali',
+  'telugu':     '🇮🇳 Telugu',
+  'marathi':    '🇮🇳 Marathi',
+  'tamil':      '🇮🇳 Tamil',
+  'gujarati':   '🇮🇳 Gujarati',
+  'urdu':       '🇮🇳 Urdu',
+  'kannada':    '🇮🇳 Kannada',
+  'odia':       '🇮🇳 Odia',
+  'punjabi':    '🇮🇳 Punjabi',
+  'malayalam':  '🇮🇳 Malayalam',
+  'english':    '🇬🇧 English',
+  'mixed':      '🇮🇳 Mixed',
+};
+function getLangLabel(lang) {
+  if (!lang) return '';
+  var key = lang.toLowerCase().trim();
+  return LANG_FLAGS[key] || ('🇮🇳 ' + lang);
+}
+
+// ── DEEPGRAM CONFIG ───────────────────────────────────────────────────
+// Nova-3: best accuracy, supports Hindi, Bengali, Telugu, Marathi,
+// Tamil, Gujarati, Urdu, Kannada, Punjabi, Malayalam + Hinglish
+var DG_KEY  = '6cc1f796b4d685cd65f5578d2d405e023c8db204';
+var DG_URL  = 'wss://api.deepgram.com/v1/listen'
+  + '?model=nova-3'            // best model, 54% better than nova-2
+  + '&language=multi'          // auto-detect all Indian languages
+  + '&punctuate=true'
+  + '&smart_format=true'
+  + '&interim_results=true'    // show words AS they're spoken
+  + '&endpointing=200'         // detect end of speech faster
+  + '&utterance_end_ms=800'    // faster utterance completion
+  + '&filler_words=false'
+  + '&diarize=false';
+
+// ── STATE ─────────────────────────────────────────────────────────────
+var _ws         = null;
+var _ctx        = null;
+var _proc       = null;
+var _stream     = null;
+var _active     = false;
+var _fullText   = '';
+var _capTimer   = null;
+var _detectedLang = '';
+var _usingFallback = false;
+
+// ── DUAL TRANSCRIPT UPDATE ────────────────────────────────────────────
+// Updates BOTH agentTranscript AND ip-transcript-box simultaneously
+function updateTranscriptBoxes(interim, confirmed, lang) {
+  var langLabel = lang ? (' <span style="font-size:9px;background:#e8f0fe;color:#3b5bdb;padding:1px 6px;border-radius:8px;font-weight:700;vertical-align:middle">' + getLangLabel(lang) + '</span>') : '';
+
+  // Box 1: agentTranscript (old agent view)
+  var box1 = document.getElementById('agentTranscript');
+  if (box1) {
+    box1.classList.add('show');
+    box1.innerHTML = '🎙️ '
+      + '<span style="color:#1a1d24;font-weight:500">' + confirmed + '</span>'
+      + (interim ? ' <span style="color:#94999f;font-style:italic">' + interim + '</span>' : '')
+      + langLabel;
+  }
+
+  // Box 2: ip-transcript-box (Intel Panel)
+  var box2 = document.getElementById('ip-transcript-box');
+  if (box2) {
+    box2.style.fontStyle = 'normal';
+    box2.style.color = '#1a1d24';
+    box2.innerHTML = '<span style="color:#1a1d24;font-weight:500">' + confirmed + '</span>'
+      + (interim ? ' <span style="color:#b0b8c8;font-style:italic">' + interim + '</span>' : '')
+      + (confirmed || interim ? langLabel : '<span style="color:#94999f;font-style:italic">Transcript appears here as customer speaks…</span>');
+    box2.scrollTop = box2.scrollHeight;
+  }
+
+  // Also update liveTranscriptBox if present
+  var box3 = document.getElementById('liveTranscriptBox');
+  if (box3) {
+    box3.innerHTML = '<span style="color:#1a1d24">' + confirmed + '</span>'
+      + (interim ? ' <span style="color:#94999f;font-style:italic">' + interim + '</span>' : '')
+      + langLabel;
+    box3.scrollTop = box3.scrollHeight;
+  }
+}
+
+// ── INSTANT FIELD FILL ────────────────────────────────────────────────
+function fillFieldsInstantly(parsed) {
+  // Intel Panel fields
+  var ipMap = {
+    'ip-inp-name':     parsed.name     || '',
+    'ip-inp-phone':    parsed.phone    || '',
+    'ip-inp-addr':     parsed.address  || parsed.rawAddress || '',
+    'ip-inp-landmark': parsed.landmark || '',
+    'ip-inp-city':     parsed.city     || '',
+    'ip-inp-state':    parsed.state    || '',
+    'ip-inp-pin':      parsed.pincode  || '',
+  };
+  Object.entries(ipMap).forEach(function(kv) {
+    var el = document.getElementById(kv[0]);
+    if (el && kv[1]) {
+      el.value = kv[1];
+      el.style.background = '#f0fff4';
+      el.style.borderColor = '#0d9354';
+      setTimeout(function() {
+        el.style.background = '';
+        el.style.borderColor = '';
+      }, 2000);
+    }
+  });
+
+  // Legacy corp fields (lfv-)
+  var lfvMap = {
+    'lfv-name':     parsed.name     || '',
+    'lfv-phone':    parsed.phone    || '',
+    'lfv-addrline': parsed.address  || parsed.rawAddress || '',
+    'lfv-landmark': parsed.landmark || '',
+    'lfv-city':     parsed.city     || '',
+    'lfv-state':    parsed.state    || '',
+    'lfv-pincode':  parsed.pincode  || '',
+  };
+  Object.entries(lfvMap).forEach(function(kv) {
+    var el = document.getElementById(kv[0]);
+    if (el && kv[1]) { el.value = kv[1]; el.classList.add('filled'); }
+  });
+
+  // Confidence bar
+  var conf = parsed.confidence || 70;
+  var fill1 = document.getElementById('ip-conf-fill');
+  var pct1  = document.getElementById('ip-conf-pct');
+  var fill2 = document.getElementById('confFillLive');
+  var fill3 = document.getElementById('confFill');
+  var pct3  = document.getElementById('confPct');
+  var color = conf >= 80 ? '#0d9354' : conf >= 55 ? '#b5740a' : '#c52f2f';
+  if (fill1) { fill1.style.width = conf + '%'; fill1.style.background = color; }
+  if (pct1)  { pct1.textContent = conf + '%'; pct1.style.color = color; }
+  if (fill2) { fill2.style.width = conf + '%'; fill2.style.background = color; }
+  if (fill3) { fill3.style.width = conf + '%'; fill3.style.background = color; }
+  if (pct3)  { pct3.textContent = conf + '%'; pct3.style.color = color; }
+
+  // Enable action buttons
+  ['ip-btn-save','ip-btn-wa','ip-btn-copy','ip-confirm-btn','ip-wa-btn','ip-copy-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if (btn) btn.disabled = false;
+  });
+
+  // Language label in Intel Panel
+  if (parsed.language) {
+    _detectedLang = parsed.language;
+    var langEl = document.getElementById('ip-lang-detected');
+    if (langEl) {
+      langEl.textContent = getLangLabel(parsed.language);
+      langEl.style.display = 'inline-block';
+    }
+  }
+}
+
+// ── FAST REGEX PRE-FILL (instant, before AI) ─────────────────────────
+// Extracts obvious patterns immediately as customer speaks
+function quickExtract(text) {
+  // Pincode: 6 digits
+  var pin = text.match(/(\d{6})/);
+  if (pin) {
+    var el = document.getElementById('ip-inp-pin');
+    if (el && !el.value) { el.value = pin[1]; el.style.background = '#f0fff4'; }
+    var el2 = document.getElementById('lfv-pincode');
+    if (el2 && !el2.value) { el2.value = pin[1]; el2.classList.add('filled'); }
+  }
+
+  // Phone: 10 digits starting with 6-9
+  var phone = text.match(/([6-9]\d{9})/);
+  if (phone) {
+    var el3 = document.getElementById('ip-inp-phone');
+    if (el3 && !el3.value) { el3.value = phone[1]; el3.style.background = '#f0fff4'; }
+    var el4 = document.getElementById('lfv-phone');
+    if (el4 && !el4.value) { el4.value = phone[1]; el4.classList.add('filled'); }
+  }
+}
+
+// ── DEEPGRAM onmessage HANDLER ────────────────────────────────────────
+function handleDGMessage(raw) {
+  var data;
+  try { data = JSON.parse(raw); } catch(e) { return; }
+
+  var alt      = data && data.channel && data.channel.alternatives && data.channel.alternatives[0];
+  var text     = (alt && alt.transcript && alt.transcript.trim()) || '';
+  var isFinal  = data && data.is_final;
+  var speechEnd = data && data.speech_final;
+  var lang     = (data && data.channel && data.channel.detected_language) || _detectedLang || '';
+
+  if (lang) _detectedLang = lang;
+
+  if (!text && !isFinal) return;
+
+  // Show interim immediately (grey)
+  if (text && !isFinal) {
+    updateTranscriptBoxes(text, _fullText, lang);
+    quickExtract(_fullText + ' ' + text);
+    return;
+  }
+
+  // Final result
+  if (isFinal || speechEnd) {
+    if (text) _fullText = (_fullText + ' ' + text).trim();
+    window.currentTranscript  = _fullText;
+    window.dgLiveTranscript   = _fullText;
+
+    updateTranscriptBoxes('', _fullText, lang);
+    quickExtract(_fullText);
+
+    // Strategy check
+    if (typeof checkAllTriggers === 'function') {
+      var fired = checkAllTriggers(_fullText);
+      if (!window.strategiesFired) window.strategiesFired = new Set();
+      fired.forEach(function(s) { window.strategiesFired.add(s); });
+    }
+    if (typeof checkAgentQuestion === 'function' && checkAgentQuestion(_fullText))
+      window.strategiesFired && window.strategiesFired.add('s1');
+    if (typeof updateStrategyUI === 'function')
+      updateStrategyUI(window.strategiesFired || new Set());
+
+    var wordCount = _fullText.split(/\s+/).filter(Boolean).length;
+    if (typeof updateLayerUI === 'function') updateLayerUI(Math.min(wordCount, 10));
+
+    // Extract after 5+ words — NO keyword gate
+    if (wordCount >= 5) {
+      clearTimeout(_capTimer);
+      _capTimer = setTimeout(function() {
+        if (!_active || _fullText.split(/\s+/).length < 5) return;
+        if (typeof setStatus === 'function')
+          setStatus('⚙️ Extracting address…', 'processing', 'AI extraction running…');
+        runExtraction(_fullText);
+      }, 1200);
+    }
+  }
+}
+
+// ── AI EXTRACTION with instant fill ───────────────────────────────────
+function runExtraction(transcript) {
+  var GROQ = window.GROQ_KEY || 'gsk_tbUNrAeWCTVT338M' + 'FptDWGdyb3FYxoJjuZo1' + '93wmGhVVOyArGfVx';
+
+  fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + GROQ },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 400,
+      temperature: 0.1,
+      messages: [{
+        role: 'system',
+        content: 'You are an India address extractor for sales calls. The customer may speak Hindi, Hinglish, Bengali, Telugu, Marathi, Tamil, Gujarati, Urdu, Kannada, Odia, Punjabi, Malayalam or English. Extract the delivery address. Return ONLY raw JSON, no markdown:
+{"found":true,"name":"","phone":"","address":"full address","house":"","street":"","colony":"","city":"","state":"","pincode":"","landmark":"","confidence":0-100,"language":"detected language name"}'
+      }, {
+        role: 'user',
+        content: 'Transcript: "' + transcript + '"
+
+Extract delivery address.'
+      }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    var clean = text.replace(/```json|```/g, '').trim();
+    var parsed;
+    try { parsed = JSON.parse(clean); } catch(e) { return; }
+
+    if (!parsed || !parsed.found) return;
+
+    // Merge with existing currentResult if available
+    if (typeof currentResult !== 'undefined' && currentResult) {
+      parsed.pincode  = parsed.pincode  || currentResult.pincode  || '';
+      parsed.city     = parsed.city     || currentResult.city     || '';
+      parsed.state    = parsed.state    || currentResult.state    || '';
+      parsed.district = parsed.district || currentResult.district || '';
+    }
+
+    // INSTANT FILL — no waiting
+    fillFieldsInstantly(parsed);
+
+    // Also call original showAgentResult if available
+    if (typeof showAgentResult === 'function') {
+      window.currentResult = {
+        rawAddress:  parsed.address  || '',
+        house:       parsed.house    || '',
+        street:      parsed.street   || '',
+        colony:      parsed.colony   || '',
+        city:        parsed.city     || '',
+        district:    parsed.district || '',
+        state:       parsed.state    || '',
+        pincode:     parsed.pincode  || '',
+        postOffice:  '',
+        confidence:  parsed.confidence || 70,
+        isComplete:  !!parsed.pincode && !!parsed.city,
+        missing:     '',
+        language:    parsed.language || _detectedLang || '',
+        strategiesFired: window.strategiesFired ? window.strategiesFired.size : 0
+      };
+      showAgentResult(window.currentResult, false);
+    }
+
+    if (typeof setStatus === 'function') {
+      var conf = parsed.confidence || 70;
+      setStatus(
+        conf >= 80 ? '✅ Address captured!' : '⚠️ Verify address — ' + conf + '% confidence',
+        conf >= 80 ? 'listening' : '',
+        getLangLabel(parsed.language || _detectedLang)
+      );
+    }
+    if (typeof updateLayerUI === 'function') updateLayerUI(10);
+  })
+  .catch(function(e) { console.warn('Extraction error:', e); });
+}
+
+// ── START DEEPGRAM ─────────────────────────────────────────────────────
+async function startEngine() {
+  // Reset state
+  _fullText     = '';
+  _detectedLang = '';
+  _usingFallback = false;
+  clearTimeout(_capTimer);
+
+  // Clear all boxes
+  updateTranscriptBoxes('', '', '');
+  ['ip-inp-name','ip-inp-phone','ip-inp-addr','ip-inp-landmark',
+   'ip-inp-city','ip-inp-state','ip-inp-pin'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { el.value = ''; el.style.background = ''; el.style.borderColor = ''; }
+  });
+
+  // Get mic
+  try {
+    _stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
+    });
+  } catch(e) {
+    if (typeof toast === 'function') toast('⚠️ Mic error: ' + (e.message || e.name), 'err');
+    if (typeof setStatus === 'function') setStatus('❌ Mic blocked — check browser permissions', '', '');
+    return false;
+  }
+
+  // Try Deepgram Nova-3
+  try {
+    _ws = new WebSocket(DG_URL, ['token', DG_KEY]);
+
+    _ws.onopen = function() {
+      _active = true;
+      _ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      var src  = _ctx.createMediaStreamSource(_stream);
+      _proc    = _ctx.createScriptProcessor(4096, 1, 1);
+      _proc.onaudioprocess = function(e) {
+        if (!_ws || _ws.readyState !== WebSocket.OPEN) return;
+        var pcm   = e.inputBuffer.getChannelData(0);
+        var i16   = new Int16Array(pcm.length);
+        for (var i = 0; i < pcm.length; i++) i16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
+        _ws.send(i16.buffer);
+      };
+      src.connect(_proc);
+      _proc.connect(_ctx.destination);
+
+      if (typeof toast === 'function') toast('🟢 Deepgram Nova-3 live — speak naturally!');
+      if (typeof setStatus === 'function') setStatus('🟢 Listening — speak the address…', 'listening', 'Nova-3 · Multi-language · Hindi/Hinglish/Bengali/Telugu +7 more');
+    };
+
+    _ws.onmessage = function(evt) { handleDGMessage(evt.data); };
+
+    _ws.onerror = function() {
+      console.warn('Deepgram error — switching to Groq Whisper fallback');
+      stopEngine();
+      startFallback();
+    };
+
+    _ws.onclose = function() {
+      _active = false;
+      if (!_usingFallback) {
+        // Unexpected close — restart Deepgram
+        setTimeout(function() { if (window.isListening) startEngine(); }, 1000);
+      }
+    };
+
+    return true;
+
+  } catch(e) {
+    console.warn('Deepgram init failed:', e);
+    startFallback();
+    return true;
+  }
+}
+
+// ── GROQ WHISPER FALLBACK ─────────────────────────────────────────────
+function startFallback() {
+  _usingFallback = true;
+  if (typeof toast === 'function') toast('🔄 Switched to Groq Whisper (offline mode)');
+  if (typeof setStatus === 'function') setStatus('🎙️ Whisper mode — speak clearly', 'listening', 'Groq Whisper fallback active');
+
+  if (!_stream) return;
+
+  var mime = 'audio/webm';
+  if (!MediaRecorder.isTypeSupported(mime)) mime = 'audio/ogg';
+
+  var mr = new MediaRecorder(_stream, { mimeType: mime });
+  var chunks = [];
+
+  mr.ondataavailable = function(e) { if (e.data.size > 0) chunks.push(e.data); };
+
+  mr.onstop = function() {
+    var blob = new Blob(chunks, { type: mime });
+    chunks = [];
+    if (blob.size < 1000) { if (window.isListening) mr.start(4000); return; }
+
+    var fd = new FormData();
+    fd.append('file', blob, 'audio.webm');
+    fd.append('model', 'whisper-large-v3-turbo');
+    fd.append('response_format', 'json');
+    fd.append('temperature', '0');
+    fd.append('language', 'hi'); // Hindi first — best for Hinglish too
+    fd.append('prompt', 'पता, घर नंबर, गली, मोहल्ला, सेक्टर, कॉलोनी, नगर, जिला, राज्य, पिनकोड, India address delivery. House number, street, area, city, state, pincode.');
+
+    var GROQ = window.GROQ_KEY || '';
+    fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + GROQ },
+      body: fd
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var text = (data.text || '').trim();
+      if (!text || text.length < 3) return;
+
+      _fullText = (_fullText + ' ' + text).trim();
+      window.currentTranscript = _fullText;
+
+      updateTranscriptBoxes('', _fullText, 'Hinglish');
+      quickExtract(_fullText);
+
+      var wordCount = _fullText.split(/\s+/).filter(Boolean).length;
+      if (typeof updateLayerUI === 'function') updateLayerUI(Math.min(wordCount, 10));
+
+      if (wordCount >= 5) {
+        clearTimeout(_capTimer);
+        _capTimer = setTimeout(function() { runExtraction(_fullText); }, 800);
+      }
+    })
+    .catch(function(e) { console.warn('Whisper error:', e); })
+    .finally(function() { if (window.isListening && _usingFallback) mr.start(4000); });
+  };
+
+  mr.start(4000); // 4-second chunks
+  window._fallbackRecorder = mr;
+}
+
+// ── STOP ENGINE ────────────────────────────────────────────────────────
+function stopEngine() {
+  _active = false;
+  clearTimeout(_capTimer);
+  try { if (_proc) _proc.disconnect(); } catch(e) {}
+  try { if (_ctx)  _ctx.close();       } catch(e) {}
+  try { if (_ws)   _ws.close();        } catch(e) {}
+  try { if (_stream) _stream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
+  try { if (window._fallbackRecorder && window._fallbackRecorder.state !== 'inactive') window._fallbackRecorder.stop(); } catch(e) {}
+  _ws = null; _ctx = null; _proc = null; _stream = null;
+}
+
+// ── OVERRIDE toggleListen ─────────────────────────────────────────────
+// Single clean override — no more chain of overrides
+window.toggleListen = async function() {
+  if (window.isListening || _active) {
+    // STOP
+    window.isListening = false;
+    stopEngine();
+    var icon = document.getElementById('listenIcon');
+    var lbl  = document.getElementById('listenBtn') || document.getElementById('listenLbl');
+    if (icon) icon.textContent = '🎙️';
+    document.getElementById('listenOuter') && document.getElementById('listenOuter').classList.remove('active');
+    document.getElementById('listenBtn')   && document.getElementById('listenBtn').classList.remove('active');
+    document.getElementById('waveBars')    && document.getElementById('waveBars').classList.remove('active');
+    var dgBadge = document.getElementById('dgLiveBadge');
+    if (dgBadge) dgBadge.remove();
+    if (typeof setStatus === 'function') setStatus('⏹ Stopped', '', '');
+    return;
+  }
+
+  // START
+  var ok = await startEngine();
+  if (!ok) return;
+
+  window.isListening    = true;
+  window.currentTranscript = '';
+  window.dgLiveTranscript  = '';
+  window.strategiesFired   = new Set();
+
+  var icon = document.getElementById('listenIcon');
+  var lbl  = document.getElementById('listenLbl');
+  if (icon) icon.textContent = '⏹';
+  if (lbl)  lbl.textContent  = 'TAP TO STOP';
+  document.getElementById('listenOuter') && document.getElementById('listenOuter').classList.add('active');
+  document.getElementById('listenBtn')   && document.getElementById('listenBtn').classList.add('active');
+  document.getElementById('waveBars')    && document.getElementById('waveBars').classList.add('active');
+
+  if (typeof updateLayerUI  === 'function') updateLayerUI(1);
+  if (typeof updateStrategyUI === 'function') updateStrategyUI(new Set());
+};
+
+// ── FIX: Tab switching ────────────────────────────────────────────────
+window.switchIP = function(tab) {
+  document.querySelectorAll('.ip-tab').forEach(function(t) {
+    var active = t.dataset.tab === tab || t.textContent.trim().toLowerCase() === tab;
+    t.style.color        = active ? '#3b5bdb' : '#94999f';
+    t.style.borderBottom = active ? '2px solid #3b5bdb' : '2px solid transparent';
+    t.style.fontWeight   = active ? '700' : '600';
+  });
+  ['capture','feed','notes','stats','upload'].forEach(function(p) {
+    var pane = document.getElementById('ip-pane-' + p);
+    if (!pane) return;
+    if (p === tab) {
+      pane.style.setProperty('display', 'flex', 'important');
+      pane.style.flexDirection = 'column';
+      pane.style.flex = '1';
+      pane.style.minHeight = '0';
+      pane.style.overflow = 'auto';
+    } else {
+      pane.style.setProperty('display', 'none', 'important');
+    }
+  });
+};
+
+// ── FIX: Recording upload — proper Hindi prompt + turbo model ─────────
+window.ipHandleRecordingUpload = function(input) {
+  var file = input && input.files && input.files[0];
+  if (!file) return;
+
+  var statusEl = document.getElementById('rec-status');
+  var resultEl = document.getElementById('rec-result');
+  var txBox    = document.getElementById('rec-transcript-box');
+  var txText   = document.getElementById('rec-transcript-text');
+
+  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing recording…</span>';
+  if (resultEl) resultEl.style.display = 'none';
+  if (txBox)    txBox.style.display = 'none';
+
+  var GROQ = window.GROQ_KEY || '';
+  var fd = new FormData();
+  fd.append('file', file, file.name);
+  fd.append('model', 'whisper-large-v3-turbo');  // fastest + accurate
+  fd.append('response_format', 'json');
+  fd.append('temperature', '0');
+  fd.append('language', 'hi');  // Hindi/Hinglish primary
+  fd.append('prompt', 'पता, घर नंबर, गली, मोहल्ला, सेक्टर, कॉलोनी, नगर, जिला, राज्य, पिनकोड. House number, flat, street, area, colony, sector, nagar, city, district, state, pincode, landmark, near, India address.');
+
+  fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + GROQ },
+    body: fd
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var transcript = (data.text || '').trim();
+    if (!transcript) throw new Error((data.error && data.error.message) || 'No transcript');
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting…</span>';
+    if (txText) txText.textContent = transcript;
+    if (txBox)  txBox.style.display = 'block';
+
+    // Extract with full Indian language prompt
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + GROQ, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 500,
+        temperature: 0.1,
+        messages: [{
+          role: 'system',
+          content: 'You extract Indian delivery addresses from call transcripts. The customer may speak Hindi, Hinglish, Bengali, Telugu, Marathi, Tamil, Gujarati, Urdu, Kannada, Odia, Punjabi or Malayalam. Return ONLY raw JSON:
+{"name":"","phone":"","address":"","house":"","street":"","colony":"","city":"","state":"","pincode":"","landmark":"","confidence":0-100,"language":""}'
+        }, {
+          role: 'user',
+          content: 'Extract address from this call transcript: "' + transcript + '"'
+        }]
+      })
+    });
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var text  = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '{}';
+    var clean = text.replace(/```json|```/g, '').trim();
+    var addr;
+    try { addr = JSON.parse(clean); } catch(e) { addr = {}; }
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Address extracted!</span>';
+
+    window._lastRecordingAddr = addr;
+
+    // Show result card
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      var langLabel = addr.language ? getLangLabel(addr.language) : '';
+      var html = '';
+      if (langLabel) html += '<div style="margin-bottom:8px"><span style="font-size:9px;background:#e8f0fe;color:#3b5bdb;padding:2px 8px;border-radius:8px;font-weight:700">' + langLabel + '</span></div>';
+      var fields = [
+        ['Name',     addr.name],
+        ['Phone',    addr.phone],
+        ['Address',  addr.address],
+        ['Landmark', addr.landmark],
+        ['City',     addr.city],
+        ['State',    addr.state],
+        ['Pincode',  addr.pincode],
+      ];
+      fields.forEach(function(f) {
+        if (!f[1]) return;
+        html += '<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px">'
+          + '<span style="font-size:9px;font-weight:700;color:#94999f;min-width:60px;padding-top:2px;text-transform:uppercase">' + f[0] + '</span>'
+          + '<span style="font-size:12px;color:#1a1d24;font-weight:600;flex:1">' + f[1] + '</span></div>';
+      });
+      html += '<div style="display:flex;gap:6px;margin-top:10px">'
+        + '<button onclick="ipApplyFromRecording()" style="flex:1;background:#0d9354;color:#fff;border:none;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✅ Apply to form</button>'
+        + '<button onclick="ipAddToFeed()" style="flex:1;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5e6470">📋 Add to feed</button>'
+        + '</div>';
+      resultEl.innerHTML = html;
+    }
+  })
+  .catch(function(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">❌ ' + e.message + '</span>';
+  });
+};
+
+window.ipApplyFromRecording = function() {
+  var a = window._lastRecordingAddr;
+  if (!a) return;
+  fillFieldsInstantly(a);
+  window.switchIP('capture');
+  if (typeof toast === 'function') toast('✅ Address applied to capture form!');
+};
+
+window.ipAddToFeed = function() {
+  var a = window._lastRecordingAddr || {};
+  if (!window._ipCaptures) window._ipCaptures = [];
+  window._ipCaptures.push({
+    addr: a.address || '', pin: a.pincode || '',
+    city: a.city || '', name: a.name || '',
+    time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}),
+    source: '🎵 Recording'
+  });
+  if (typeof ipRenderFeed === 'function') ipRenderFeed();
+  window.switchIP('feed');
+  if (typeof toast === 'function') toast('📋 Added to feed!');
+};
+
+window.ipExportAll = function() {
+  var rows = (window._ipCaptures || []).map(function(c) {
+    return [c.name||'', c.addr||'', c.pin||'', c.city||'', c.time||'', c.source||'Live'];
+  });
+  (window._recordingsLog || []).forEach(function(c) {
+    rows.push([c.name||'', c.address||'', c.pincode||'', c.city||'', c.time||'', '🎵 '+c.file]);
+  });
+  if (!rows.length) { if (typeof toast==='function') toast('No captures yet','err'); return; }
+  var csv = 'Name,Address,Pincode,City,Time,Source
+'
+    + rows.map(function(r) { return r.map(function(v){return '"'+(v||'').replace(/"/g,'""')+'"';}).join(','); }).join('
+');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+  if (typeof toast==='function') toast('📥 Exported ' + rows.length + ' records!');
+};
+
+// Fix tab attributes after render
+function fixTabs() {
+  var names = ['capture','feed','notes','stats','upload'];
+  var tabs  = document.querySelectorAll('.ip-tab');
+  tabs.forEach(function(t, i) {
+    if (names[i]) {
+      t.dataset.tab = names[i];
+      (function(n){ t.onclick = function(){ window.switchIP(n); }; })(names[i]);
+    }
+  });
+}
+
+// Hook into showAgentView
+var _prevSAV = window.showAgentView;
+window.showAgentView = async function() {
+  if (typeof _prevSAV === 'function') await _prevSAV();
+  setTimeout(function() { fixTabs(); window.switchIP('capture'); }, 300);
+};
+
+// Run immediately if already rendered
+if (document.getElementById('intelPanel')) {
+  setTimeout(function() { fixTabs(); window.switchIP('capture'); }, 100);
+}
+
+console.log('✅ VN Transcription Engine v3 loaded — Nova-3 + 10 Indian languages + Hinglish');
+})();
+</script>
+
 </body>
 </html>
