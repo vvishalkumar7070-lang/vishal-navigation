@@ -509,11 +509,6 @@ body.light-mode .lcard{background:#fff}
 </head>
 <body>
 <script>
-// ═══════════════════════════════════════════════════════
-// VISHAL NAVIGATION — CONSOLIDATED SCRIPTS
-// All patches merged into single block for reliability
-// ═══════════════════════════════════════════════════════
-
 /* ═══ SECTION 1: CONSTANTS ═══ */
 window.GROQ_KEY = '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';
 // Show landing immediately before heavy PIN_DB loads
@@ -524,7 +519,529 @@ window.onload = function(){
 document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('landing').style.display='flex';
 });
+</script>
 
+<!-- ===== LANDING ===== -->
+<div class="landing" id="landing" style="display:none">
+  <div class="landing-inner">
+    <div class="landing-logo">
+      <div class="landing-logo-mark">🧭</div>
+      <div class="landing-logo-text">
+        <div class="name">Vishal Navigation</div>
+        <div class="tagline">INDIA ADDRESS INTELLIGENCE</div>
+      </div>
+    </div>
+    <div class="landing-title">The smarter way to<br>capture <span>any India address</span></div>
+    <div class="landing-sub">154,784 real pincodes · 20 languages · AI-powered voice capture · Built for sales teams</div>
+    <div class="landing-cards">
+      <div class="lcard public" id="btnPublic">
+        <div class="lcard-icon">🔍</div>
+        <div class="lcard-title">Public Search</div>
+        <div class="lcard-sub">Find any location</div>
+      </div>
+      <div class="lcard agent" id="btnAgent">
+        <div class="lcard-icon">🎙️</div>
+        <div class="lcard-title">Agent Login</div>
+        <div class="lcard-sub">Sales call tool</div>
+        <div class="lcard-badge">PRO</div>
+      </div>
+      <div class="lcard admin" id="btnAdmin">
+        <div class="lcard-icon">👑</div>
+        <div class="lcard-title">Admin</div>
+        <div class="lcard-sub">Manage all</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOGIN ===== -->
+<div class="login-page" id="loginPage">
+  <div class="login-card" id="loginCard">
+    <div class="login-header">
+      <div class="login-header-icon" id="loginIcon">🎙️</div>
+      <div class="login-header-title" id="loginTitle">Agent Login</div>
+      <div class="login-header-sub" id="loginSub">VISHAL NAVIGATION · SECURE ACCESS</div>
+    </div>
+    <div class="login-body">
+      <div class="lf" id="adminUserField" style="display:none">
+        <label class="lf-label">Admin Username</label>
+        <input class="lf-inp" type="text" id="adminUser" placeholder="Enter admin username"/>
+      </div>
+      <div class="lf">
+        <label class="lf-label" id="idLabel">Agent ID</label>
+        <input class="lf-inp" type="text" id="loginId" placeholder="Enter your ID" autocomplete="off"/>
+      </div>
+      <div class="lf">
+        <label class="lf-label">Password</label>
+        <input class="lf-inp" type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="login-btn green" id="loginBtn" onclick="doLogin()">Login</button>
+      <div class="login-err" id="loginErr">Invalid credentials. Please try again.</div>
+      <div class="login-back" onclick="backToLanding()">← Back to home</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP SHELL ===== -->
+<div class="app-shell" id="appShell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo" onclick="backToLanding()" style="cursor:pointer">
+      <div class="tb-logo-mark">🧭</div>
+      <div class="tb-logo-name">Vishal Navigation</div>
+    </div>
+    <div class="tb-center" id="tbCenter"></div>
+    <div class="tb-right" id="tbRight"></div>
+  </div>
+
+  <!-- PUBLIC VIEW -->
+  <div id="publicView">
+
+    <!-- HAMBURGER DRAWER TOGGLE -->
+    <button id="drawerToggle" onclick="toggleDrawer()" style="position:fixed;top:62px;right:16px;z-index:300;width:40px;height:40px;background:rgba(7,13,20,.95);border:1px solid rgba(0,255,170,.2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:all .25s;backdrop-filter:blur(16px);padding:0">
+      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
+      <span class="hb-line" style="width:13px;height:2px;background:var(--text2);border-radius:2px;display:block;transition:all .3s"></span>
+      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
+    </button>
+
+    <!-- RIGHT SIDE DRAWER -->
+    <div id="toolDrawer" style="position:fixed;top:0;right:-320px;width:300px;height:100vh;background:rgba(3,5,10,.98);border-left:1px solid rgba(0,255,170,.08);z-index:299;display:flex;flex-direction:column;overflow-y:auto;transition:right .32s cubic-bezier(.2,.8,.3,1);box-shadow:-24px 0 80px rgba(0,0,0,.7);backdrop-filter:blur(24px);scrollbar-width:thin;scrollbar-color:var(--border2) transparent">
+      <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(0,255,170,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:56px">
+        <div>
+          <div style="font-size:14px;font-weight:800;font-family:var(--font-display);background:linear-gradient(90deg,#fff,var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Tools</div>
+          <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px">ADDRESS INTELLIGENCE</div>
+        </div>
+        <button onclick="toggleDrawer()" style="background:none;border:1px solid var(--border2);color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:5px 8px;border-radius:8px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">✕</button>
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:7px;flex:1">
+        <button class="drawer-btn green" onclick="triggerCurrentLocation();toggleDrawer()"><span class="dbi">📍</span><div class="dbt"><div class="dbt-title">My Current Location</div><div class="dbt-sub">One click · get your exact address</div></div></button>
+        <button class="drawer-btn red" onclick="openPhotoMode();toggleDrawer()"><span class="dbi">📸</span><div class="dbt"><div class="dbt-title">Photo → Address</div><div class="dbt-sub">Upload photo · extract location</div></div></button>
+        <button class="drawer-btn teal" onclick="openConversational();toggleDrawer()"><span class="dbi">🗣️</span><div class="dbt"><div class="dbt-title">Describe It</div><div class="dbt-sub">Describe surroundings · AI finds you</div></div></button>
+        <button class="drawer-btn blue" onclick="openCompare();toggleDrawer()"><span class="dbi">📏</span><div class="dbt"><div class="dbt-title">Compare Locations</div><div class="dbt-sub">Distance between two places</div></div></button>
+        <button class="drawer-btn purple" onclick="openLandmark();toggleDrawer()"><span class="dbi">🏛️</span><div class="dbt"><div class="dbt-title">Landmark → Address</div><div class="dbt-sub">India Gate, Lotus Temple…</div></div></button>
+        <button class="drawer-btn amber" onclick="openFilterNearby();toggleDrawer()"><span class="dbi">🎯</span><div class="dbt"><div class="dbt-title">Filter Nearby</div><div class="dbt-sub">Hospital, bank, pharmacy…</div></div></button>
+        <button class="drawer-btn gray" onclick="openCommunity();toggleDrawer()"><span class="dbi">🤝</span><div class="dbt"><div class="dbt-title">Report Wrong Address</div><div class="dbt-sub">Help improve accuracy</div></div></button>
+        <button class="drawer-btn purple" onclick="openMultiStop();toggleDrawer()"><span class="dbi">🗺️</span><div class="dbt"><div class="dbt-title">Multi-Stop Route</div><div class="dbt-sub">Plan route through 3+ locations</div></div></button>
+        <button class="drawer-btn blue" onclick="openBatch();toggleDrawer()"><span class="dbi">📋</span><div class="dbt"><div class="dbt-title">Batch Addresses</div><div class="dbt-sub">Validate 20 addresses at once</div></div></button>
+        <button class="drawer-btn amber" onclick="openBookmarks();toggleDrawer()"><span class="dbi">⭐</span><div class="dbt"><div class="dbt-title">Saved Addresses</div><div class="dbt-sub">Your bookmarked locations</div></div></button>
+        <button class="drawer-btn gray" onclick="toggleTheme();toggleDrawer()"><span class="dbi" id="themeIcon">☀️</span><div class="dbt"><div class="dbt-title">Toggle Light Mode</div><div class="dbt-sub">Switch display theme</div></div></button>
+        <div style="height:1px;background:rgba(255,255,255,.04);margin:4px 0"></div>
+        <button class="drawer-btn green-outline" onclick="showLogin('agent');toggleDrawer()"><span class="dbi">🎙️</span><div class="dbt"><div class="dbt-title">Agent Login</div><div class="dbt-sub">Sales call address capture</div></div><span style="font-size:9px;background:rgba(0,255,170,.12);color:var(--green);padding:2px 8px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(0,255,170,.18);white-space:nowrap;flex-shrink:0">PRO</span></button>
+      </div>
+      <!-- Council status -->
+      <div style="padding:12px 16px 16px;border-top:1px solid rgba(0,255,170,.05);flex-shrink:0">
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px">⚔️ BACKGROUND COUNCIL</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span id="cs-naruto" class="council-status-pill">🍥</span>
+          <span id="cs-sasuke" class="council-status-pill">⚡</span>
+          <span id="cs-sakura" class="council-status-pill">🌸</span>
+          <span id="cs-itachi" class="council-status-pill">👁️</span>
+          <span id="cs-shikamaru" class="council-status-pill">🧠</span>
+          <span id="cs-jiraiya" class="council-status-pill">📖</span>
+        </div>
+        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:7px;line-height:1.6">6 agents silently verify every search to ensure the perfect address.</div>
+      </div>
+    </div>
+
+    <!-- DRAWER BACKDROP -->
+    <div id="drawerBackdrop" onclick="toggleDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:298;backdrop-filter:blur(2px)"></div>
+
+    <!-- SEARCH HISTORY DROPDOWN -->
+    <div id="historyDropdown" style="display:none;position:absolute;bottom:130px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:720px;background:rgba(6,10,20,.97);border:1px solid rgba(0,255,170,.2);border-radius:14px;z-index:200;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(20px)">
+      <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px">RECENT SEARCHES</span>
+        <span onclick="clearSearchHistory()" style="font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font-mono)" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">clear all</span>
+      </div>
+      <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
+    </div>
+
+    <!-- MODALS (centered overlays) -->
+    <div id="compareModal"     style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:440px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">📏 COMPARE TWO LOCATIONS<button onclick="document.getElementById('compareModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <input id="locA" placeholder="Location A — e.g. Connaught Place, Delhi" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
+      <input id="locB" placeholder="Location B — e.g. Bandra West, Mumbai"   style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box"/>
+      <button onclick="runCompare()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.2),rgba(56,182,255,.06));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Calculate Distance &amp; Compare</button>
+      <div id="compareResult" style="margin-top:12px;display:none"></div>
+    </div>
+
+    <div id="landmarkModal"    style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(176,140,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🏛️ LANDMARK → FULL ADDRESS<button onclick="document.getElementById('landmarkModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="display:flex;gap:8px"><input id="landmarkInp" placeholder="e.g. India Gate, Lotus Temple, Charminar…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body)" onkeydown="if(event.key==='Enter')runLandmark()"/><button onclick="runLandmark()" style="background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Find</button></div>
+    </div>
+
+    <div id="filterNearbyModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,179,71,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🎯 FILTER NEARBY PLACES<button onclick="document.getElementById('filterNearbyModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="filter-chip active" onclick="toggleFilter(this,'hospital')">🏥 Hospital</span><span class="filter-chip" onclick="toggleFilter(this,'bank')">🏦 Bank</span><span class="filter-chip" onclick="toggleFilter(this,'school')">🏫 School</span><span class="filter-chip" onclick="toggleFilter(this,'restaurant')">🍽️ Food</span><span class="filter-chip" onclick="toggleFilter(this,'pharmacy')">💊 Pharmacy</span><span class="filter-chip" onclick="toggleFilter(this,'atm')">💳 ATM</span><span class="filter-chip" onclick="toggleFilter(this,'petrol')">⛽ Petrol</span><span class="filter-chip" onclick="toggleFilter(this,'police')">👮 Police</span><span class="filter-chip" onclick="toggleFilter(this,'post')">📮 Post Office</span><span class="filter-chip" onclick="toggleFilter(this,'temple')">🛕 Temple</span></div>
+      <div style="display:flex;gap:8px"><input id="filterLocInp" placeholder="Enter area or use current location…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)"/><button onclick="runFilterNearby()" style="background:linear-gradient(135deg,rgba(255,179,71,.2),rgba(255,179,71,.06));border:1px solid rgba(255,179,71,.35);color:var(--amber);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Search</button></div>
+    </div>
+
+    <div id="conversationalModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(0,255,170,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">🗣️ DESCRIBE YOUR SURROUNDINGS<button onclick="document.getElementById('conversationalModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">Describe what you see around you — AI will identify your exact India location.</div>
+      <textarea id="convInp" rows="3" placeholder="e.g. I'm near a big red temple, SBI bank on my left, green pharmacy across the road, auto stand nearby, flyover on main road…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
+      <button onclick="runConversational()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Find My Location</button>
+    </div>
+
+    <div id="photoModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,85,102,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--red);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📸 PHOTO → ADDRESS<button onclick="document.getElementById('photoModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <div id="photoDropzone" onclick="document.getElementById('photoInput').click()" style="border:2px dashed rgba(255,85,102,.3);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px;font-family:var(--font-mono)" onmouseover="this.style.borderColor='rgba(255,85,102,.6)';this.style.background='rgba(255,85,102,.04)'" onmouseout="this.style.borderColor='rgba(255,85,102,.3)';this.style.background='transparent'"><div style="font-size:32px;margin-bottom:10px">📷</div><div>Click to upload photo of shopfront, building or street sign</div><div style="font-size:10px;margin-top:5px">JPG · PNG · WEBP · Max 5MB</div></div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
+      <div id="photoPreview" style="display:none;margin-top:12px;text-align:center"><img id="photoImg" style="max-height:140px;border-radius:10px;border:1px solid var(--border2)"/></div>
+      <button id="photoAnalyzeBtn" onclick="analyzePhoto()" style="display:none;margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(255,85,102,.15),rgba(255,85,102,.05));border:1px solid rgba(255,85,102,.35);color:var(--red);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Extract Address from Photo</button>
+    </div>
+
+    <div id="communityModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
+      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🤝 COMMUNITY CORRECTION<button onclick="document.getElementById('communityModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
+      <input id="wrongAddr" placeholder="Wrong address (what was shown)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
+      <input id="correctAddr" placeholder="Correct address (what it should be)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
+      <button onclick="submitCorrection()" style="width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Submit Correction</button>
+    </div>
+
+    <!-- Modal backdrop -->
+    <div id="modalBackdrop" onclick="closeAllModals()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:399;backdrop-filter:blur(3px)"></div>
+
+    <div class="chat-area" id="chatArea">
+      <div class="msg-wrap ai">
+        <div class="msg bot">
+          <strong>Namaste! 🙏</strong><br><br>
+          Type or speak any <strong>area, colony, landmark or city</strong> in India — I'll instantly find the correct address, pincode, post office and nearby places.<br><br>
+          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Landmarks · ✏️ AI-corrected · ☰ Tools →</span>
+        </div>
+      </div>
+      <div class="sugs" id="sugs">
+        <span class="sug" onclick="useSug(this)">Chandni Chowk, Delhi</span>
+        <span class="sug" onclick="useSug(this)">Koramangala, Bangalore</span>
+        <span class="sug" onclick="useSug(this)">Bandra West, Mumbai</span>
+        <span class="sug" onclick="useSug(this)">Sector 14, Gurugram</span>
+        <span class="sug" onclick="useSug(this)">Park Street, Kolkata</span>
+        <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
+      </div>
+    </div>
+    <div class="pub-footer">
+      <div id="recentChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:0"></div>
+      <div class="pub-inp-row">
+        <div class="ac-wrap">
+          <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
+            onkeydown="handlePubKey(event)"
+            oninput="onSearchInput(this.value);triggerAutocomplete(this.value)"
+            onfocus="showHistoryDropdown()"
+            onblur="setTimeout(()=>{hideHistoryDropdown();hideAutocomplete()},220)"/>
+          <div class="ac-drop" id="acDrop"></div>
+        </div>
+        <button class="pub-mic" id="pubMic" onclick="togglePubMic()" title="Speak your location">🎤</button>
+        <button class="pub-send" id="pubSend" onclick="pubSearch()">➤</button>
+      </div>
+      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes · ⚔️ Council of 6</div>
+    </div>
+  </div>
+
+  <!-- AGENT VIEW -->
+  <div id="agentView">
+    <!-- LEFT -->
+    <div class="agent-left">
+      <div class="al-tabs">
+        <div class="al-tab active" onclick="switchAgentTab('history',this)">History</div>
+        <div class="al-tab" onclick="switchAgentTab('stats',this)">Stats</div>
+      </div>
+      <div class="al-content active" id="at-history">
+        <div class="al-empty" id="histEmpty">No addresses captured yet.<br>Start listening to begin.</div>
+      </div>
+      <div class="al-content" id="at-stats">
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-num" id="s-today">0</div><div class="stat-lbl">Today</div></div>
+          <div class="stat-box"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+          <div class="stat-box"><div class="stat-num" id="s-rate">0%</div><div class="stat-lbl">Success</div></div>
+          <div class="stat-box"><div class="stat-num" id="s-dup">0</div><div class="stat-lbl">Duplicates</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <button class="al-action-btn" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="al-action-btn danger" onclick="clearHistory()">🗑️ Clear History</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="agent-right">
+
+      <!-- Listen button -->
+      <div class="listen-outer" id="listenOuter" onclick="toggleListen()">
+        <div class="listen-ring r1"></div>
+        <div class="listen-ring r2"></div>
+        <div class="listen-ring r3"></div>
+        <div class="listen-ring r4"></div>
+        <div class="listen-btn" id="listenBtn">
+          <div class="listen-icon" id="listenIcon">🎙️</div>
+          <div class="listen-lbl" id="listenLbl">TAP TO START</div>
+        </div>
+      </div>
+
+      <!-- Wave -->
+      <div class="wave-bars" id="waveBars">
+        <div class="wb" style="height:4px"></div><div class="wb" style="height:8px"></div>
+        <div class="wb" style="height:4px"></div><div class="wb" style="height:12px"></div>
+        <div class="wb" style="height:6px"></div><div class="wb" style="height:4px"></div>
+        <div class="wb" style="height:10px"></div><div class="wb" style="height:4px"></div>
+        <div class="wb" style="height:8px"></div><div class="wb" style="height:4px"></div>
+      </div>
+
+      <!-- Status -->
+      <div class="agent-status">
+        <div class="as-main" id="asMain">Tap the button to start listening</div>
+        <div class="as-sub" id="asSub">7 auto-strategies · 10 verification layers · 20 languages</div>
+      </div>
+
+      <!-- Strategy indicators -->
+      <div class="strategy-row" id="stratRow">
+        <div class="strat" id="s1">S1:AgentQ</div>
+        <div class="strat" id="s2">S2:Trigger</div>
+        <div class="strat" id="s3">S3:Context</div>
+        <div class="strat" id="s4">S4:Silence</div>
+        <div class="strat" id="s5">S5:Pattern</div>
+        <div class="strat" id="s6">S6:Pincode</div>
+        <div class="strat" id="s7">S7:Buffer</div>
+      </div>
+
+      <!-- Layer progress -->
+      <div class="layers-row" id="layersRow">
+        <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
+        <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
+        <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
+        <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
+        <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
+      </div>
+
+      <!-- Transcript -->
+      <div class="agent-transcript" id="agentTranscript"></div>
+
+      <!-- Result -->
+      <div class="agent-result" id="agentResult">
+        <div class="result-card">
+          <div class="conf-row">
+            <span class="conf-lbl">Confidence</span>
+            <div class="conf-track"><div class="conf-fill" id="confFill" style="width:0%"></div></div>
+            <span class="conf-pct" id="confPct">0%</span>
+          </div>
+          <div class="r-addr" id="rAddr"></div>
+          <div class="r-pills" id="rPills"></div>
+          <div class="r-actions">
+            <button class="ra confirm" onclick="confirmAddr()">✅ Confirm & Save</button>
+            <button class="ra maps" onclick="openMaps()">🗺️ Maps</button>
+            <button class="ra edit" onclick="showEdit()">✏️ Edit</button>
+            <button class="ra reject" onclick="rejectAddr()">❌ Wrong</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit -->
+      <div class="edit-row" id="editRow">
+        <input class="edit-inp" id="editInp" placeholder="Edit the address..."/>
+        <button class="edit-go" onclick="searchEdited()">Search</button>
+      </div>
+
+      <!-- Manual -->
+      <div class="manual-row">
+        <input class="manual-inp" id="manualInp" placeholder="⌨️ Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
+        <button class="manual-go" onclick="manualSearch()">Search</button>
+      </div>
+
+    </div>
+
+
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="adminView">
+    <div class="admin-sidebar">
+      <div class="admin-nav active" onclick="switchAdminPage('dashboard',this)">📊 Dashboard</div>
+      <div class="admin-nav" onclick="switchAdminPage('companies',this)">🏢 Companies</div>
+      <div class="admin-nav" onclick="switchAdminPage('agents',this)">👤 Agents</div>
+      <div class="admin-nav" onclick="switchAdminPage('addresses',this)">📋 Addresses</div>
+      <div class="admin-nav" onclick="switchAdminPage('settings',this)">⚙️ Settings</div>
+    </div>
+    <div class="admin-content">
+
+      <!-- Dashboard -->
+      <div class="admin-page active" id="ap-dashboard">
+        <div class="admin-page-title">Dashboard</div>
+        <div class="admin-page-sub">Overview of all activity</div>
+        <div class="admin-stats">
+          <div class="admin-stat"><div class="admin-stat-val" id="as-co">0</div><div class="admin-stat-lbl">Companies</div></div>
+          <div class="admin-stat"><div class="admin-stat-val" id="as-ag">0</div><div class="admin-stat-lbl">Agents</div></div>
+          <div class="admin-stat"><div class="admin-stat-val" id="as-addr">0</div><div class="admin-stat-lbl">Addresses</div></div>
+          <div class="admin-stat"><div class="admin-stat-val" id="as-act">0</div><div class="admin-stat-lbl">Active Today</div></div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-hdr"><div class="admin-section-title">Recent Addresses</div></div>
+          <div class="admin-section-body">
+            <table class="admin-table"><thead><tr><th>Address</th><th>Pincode</th><th>Agent</th><th>Company</th><th>Time</th></tr></thead>
+            <tbody id="dash-addr"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Companies -->
+      <div class="admin-page" id="ap-companies">
+        <div class="admin-page-title">Companies</div>
+        <div class="admin-page-sub">Manage registered companies</div>
+        <div class="admin-section">
+          <div class="admin-section-hdr">
+            <div class="admin-section-title">Add Company</div>
+          </div>
+          <div class="admin-section-body">
+            <div class="admin-form">
+              <div><label class="af-label">Company Name</label><input class="af-inp" id="c-name" placeholder="ABC Sales Pvt Ltd"/></div>
+              <div><label class="af-label">Login ID</label><input class="af-inp" id="c-id" placeholder="abc_sales"/></div>
+              <div><label class="af-label">Password</label><input class="af-inp" type="password" id="c-pass" placeholder="Password"/></div>
+              <div><label class="af-label">Email (optional)</label><input class="af-inp" id="c-email" placeholder="company@email.com"/></div>
+              <div><label class="af-label">Plan</label><select class="af-select" id="c-plan"><option value="starter">Starter — 5 seats, 500/mo</option><option value="growth">Growth — 25 seats, 5,000/mo</option><option value="enterprise">Enterprise — Unlimited</option></select></div>
+            </div>
+            <div style="margin-top:14px"><button class="a-btn green" onclick="addCompany()">+ Create Company</button></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-hdr"><div class="admin-section-title">All Companies</div></div>
+          <div class="admin-section-body">
+            <table class="admin-table"><thead><tr><th>Name</th><th>ID</th><th>Agents</th><th>Addresses</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="companies-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agents -->
+      <div class="admin-page" id="ap-agents">
+        <div class="admin-page-title">Agents</div>
+        <div class="admin-page-sub">Manage all agents</div>
+        <div class="admin-section">
+          <div class="admin-section-hdr"><div class="admin-section-title">Add Agent</div></div>
+          <div class="admin-section-body">
+            <div class="admin-form">
+              <div><label class="af-label">Full Name</label><input class="af-inp" id="a-name" placeholder="Rahul Kumar"/></div>
+              <div><label class="af-label">Agent ID</label><input class="af-inp" id="a-id" placeholder="agent_001"/></div>
+              <div><label class="af-label">Password</label><input class="af-inp" type="password" id="a-pass" placeholder="Password"/></div>
+              <div><label class="af-label">Company</label><select class="af-select" id="a-company"></select></div>
+            </div>
+            <div style="margin-top:14px"><button class="a-btn green" onclick="addAgent()">+ Create Agent</button></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-hdr">
+            <div class="admin-section-title">All Agents</div>
+            <input class="search-inp" placeholder="Search agents..." oninput="filterAgents(this.value)"/>
+          </div>
+          <div class="admin-section-body">
+            <table class="admin-table"><thead><tr><th>Name</th><th>ID</th><th>Company</th><th>Addresses</th><th>Last Active</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="agents-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Addresses -->
+      <div class="admin-page" id="ap-addresses">
+        <div class="admin-page-title">All Addresses</div>
+        <div class="admin-page-sub">Every address captured across all agents</div>
+        <div class="admin-section">
+          <div class="admin-section-hdr">
+            <div class="admin-section-title">Address Log</div>
+            <div style="display:flex;gap:8px">
+              <input class="search-inp" placeholder="Search..." oninput="filterAddresses(this.value)"/>
+              <button class="a-btn blue" onclick="exportAllCSV()">📥 Export All</button>
+            </div>
+          </div>
+          <div class="admin-section-body">
+            <table class="admin-table"><thead><tr><th>Address</th><th>Pincode</th><th>District</th><th>State</th><th>Agent</th><th>Company</th><th>Time</th></tr></thead>
+            <tbody id="addresses-table"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="admin-page" id="ap-settings">
+        <div class="admin-page-title">Settings</div>
+        <div class="admin-page-sub">Admin configuration</div>
+        <div class="admin-section">
+          <div class="admin-section-hdr"><div class="admin-section-title">Change Admin Password</div></div>
+          <div class="admin-section-body">
+            <div class="admin-form">
+              <div><label class="af-label">Current Password</label><input class="af-inp" type="password" id="currPass"/></div>
+              <div><label class="af-label">New Password</label><input class="af-inp" type="password" id="newPass"/></div>
+              <div class="full"><label class="af-label">Confirm New Password</label><input class="af-inp" type="password" id="confPass"/></div>
+            </div>
+            <div style="margin-top:14px"><button class="a-btn green" onclick="changeAdminPass()">Update Password</button></div>
+          </div>
+        </div>
+        <div class="admin-section">
+          <div class="admin-section-hdr"><div class="admin-section-title">Danger Zone</div></div>
+          <div class="admin-section-body">
+            <button class="a-btn green" onclick="vnSyncToCloud()" style="margin-bottom:8px">☁️ Sync Agents to Cloud</button>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:12px">Saves agents & companies so any device can login with same credentials.</div>
+            <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
+            <div style="margin-top:8px;font-size:11px;color:var(--text3)">Deletes all companies, agents and addresses permanently.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ── QR Code Modal ── -->
+<div id="qrModal">
+  <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">📱 QR CODE
+    <button onclick="document.getElementById('qrModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <canvas id="qrCanvas" width="220" height="220"></canvas>
+  <div id="qrText" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:8px;word-break:break-all"></div>
+  <button onclick="downloadQR()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(176,140,255,.15),rgba(176,140,255,.05));border:1px solid rgba(176,140,255,.3);color:var(--purple);border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⬇️ Download QR</button>
+</div>
+
+<!-- ── Bookmarks Panel ── -->
+<div id="bookmarksPanel">
+  <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(255,179,71,.1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="font-size:13px;font-weight:700;font-family:var(--font-display);color:var(--amber)">⭐ Saved Addresses</div>
+    <button onclick="document.getElementById('bookmarksPanel').classList.remove('show');document.getElementById('modalBackdrop').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div id="bookmarksList" style="overflow-y:auto;flex:1;padding:8px 0"></div>
+  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04)">
+    <button onclick="clearBookmarks()" style="width:100%;background:none;border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:8px;padding:8px;font-size:11px;cursor:pointer;font-family:var(--font-mono)">🗑️ Clear All Saved</button>
+  </div>
+</div>
+
+<!-- ── Multi-Stop Route Planner ── -->
+<div id="multiStopModal">
+  <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">🗺️ MULTI-STOP ROUTE PLANNER
+    <button onclick="document.getElementById('multiStopModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div id="stopsList">
+    <div class="stop-row"><span class="stop-num">1</span><input class="stop-inp" placeholder="Starting point…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+    <div class="stop-row"><span class="stop-num">2</span><input class="stop-inp" placeholder="Stop 2…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+    <div class="stop-row"><span class="stop-num">3</span><input class="stop-inp" placeholder="Destination…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <button onclick="addStop()" style="flex:1;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);color:var(--green);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--font-display)">+ Add Stop</button>
+    <button onclick="planRoute()" style="flex:2;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:10px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🗺️ Plan Route</button>
+  </div>
+  <div id="routeResult" style="margin-top:12px"></div>
+</div>
+
+<!-- ── Batch Address Upload ── -->
+<div id="batchModal">
+  <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📋 BATCH ADDRESS PROCESSOR
+    <button onclick="document.getElementById('batchModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
+  </div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Paste up to 20 addresses (one per line) — AI will validate and enrich all at once.</div>
+  <textarea id="batchInp" rows="6" placeholder="Lajpat Nagar, Delhi&#10;Koramangala, Bangalore&#10;Bandra West, Mumbai&#10;..." style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
+  <button onclick="runBatch()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⚡ Process All Addresses</button>
+  <div id="batchResult" style="margin-top:12px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+
+<script src="pindb.js"></script>
+<script>
 const GROQ_KEY = window.GROQ_KEY;
 const ADMIN_USER = 'vishal_admin';
 const ADMIN_PASS_KEY = 'vn_admin_pass';
@@ -2928,7 +3445,12 @@ function diffAddresses(a,b){
 })();
 
 console.log('✅ New features loaded: autocomplete, QR codes, bookmarks, multi-stop routing, batch processor, PWA offline support, keyboard shortcuts, light/dark theme, street view, feedback voting, live agent GPS tracking');
-
+</script> 
+<!-- ═══════════════════════════════════════════════════════
+     REAL ROAD DISTANCE FIX — injected patch
+     Overrides runCompare() and planRoute() with OSRM routing
+     ═══════════════════════════════════════════════════════ -->
+<script>
 // ══════════════════════════════════════════════════════════
 // REAL ROAD DISTANCE via OSRM (free, no key needed)
 // Profiles: driving, walking, cycling (train = fallback haversine)
@@ -3151,6 +3673,13 @@ async function planRoute() {
   }
 }
 
+</script>
+
+<!-- ═══════════════════════════════════════════════
+     DEEPGRAM REAL-TIME STT — INJECTED
+     Key: 6cc1f796b4d685cd65f5578d2d405e023c8db204
+     ═══════════════════════════════════════════════ -->
+<script>
 const DEEPGRAM_KEY='6cc1f796b4d685cd65f5578d2d405e023c8db204';
 let dgSocket=null,dgStream=null,dgProcessor=null;
 let dgContext=null,dgLiveTranscript='',dgActive=false,dgCaptureTimer=null;
@@ -3319,7 +3848,8 @@ const _dgOriginalLogout=typeof agentLogout!=='undefined'?agentLogout:function(){
 window.agentLogout=function(){stopDeepgramListen();_dgOriginalLogout();};
 
 console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
-
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — PATCH v2
 // Fix 1: Deepgram real-time STT in PUBLIC SEARCH mic button
@@ -3552,7 +4082,8 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 
   console.log('✅ Patch Fix 2: Agent auto-stop + auto-confirm wired');
 })();
-
+</script>
+<script>
 // ═══════════════════════════════════════════════════════════════
 // SUPABASE BACKEND — Real cloud database for Vishal Navigation
 // ═══════════════════════════════════════════════════════════════
@@ -3812,7 +4343,9 @@ window.vnSyncToCloud = function() { if(typeof toast==='function') toast('☁️ 
 
 console.log('✅ Supabase backend loaded');
 })();
+</script>
 
+<script id="vn-tab-recording-fix">
 (function() {
 'use strict';
 
@@ -4092,7 +4625,427 @@ if (document.getElementById('intelPanel')) {
 
 console.log('✅ Tab fix + Recording upload + CSV export loaded');
 })();
+</script>
+</body>
 
+<style id="vn-upgrade-styles">
+/* ── AGENT UPGRADE ─────────────────────────────────────── */
+.agent-left-v2{background:rgba(5,10,18,.95);border-right:1px solid rgba(0,255,170,.08);display:flex;flex-direction:column;overflow:hidden}
+.agent-right-v2{display:flex;flex-direction:column;overflow:hidden;background:#030810}
+
+/* Live fields panel */
+.live-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px}
+.lf-field{background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;transition:all .3s;position:relative}
+.lf-field.filling{border-color:var(--green);box-shadow:0 0 16px rgba(0,255,170,.15);animation:fieldPulse .6s ease}
+.lf-field.filled{border-color:rgba(0,255,170,.4);background:rgba(0,255,170,.05)}
+.lf-field.verified{border-color:var(--green);background:rgba(0,255,170,.08)}
+@keyframes fieldPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+.lf-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.lf-value{font-size:13px;font-weight:600;color:var(--text);min-height:20px;font-family:var(--font-body)}
+.lf-value.empty{color:var(--text3);font-weight:400;font-size:11px;font-style:italic}
+.lf-check{font-size:12px;display:none}
+.lf-field.verified .lf-check{display:inline;color:var(--green)}
+.lf-field.filling .lf-value::after{content:'|';animation:blink .7s infinite;color:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* Full width field */
+.lf-field.full{grid-column:1/-1}
+
+/* Live transcript */
+.live-transcript-box{width:100%;max-width:520px;background:rgba(4,8,16,.9);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;min-height:60px;max-height:100px;overflow-y:auto;font-size:11px;font-family:var(--font-mono);color:var(--text2);line-height:1.7;position:relative}
+.live-transcript-box::before{content:'🎙️ LIVE';position:absolute;top:8px;right:10px;font-size:8px;color:var(--green);letter-spacing:1px;opacity:.6}
+.live-transcript-box .word{display:inline}
+.live-transcript-box .word.new{color:var(--green);font-weight:600;animation:wordIn .3s ease}
+@keyframes wordIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+/* Force extract + stop buttons */
+.agent-action-row{display:flex;gap:8px;width:100%;max-width:520px}
+.btn-force{flex:1;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.25);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-force:hover{background:rgba(56,182,255,.15);box-shadow:0 0 16px rgba(56,182,255,.2)}
+.btn-force:disabled{opacity:.3;cursor:not-allowed}
+.btn-stop-save{flex:2;background:linear-gradient(135deg,#00ffaa,#00cc88);border:none;color:#000;border-radius:10px;padding:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 20px rgba(0,255,170,.3)}
+.btn-stop-save:hover{box-shadow:0 8px 32px rgba(0,255,170,.5);transform:translateY(-1px)}
+.btn-stop-save:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Confidence meter */
+.conf-meter-wrap{width:100%;max-width:520px}
+.conf-meter-bar{height:6px;background:var(--border2);border-radius:4px;overflow:hidden;margin-top:4px}
+.conf-meter-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.2,.8,.3,1),background .3s}
+
+/* Call records table */
+.call-records{width:100%;border-collapse:collapse;font-size:11px}
+.call-records th{font-size:9px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.call-records td{padding:9px 10px;border-bottom:1px solid rgba(20,32,48,.6);color:var(--text2);font-family:var(--font-mono);font-size:11px;vertical-align:middle}
+.call-records td:first-child{color:var(--text);font-family:var(--font-body);font-size:12px;font-weight:600}
+.call-records tr:hover td{background:rgba(0,255,170,.02)}
+.call-records tr:last-child td{border-bottom:none}
+.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:3px 8px;border-radius:6px;font-family:var(--font-mono);font-weight:700;letter-spacing:.5px}
+.status-badge.patched{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25)}
+.status-badge.draft{background:rgba(255,179,71,.1);color:var(--amber);border:1px solid rgba(255,179,71,.25)}
+.status-badge.review{background:rgba(255,85,102,.1);color:var(--red);border:1px solid rgba(255,85,102,.25)}
+.pin-verified{display:inline-flex;align-items:center;gap:3px;color:var(--green);font-size:10px}
+.pin-unverified{color:var(--text3);font-size:10px}
+
+/* ── ADMIN UPGRADE ─────────────────────────────────────── */
+#adminView.active{display:flex!important;flex-direction:row}
+.admin-sidebar-v2{width:220px;min-width:220px;background:rgba(3,6,12,.98);border-right:1px solid rgba(0,255,170,.06);display:flex;flex-direction:column;flex-shrink:0}
+.admin-sidebar-v2 .brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
+.admin-sidebar-v2 .brand-logo{width:36px;height:36px;background:linear-gradient(135deg,#00ffaa,#00cc88);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;box-shadow:0 0 16px rgba(0,255,170,.3)}
+.admin-sidebar-v2 .brand-name{font-size:13px;font-weight:800;font-family:var(--font-display);color:var(--text)}
+.admin-sidebar-v2 .brand-sub{font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px}
+.admin-nav-v2{display:flex;flex-direction:column;padding:12px 10px;gap:2px;flex:1}
+.admin-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--text2);font-weight:500;border:1px solid transparent}
+.admin-nav-item:hover{background:rgba(0,255,170,.04);color:var(--text)}
+.admin-nav-item.active{background:rgba(0,255,170,.08);color:var(--green);border-color:rgba(0,255,170,.15)}
+.admin-nav-item .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.admin-nav-badge{margin-left:auto;background:rgba(255,85,102,.15);color:var(--red);font-size:9px;padding:2px 7px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(255,85,102,.25)}
+
+.admin-content-v2{flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
+
+/* Top bar */
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid rgba(0,255,170,.06);background:rgba(3,6,12,.9);flex-shrink:0;backdrop-filter:blur(16px)}
+.admin-topbar-title{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase}
+.admin-topbar-heading{font-size:22px;font-weight:800;font-family:var(--font-display);color:var(--text);letter-spacing:-.5px;margin-top:2px}
+.admin-topbar-actions{display:flex;gap:10px;align-items:center}
+.btn-open-agent{display:flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(0,255,170,.08);border:1px solid rgba(0,255,170,.25);color:var(--green);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-open-agent:hover{background:rgba(0,255,170,.15);box-shadow:0 0 16px rgba(0,255,170,.2)}
+.btn-signout{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,85,102,.08);border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-signout:hover{background:rgba(255,85,102,.15)}
+.btn-refresh{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(7,13,20,.8);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-display);transition:all .25s}
+.btn-refresh:hover{border-color:var(--green);color:var(--green)}
+.btn-refresh.spinning .refresh-icon{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.refresh-icon{display:inline-block}
+.admin-user-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.15);border-radius:20px;font-size:11px;color:var(--green);font-family:var(--font-mono)}
+.admin-user-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:livePulse 1.5s infinite}
+
+/* Stats grid */
+.admin-body{padding:24px 28px;flex:1}
+.stats-grid-v2{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:all .25s;cursor:default}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 14px 14px;opacity:0;transition:opacity .3s}
+.stat-card.green::after{background:linear-gradient(90deg,var(--green2),var(--green));opacity:1}
+.stat-card.amber::after{background:linear-gradient(90deg,var(--amber2),var(--amber));opacity:1}
+.stat-card.blue::after{background:linear-gradient(90deg,#2563eb,var(--blue));opacity:1}
+.stat-card.red::after{background:linear-gradient(90deg,#cc2233,var(--red));opacity:1}
+.stat-card.purple::after{background:linear-gradient(90deg,#7c3aed,var(--purple));opacity:1}
+.stat-card-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.stat-card-icon{font-size:14px;opacity:.5}
+.stat-card-val{font-size:32px;font-weight:700;font-family:var(--font-mono);line-height:1;margin-bottom:4px}
+.stat-card.green .stat-card-val{color:var(--green);text-shadow:0 0 20px rgba(0,255,170,.3)}
+.stat-card.amber .stat-card-val{color:var(--amber);text-shadow:0 0 20px rgba(255,179,71,.3)}
+.stat-card.blue .stat-card-val{color:var(--blue);text-shadow:0 0 20px rgba(56,182,255,.3)}
+.stat-card.red .stat-card-val{color:var(--red)}
+.stat-card.purple .stat-card-val{color:var(--purple)}
+.stat-card-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;overflow:hidden}
+.chart-title{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.chart-title-icon{font-size:12px;opacity:.6}
+
+/* Bar chart */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:20px;position:relative}
+.bar-chart::after{content:'';position:absolute;bottom:20px;left:0;right:0;height:1px;background:rgba(255,255,255,.04)}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar-inner{width:100%;display:flex;align-items:flex-end;flex:1}
+.bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.2,.8,.3,1);min-height:2px;position:relative}
+.bar:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text);font-family:var(--font-mono);white-space:nowrap;background:rgba(7,13,20,.9);padding:2px 6px;border-radius:4px;border:1px solid var(--border2)}
+.bar-lbl{font-size:8px;color:var(--text3);font-family:var(--font-mono);text-align:center}
+
+/* Donut chart */
+.donut-wrap{display:flex;align-items:center;gap:20px}
+.donut-svg{flex-shrink:0}
+.donut-legend{display:flex;flex-direction:column;gap:8px}
+.donut-legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);font-family:var(--font-mono)}
+.donut-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.donut-val{margin-left:auto;font-weight:700;font-size:12px}
+
+/* Recent calls table */
+.table-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.table-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
+.table-card-title{font-size:13px;font-weight:700;font-family:var(--font-display)}
+.table-card-actions{display:flex;gap:8px}
+.tbl-search{background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text);outline:none;font-family:var(--font-body);width:160px}
+.tbl-search:focus{border-color:rgba(0,255,170,.4)}
+.tbl-export{padding:6px 14px;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.2);color:var(--blue);border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font-display);font-weight:600}
+
+/* Admin pages */
+.admin-page-v2{display:none}
+.admin-page-v2.active{display:block}
+
+/* Agents page */
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.agent-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:16px;transition:all .25s}
+.agent-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.agent-card-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.agent-avatar{width:40px;height:40px;background:linear-gradient(135deg,rgba(0,255,170,.2),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.agent-card-name{font-size:13px;font-weight:700;color:var(--text);font-family:var(--font-display)}
+.agent-card-id{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.agent-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.agent-stat{text-align:center;background:rgba(12,21,32,.6);border-radius:8px;padding:8px 4px}
+.agent-stat-val{font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--green)}
+.agent-stat-lbl{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
+.agent-card-footer{display:flex;gap:6px;margin-top:12px}
+.agent-action{flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-display);border:none;transition:all .2s;text-align:center}
+.agent-action.primary{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.2)}
+.agent-action.primary:hover{background:rgba(0,255,170,.18)}
+.agent-action.danger{background:rgba(255,85,102,.08);color:var(--red);border:1px solid rgba(255,85,102,.2)}
+.agent-action.danger:hover{background:rgba(255,85,102,.15)}
+
+/* Online indicator */
+.online-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,170,.6);animation:livePulse 1.5s infinite;flex-shrink:0}
+.offline-dot{width:8px;height:8px;background:var(--text3);border-radius:50%;flex-shrink:0}
+
+/* ════════════════════════════════════════════════════════════
+   CORPORATE ENTERPRISE THEME — light, Stripe/Linear-style
+   Scoped to #agentView and #adminView only
+   ════════════════════════════════════════════════════════════ */
+:root{
+  --corp-bg:#f6f7f9;--corp-surface:#ffffff;--corp-surface2:#fafbfc;
+  --corp-border:#e3e6eb;--corp-border-strong:#d1d6dd;
+  --corp-text:#1a1d24;--corp-text2:#5e6470;--corp-text3:#94999f;
+  --corp-blue:#3b5bdb;--corp-blue-dim:#eef1fd;--corp-blue-strong:#2d46ad;
+  --corp-green:#0d9354;--corp-green-dim:#e8f7ee;
+  --corp-amber:#b5740a;--corp-amber-dim:#fdf3e2;
+  --corp-red:#c52f2f;--corp-red-dim:#fcebeb;
+  --corp-shadow:0 1px 2px rgba(20,22,30,.04),0 1px 8px rgba(20,22,30,.04);
+  --corp-shadow-md:0 2px 6px rgba(20,22,30,.06),0 8px 24px rgba(20,22,30,.06);
+  --corp-radius:10px;--corp-radius-lg:14px;
+}
+
+#agentView.active,#adminView.active{background:var(--corp-bg)!important;color:var(--corp-text)}
+.corp-shell{padding:28px 32px 48px;max-width:1080px;margin:0 auto;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:20px;font-family:var(--font-body)}
+
+.corp-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 0 4px}
+.corp-brand{display:flex;align-items:center;gap:10px}
+.corp-brand-mark{width:32px;height:32px;background:var(--corp-blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700}
+.corp-brand-name{font-size:15px;font-weight:600;color:var(--corp-text)}
+.corp-brand-sub{font-size:11px;color:var(--corp-text3);letter-spacing:.3px}
+.corp-topbar-right{display:flex;align-items:center;gap:10px}
+.corp-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px}
+.corp-pill.live{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-pill.plan{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+.corp-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 16px;border-radius:var(--corp-radius);border:1px solid var(--corp-border);background:var(--corp-surface);color:var(--corp-text2);cursor:pointer;transition:all .15s}
+.corp-btn:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
+.corp-btn.primary{background:var(--corp-blue);border-color:var(--corp-blue);color:#fff}
+.corp-btn.primary:hover{background:var(--corp-blue-strong)}
+.corp-btn.danger{border-color:var(--corp-red-dim);color:var(--corp-red);background:var(--corp-red-dim)}
+.corp-btn.danger:hover{background:#f9dada}
+.corp-btn:disabled{opacity:.45;cursor:not-allowed}
+
+.corp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.corp-stat{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px 20px;box-shadow:var(--corp-shadow)}
+.corp-stat-lbl{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.corp-stat-val{font-size:28px;font-weight:600;color:var(--corp-text);line-height:1}
+.corp-stat-val.green{color:var(--corp-green)}
+.corp-stat-val.amber{color:var(--corp-amber)}
+.corp-stat-sub{font-size:12px;color:var(--corp-text3);margin-top:4px}
+
+.corp-card{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:22px 24px;box-shadow:var(--corp-shadow)}
+.corp-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.corp-card-title{font-size:14px;font-weight:600;color:var(--corp-text);display:flex;align-items:center;gap:8px}
+.corp-card-sub{font-size:12px;color:var(--corp-text3);margin-top:2px}
+
+.corp-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:10px 13px;font-size:13px;color:var(--corp-text);outline:none;width:100%;transition:all .15s}
+.corp-inp:focus{border-color:var(--corp-blue);background:#fff;box-shadow:0 0 0 3px var(--corp-blue-dim)}
+.corp-inp::placeholder{color:var(--corp-text3)}
+.corp-inp.filled{border-color:var(--corp-green);background:var(--corp-green-dim)}
+.corp-inp.verified{box-shadow:0 0 0 2px var(--corp-green-dim)}
+.corp-field{display:flex;flex-direction:column;gap:6px}
+.corp-field.full{grid-column:1/-1}
+.corp-field label{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.2px}
+.corp-field-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+.corp-listen-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
+.corp-listen-outer{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.corp-listen-ring{position:absolute;border-radius:50%;border:1px solid var(--corp-blue-dim);pointer-events:none;transition:all .4s}
+.corp-listen-ring.r1{width:120px;height:120px}.corp-listen-ring.r2{width:148px;height:148px}
+.corp-listen-ring.r3{width:176px;height:176px}.corp-listen-ring.r4{width:204px;height:204px}
+.corp-listen-outer.active .corp-listen-ring{animation:corpRingExpand 2.5s ease-out infinite}
+.corp-listen-outer.active .corp-listen-ring.r2{animation-delay:.5s}
+.corp-listen-outer.active .corp-listen-ring.r3{animation-delay:1s}
+.corp-listen-outer.active .corp-listen-ring.r4{animation-delay:1.5s}
+@keyframes corpRingExpand{0%{opacity:.6;transform:scale(.92);border-color:var(--corp-blue)}100%{opacity:0;transform:scale(1.1);border-color:transparent}}
+.corp-listen-btn{width:96px;height:96px;border-radius:50%;background:var(--corp-surface);border:2px solid var(--corp-border-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .25s;z-index:1;box-shadow:var(--corp-shadow-md)}
+.corp-listen-btn:hover{border-color:var(--corp-blue)}
+.corp-listen-btn.active{background:var(--corp-red-dim);border-color:var(--corp-red)}
+.corp-listen-icon{font-size:26px}
+.corp-listen-lbl{font-size:8px;font-weight:700;color:var(--corp-text3);letter-spacing:1px;text-transform:uppercase}
+.corp-status-main{font-size:14px;font-weight:600;color:var(--corp-text)}
+.corp-status-sub{font-size:11px;color:var(--corp-text3);margin-top:2px}
+.corp-wave{display:flex;align-items:center;gap:3px;height:28px}
+.corp-wb{width:3px;border-radius:3px;background:var(--corp-border);transition:height .1s}
+.corp-wave.active .corp-wb{background:var(--corp-blue);animation:corpWave .8s ease-in-out infinite}
+
+.corp-strategy-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:480px}
+.corp-strat{font-size:9px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text3);transition:all .25s}
+.corp-strat.fired{background:var(--corp-blue-dim);border-color:var(--corp-blue);color:var(--corp-blue-strong)}
+.corp-layers-row{display:flex;gap:4px;width:100%;max-width:480px}
+.corp-layer-dot{flex:1;height:4px;border-radius:2px;background:var(--corp-border);transition:all .3s}
+.corp-layer-dot.active{background:var(--corp-blue)}
+.corp-layer-dot.warn{background:var(--corp-amber)}
+
+.corp-transcript{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:12px 15px;font-size:12px;color:var(--corp-text2);width:100%;max-width:480px;min-height:48px;line-height:1.6}
+.corp-conf-wrap{width:100%;max-width:480px}
+.corp-conf-bar{height:5px;background:var(--corp-border);border-radius:3px;overflow:hidden;margin-top:5px}
+.corp-conf-fill{height:100%;border-radius:3px;transition:width .5s ease,background .3s}
+
+.corp-table{width:100%;border-collapse:collapse;font-size:13px}
+.corp-table thead th{font-size:11px;color:var(--corp-text3);font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid var(--corp-border);white-space:nowrap}
+.corp-table tbody td{padding:11px 14px;color:var(--corp-text2);border-bottom:1px solid var(--corp-border);white-space:nowrap}
+.corp-table tbody tr:hover td{background:var(--corp-surface2)}
+.corp-table tbody tr:last-child td{border-bottom:none}
+.corp-table .addr-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--corp-text)}
+.corp-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block}
+.corp-badge.patched{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-badge.draft{background:var(--corp-amber-dim);color:var(--corp-amber)}
+.corp-badge.active{background:var(--corp-green-dim);color:var(--corp-green)}
+.corp-badge.inactive{background:var(--corp-surface2);color:var(--corp-text3)}
+.corp-pin-ok{color:var(--corp-green);font-weight:600}
+
+.corp-sidebar{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:2px}
+.corp-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--corp-radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--corp-text2);transition:all .15s}
+.corp-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
+.corp-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+.corp-nav-badge{margin-left:auto;background:var(--corp-surface2);color:var(--corp-text3);font-size:10px;padding:2px 7px;border-radius:9px;font-weight:600}
+
+.corp-admin-layout{display:flex;gap:24px;padding:28px 32px 48px;max-width:1200px;margin:0 auto;overflow-y:auto;height:100%}
+.corp-admin-main{flex:1;display:flex;flex-direction:column;gap:20px;min-width:0}
+
+.corp-usage-meter{display:flex;align-items:center;gap:12px}
+.corp-usage-bar{flex:1;height:8px;background:var(--corp-border);border-radius:4px;overflow:hidden}
+.corp-usage-fill{height:100%;border-radius:4px;transition:width .4s}
+.corp-usage-fill.ok{background:var(--corp-green)}
+.corp-usage-fill.warn{background:var(--corp-amber)}
+.corp-usage-fill.over{background:var(--corp-red)}
+.corp-usage-text{font-size:12px;color:var(--corp-text2);font-weight:600;white-space:nowrap}
+
+.corp-plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.corp-plan-card{border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px;background:var(--corp-surface2)}
+.corp-plan-card.current{border:2px solid var(--corp-blue);background:var(--corp-blue-dim)}
+.corp-plan-name{font-size:13px;color:var(--corp-text3);font-weight:600}
+.corp-plan-price{font-size:22px;font-weight:600;color:var(--corp-text);margin:6px 0}
+.corp-plan-detail{font-size:12px;color:var(--corp-text2)}
+.corp-plan-current-badge{display:inline-block;background:var(--corp-blue);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;margin-bottom:8px}
+
+@keyframes corpWave{0%,100%{height:4px}50%{height:24px}}
+
+@media(max-width:900px){
+  .corp-admin-layout{flex-direction:column}
+  .corp-sidebar{width:100%;flex-direction:row;overflow-x:auto}
+  .corp-stats{grid-template-columns:repeat(2,1fr)}
+  .corp-field-grid{grid-template-columns:1fr 1fr}
+  .corp-plan-grid{grid-template-columns:1fr}
+}
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN VIEW LIGHT RETHEME — overrides old dark classes
+   Scoped to #adminView so public/landing pages stay untouched
+   ════════════════════════════════════════════════════════════ */
+/* Scope old dark-theme variable NAMES to light corp values inside agent/admin —
+   this catches every remaining inline style="color:var(--text3)" etc without
+   needing to edit each one individually. Public/landing pages are untouched
+   since this rule only applies inside #agentView and #adminView. */
+#agentView,#adminView{
+  --text:var(--corp-text);--text2:var(--corp-text2);--text3:var(--corp-text3);
+  --green:var(--corp-green);--green2:var(--corp-green);
+  --amber:var(--corp-amber);--amber2:var(--corp-amber);
+  --red:var(--corp-red);--blue:var(--corp-blue);
+  --border:var(--corp-border);--border2:var(--corp-border-strong);--border3:var(--corp-border-strong);
+  --surface:var(--corp-surface);--surface2:var(--corp-surface2);
+  --font-mono:var(--font-body);--font-display:var(--font-body);
+}
+
+#adminView.active{background:var(--corp-bg)!important;display:flex!important}
+
+#adminView .admin-sidebar-v2{width:230px;min-width:230px;background:var(--corp-surface);border-right:1px solid var(--corp-border);box-shadow:none}
+#adminView .brand-logo{background:var(--corp-blue);box-shadow:none;color:#fff;font-size:16px}
+#adminView .brand-name{color:var(--corp-text);font-weight:600}
+#adminView .brand-sub{color:var(--corp-text3)}
+#adminView .admin-nav-item{color:var(--corp-text2);border-radius:var(--corp-radius);font-weight:500}
+#adminView .admin-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
+#adminView .admin-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
+#adminView .admin-nav-badge{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
+#adminView .admin-nav-item.active .admin-nav-badge{background:rgba(59,91,219,.12);color:var(--corp-blue-strong);border-color:transparent}
+#adminView .council-status-pill{background:var(--corp-surface2);border:1px solid var(--corp-border);box-shadow:none}
+#adminView .council-status-pill.active{border-color:var(--corp-blue);background:var(--corp-blue-dim);box-shadow:none;animation:none}
+#adminView .council-status-pill.done{border-color:var(--corp-green);background:var(--corp-green-dim)}
+
+#adminView .admin-content-v2{background:var(--corp-bg)}
+#adminView .admin-topbar{background:var(--corp-surface);border-bottom:1px solid var(--corp-border);backdrop-filter:none}
+#adminView .admin-topbar-title{color:var(--corp-text3)}
+#adminView .admin-topbar-heading{color:var(--corp-text);font-weight:600;font-family:var(--font-body)}
+#adminView .admin-user-chip{background:var(--corp-green-dim);border:1px solid transparent;color:var(--corp-green)}
+#adminView .admin-user-dot{background:var(--corp-green);box-shadow:none}
+#adminView .btn-open-agent{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-family:var(--font-body)}
+#adminView .btn-open-agent:hover{background:#dde4fb}
+#adminView .btn-refresh{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text2);font-family:var(--font-body)}
+#adminView .btn-refresh:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
+#adminView .btn-signout{background:var(--corp-red-dim);border:1px solid transparent;color:var(--corp-red);font-family:var(--font-body)}
+#adminView .btn-signout:hover{background:#f9dada}
+
+#adminView .admin-body{background:transparent}
+#adminView .stats-grid-v2{gap:14px}
+#adminView .stat-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .stat-card:hover{border-color:var(--corp-border-strong);box-shadow:var(--corp-shadow-md);transform:none}
+#adminView .stat-card::after{display:none}
+#adminView .stat-card-label{color:var(--corp-text3)}
+#adminView .stat-card-val{font-family:var(--font-body)!important;text-shadow:none!important}
+#adminView .stat-card.green .stat-card-val{color:var(--corp-green)!important}
+#adminView .stat-card.amber .stat-card-val{color:var(--corp-amber)!important}
+#adminView .stat-card.blue .stat-card-val{color:var(--corp-blue)!important}
+#adminView .stat-card.red .stat-card-val{color:var(--corp-red)!important}
+#adminView .stat-card.purple .stat-card-val{color:#7c5cd6!important}
+#adminView .stat-card-sub{color:var(--corp-text3)}
+
+#adminView .chart-card,#adminView .table-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .chart-title{color:var(--corp-text3)}
+#adminView .bar-chart::after{background:var(--corp-border)}
+#adminView .bar:hover::after{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .bar-lbl{color:var(--corp-text3)}
+#adminView .donut-legend-item{color:var(--corp-text2)}
+
+#adminView .table-card-hdr{border-bottom:1px solid var(--corp-border)}
+#adminView .table-card-title{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .tbl-search{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .tbl-search:focus{border-color:var(--corp-blue)}
+#adminView .tbl-export{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-weight:600}
+#adminView .tbl-export:hover{background:#dde4fb}
+
+#adminView .admin-table th{color:var(--corp-text3);border-bottom:1px solid var(--corp-border)}
+#adminView .admin-table td{color:var(--corp-text2);border-bottom:1px solid var(--corp-border)}
+#adminView .admin-table td:first-child{color:var(--corp-text)}
+#adminView .admin-table tr:hover td{background:var(--corp-surface2)}
+
+#adminView .agents-grid{gap:14px}
+#adminView .agent-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
+#adminView .agent-card:hover{border-color:var(--corp-border-strong);transform:none;box-shadow:var(--corp-shadow-md)}
+#adminView .agent-avatar{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong)}
+#adminView .agent-card-name{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .agent-card-id{color:var(--corp-text3)}
+#adminView .agent-stat{background:var(--corp-surface2)}
+#adminView .agent-stat-val{color:var(--corp-text);font-family:var(--font-body)}
+#adminView .agent-stat-lbl{color:var(--corp-text3)}
+#adminView .agent-action.primary{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
+#adminView .agent-action.primary:hover{background:#dde4fb}
+#adminView .agent-action.danger{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
+#adminView .agent-action.danger:hover{background:#f9dada}
+
+#adminView .a-btn.green{background:var(--corp-green);color:#fff;box-shadow:none}
+#adminView .a-btn.green:hover{background:#0b7a45;transform:none;box-shadow:none}
+#adminView .a-btn.red{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
+#adminView .a-btn.blue{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
+#adminView .af-inp,#adminView .af-select,#adminView .search-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
+#adminView .af-inp:focus,#adminView .af-select:focus{border-color:var(--corp-blue);box-shadow:0 0 0 3px var(--corp-blue-dim)}
+#adminView .af-label{color:var(--corp-text3)}
+#adminView .badge.on{background:var(--corp-green-dim);color:var(--corp-green);border:1px solid transparent}
+#adminView .badge.off{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
+</style>
+
+<script id="vn-agent-admin-upgrade">
 // ═══════════════════════════════════════════════════════
 // AGENT SECTION — 7 auto-filling fields + live transcript
 // ═══════════════════════════════════════════════════════
@@ -5551,7 +6504,15 @@ if (_origUpdateLayerUI) {
 }
 
 console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
-
+</script>
+<!-- ═══════════════════════════════════════════════════════════
+     VISHAL NAVIGATION — MASTER FIX
+     Paste this LAST, just before 
+</body>
+     Fixes: agent form filling, strategy UI, listen toggle,
+            plan enforcement, admin addCompany, corp-strat sync
+     ═══════════════════════════════════════════════════════════ -->
+<script id="master-fix">
 (function() {
 'use strict';
 
@@ -5862,7 +6823,8 @@ window.manualSearch = function() {
 
 console.log('✅ Master Fix loaded — all 14 fixes active');
 })();
-
+</script> 
+<script>
 // ═══════════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — CRITICAL FIX PATCH
 // Paste this entire block just before 
@@ -7472,975 +8434,6 @@ window.stopAndSave = function() {
 console.log('✅ Intel Panel v2 loaded');
 })();
 </script>
-
-<!-- ===== LANDING ===== -->
-<div class="landing" id="landing" style="display:none">
-  <div class="landing-inner">
-    <div class="landing-logo">
-      <div class="landing-logo-mark">🧭</div>
-      <div class="landing-logo-text">
-        <div class="name">Vishal Navigation</div>
-        <div class="tagline">INDIA ADDRESS INTELLIGENCE</div>
-      </div>
-    </div>
-    <div class="landing-title">The smarter way to<br>capture <span>any India address</span></div>
-    <div class="landing-sub">154,784 real pincodes · 20 languages · AI-powered voice capture · Built for sales teams</div>
-    <div class="landing-cards">
-      <div class="lcard public" id="btnPublic">
-        <div class="lcard-icon">🔍</div>
-        <div class="lcard-title">Public Search</div>
-        <div class="lcard-sub">Find any location</div>
-      </div>
-      <div class="lcard agent" id="btnAgent">
-        <div class="lcard-icon">🎙️</div>
-        <div class="lcard-title">Agent Login</div>
-        <div class="lcard-sub">Sales call tool</div>
-        <div class="lcard-badge">PRO</div>
-      </div>
-      <div class="lcard admin" id="btnAdmin">
-        <div class="lcard-icon">👑</div>
-        <div class="lcard-title">Admin</div>
-        <div class="lcard-sub">Manage all</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== LOGIN ===== -->
-<div class="login-page" id="loginPage">
-  <div class="login-card" id="loginCard">
-    <div class="login-header">
-      <div class="login-header-icon" id="loginIcon">🎙️</div>
-      <div class="login-header-title" id="loginTitle">Agent Login</div>
-      <div class="login-header-sub" id="loginSub">VISHAL NAVIGATION · SECURE ACCESS</div>
-    </div>
-    <div class="login-body">
-      <div class="lf" id="adminUserField" style="display:none">
-        <label class="lf-label">Admin Username</label>
-        <input class="lf-inp" type="text" id="adminUser" placeholder="Enter admin username"/>
-      </div>
-      <div class="lf">
-        <label class="lf-label" id="idLabel">Agent ID</label>
-        <input class="lf-inp" type="text" id="loginId" placeholder="Enter your ID" autocomplete="off"/>
-      </div>
-      <div class="lf">
-        <label class="lf-label">Password</label>
-        <input class="lf-inp" type="password" id="loginPass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/>
-      </div>
-      <button class="login-btn green" id="loginBtn" onclick="doLogin()">Login</button>
-      <div class="login-err" id="loginErr">Invalid credentials. Please try again.</div>
-      <div class="login-back" onclick="backToLanding()">← Back to home</div>
-    </div>
-  </div>
-</div>
-
-<!-- ===== APP SHELL ===== -->
-<div class="app-shell" id="appShell">
-
-  <!-- TOPBAR -->
-  <div class="topbar">
-    <div class="tb-logo" onclick="backToLanding()" style="cursor:pointer">
-      <div class="tb-logo-mark">🧭</div>
-      <div class="tb-logo-name">Vishal Navigation</div>
-    </div>
-    <div class="tb-center" id="tbCenter"></div>
-    <div class="tb-right" id="tbRight"></div>
-  </div>
-
-  <!-- PUBLIC VIEW -->
-  <div id="publicView">
-
-    <!-- HAMBURGER DRAWER TOGGLE -->
-    <button id="drawerToggle" onclick="toggleDrawer()" style="position:fixed;top:62px;right:16px;z-index:300;width:40px;height:40px;background:rgba(7,13,20,.95);border:1px solid rgba(0,255,170,.2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:all .25s;backdrop-filter:blur(16px);padding:0">
-      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
-      <span class="hb-line" style="width:13px;height:2px;background:var(--text2);border-radius:2px;display:block;transition:all .3s"></span>
-      <span class="hb-line" style="width:18px;height:2px;background:var(--green);border-radius:2px;display:block;transition:all .3s"></span>
-    </button>
-
-    <!-- RIGHT SIDE DRAWER -->
-    <div id="toolDrawer" style="position:fixed;top:0;right:-320px;width:300px;height:100vh;background:rgba(3,5,10,.98);border-left:1px solid rgba(0,255,170,.08);z-index:299;display:flex;flex-direction:column;overflow-y:auto;transition:right .32s cubic-bezier(.2,.8,.3,1);box-shadow:-24px 0 80px rgba(0,0,0,.7);backdrop-filter:blur(24px);scrollbar-width:thin;scrollbar-color:var(--border2) transparent">
-      <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(0,255,170,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;margin-top:56px">
-        <div>
-          <div style="font-size:14px;font-weight:800;font-family:var(--font-display);background:linear-gradient(90deg,#fff,var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Tools</div>
-          <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px">ADDRESS INTELLIGENCE</div>
-        </div>
-        <button onclick="toggleDrawer()" style="background:none;border:1px solid var(--border2);color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:5px 8px;border-radius:8px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">✕</button>
-      </div>
-      <div style="padding:12px;display:flex;flex-direction:column;gap:7px;flex:1">
-        <button class="drawer-btn green" onclick="triggerCurrentLocation();toggleDrawer()"><span class="dbi">📍</span><div class="dbt"><div class="dbt-title">My Current Location</div><div class="dbt-sub">One click · get your exact address</div></div></button>
-        <button class="drawer-btn red" onclick="openPhotoMode();toggleDrawer()"><span class="dbi">📸</span><div class="dbt"><div class="dbt-title">Photo → Address</div><div class="dbt-sub">Upload photo · extract location</div></div></button>
-        <button class="drawer-btn teal" onclick="openConversational();toggleDrawer()"><span class="dbi">🗣️</span><div class="dbt"><div class="dbt-title">Describe It</div><div class="dbt-sub">Describe surroundings · AI finds you</div></div></button>
-        <button class="drawer-btn blue" onclick="openCompare();toggleDrawer()"><span class="dbi">📏</span><div class="dbt"><div class="dbt-title">Compare Locations</div><div class="dbt-sub">Distance between two places</div></div></button>
-        <button class="drawer-btn purple" onclick="openLandmark();toggleDrawer()"><span class="dbi">🏛️</span><div class="dbt"><div class="dbt-title">Landmark → Address</div><div class="dbt-sub">India Gate, Lotus Temple…</div></div></button>
-        <button class="drawer-btn amber" onclick="openFilterNearby();toggleDrawer()"><span class="dbi">🎯</span><div class="dbt"><div class="dbt-title">Filter Nearby</div><div class="dbt-sub">Hospital, bank, pharmacy…</div></div></button>
-        <button class="drawer-btn gray" onclick="openCommunity();toggleDrawer()"><span class="dbi">🤝</span><div class="dbt"><div class="dbt-title">Report Wrong Address</div><div class="dbt-sub">Help improve accuracy</div></div></button>
-        <button class="drawer-btn purple" onclick="openMultiStop();toggleDrawer()"><span class="dbi">🗺️</span><div class="dbt"><div class="dbt-title">Multi-Stop Route</div><div class="dbt-sub">Plan route through 3+ locations</div></div></button>
-        <button class="drawer-btn blue" onclick="openBatch();toggleDrawer()"><span class="dbi">📋</span><div class="dbt"><div class="dbt-title">Batch Addresses</div><div class="dbt-sub">Validate 20 addresses at once</div></div></button>
-        <button class="drawer-btn amber" onclick="openBookmarks();toggleDrawer()"><span class="dbi">⭐</span><div class="dbt"><div class="dbt-title">Saved Addresses</div><div class="dbt-sub">Your bookmarked locations</div></div></button>
-        <button class="drawer-btn gray" onclick="toggleTheme();toggleDrawer()"><span class="dbi" id="themeIcon">☀️</span><div class="dbt"><div class="dbt-title">Toggle Light Mode</div><div class="dbt-sub">Switch display theme</div></div></button>
-        <div style="height:1px;background:rgba(255,255,255,.04);margin:4px 0"></div>
-        <button class="drawer-btn green-outline" onclick="showLogin('agent');toggleDrawer()"><span class="dbi">🎙️</span><div class="dbt"><div class="dbt-title">Agent Login</div><div class="dbt-sub">Sales call address capture</div></div><span style="font-size:9px;background:rgba(0,255,170,.12);color:var(--green);padding:2px 8px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(0,255,170,.18);white-space:nowrap;flex-shrink:0">PRO</span></button>
-      </div>
-      <!-- Council status -->
-      <div style="padding:12px 16px 16px;border-top:1px solid rgba(0,255,170,.05);flex-shrink:0">
-        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px">⚔️ BACKGROUND COUNCIL</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap">
-          <span id="cs-naruto" class="council-status-pill">🍥</span>
-          <span id="cs-sasuke" class="council-status-pill">⚡</span>
-          <span id="cs-sakura" class="council-status-pill">🌸</span>
-          <span id="cs-itachi" class="council-status-pill">👁️</span>
-          <span id="cs-shikamaru" class="council-status-pill">🧠</span>
-          <span id="cs-jiraiya" class="council-status-pill">📖</span>
-        </div>
-        <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:7px;line-height:1.6">6 agents silently verify every search to ensure the perfect address.</div>
-      </div>
-    </div>
-
-    <!-- DRAWER BACKDROP -->
-    <div id="drawerBackdrop" onclick="toggleDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:298;backdrop-filter:blur(2px)"></div>
-
-    <!-- SEARCH HISTORY DROPDOWN -->
-    <div id="historyDropdown" style="display:none;position:absolute;bottom:130px;left:50%;transform:translateX(-50%);width:calc(100% - 40px);max-width:720px;background:rgba(6,10,20,.97);border:1px solid rgba(0,255,170,.2);border-radius:14px;z-index:200;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.8);backdrop-filter:blur(20px)">
-      <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:10px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px">RECENT SEARCHES</span>
-        <span onclick="clearSearchHistory()" style="font-size:10px;color:var(--text3);cursor:pointer;font-family:var(--font-mono)" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">clear all</span>
-      </div>
-      <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
-    </div>
-
-    <!-- MODALS (centered overlays) -->
-    <div id="compareModal"     style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:440px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">📏 COMPARE TWO LOCATIONS<button onclick="document.getElementById('compareModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <input id="locA" placeholder="Location A — e.g. Connaught Place, Delhi" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:8px"/>
-      <input id="locB" placeholder="Location B — e.g. Bandra West, Mumbai"   style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box"/>
-      <button onclick="runCompare()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.2),rgba(56,182,255,.06));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Calculate Distance &amp; Compare</button>
-      <div id="compareResult" style="margin-top:12px;display:none"></div>
-    </div>
-
-    <div id="landmarkModal"    style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(176,140,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🏛️ LANDMARK → FULL ADDRESS<button onclick="document.getElementById('landmarkModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <div style="display:flex;gap:8px"><input id="landmarkInp" placeholder="e.g. India Gate, Lotus Temple, Charminar…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;font-family:var(--font-body)" onkeydown="if(event.key==='Enter')runLandmark()"/><button onclick="runLandmark()" style="background:linear-gradient(135deg,#b080ff,#7040c0);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Find</button></div>
-    </div>
-
-    <div id="filterNearbyModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,179,71,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--amber);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🎯 FILTER NEARBY PLACES<button onclick="document.getElementById('filterNearbyModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><span class="filter-chip active" onclick="toggleFilter(this,'hospital')">🏥 Hospital</span><span class="filter-chip" onclick="toggleFilter(this,'bank')">🏦 Bank</span><span class="filter-chip" onclick="toggleFilter(this,'school')">🏫 School</span><span class="filter-chip" onclick="toggleFilter(this,'restaurant')">🍽️ Food</span><span class="filter-chip" onclick="toggleFilter(this,'pharmacy')">💊 Pharmacy</span><span class="filter-chip" onclick="toggleFilter(this,'atm')">💳 ATM</span><span class="filter-chip" onclick="toggleFilter(this,'petrol')">⛽ Petrol</span><span class="filter-chip" onclick="toggleFilter(this,'police')">👮 Police</span><span class="filter-chip" onclick="toggleFilter(this,'post')">📮 Post Office</span><span class="filter-chip" onclick="toggleFilter(this,'temple')">🛕 Temple</span></div>
-      <div style="display:flex;gap:8px"><input id="filterLocInp" placeholder="Enter area or use current location…" style="flex:1;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body)"/><button onclick="runFilterNearby()" style="background:linear-gradient(135deg,rgba(255,179,71,.2),rgba(255,179,71,.06));border:1px solid rgba(255,179,71,.35);color:var(--amber);border-radius:10px;padding:10px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);white-space:nowrap">Search</button></div>
-    </div>
-
-    <div id="conversationalModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(0,255,170,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">🗣️ DESCRIBE YOUR SURROUNDINGS<button onclick="document.getElementById('conversationalModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.6">Describe what you see around you — AI will identify your exact India location.</div>
-      <textarea id="convInp" rows="3" placeholder="e.g. I'm near a big red temple, SBI bank on my left, green pharmacy across the road, auto stand nearby, flyover on main road…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
-      <button onclick="runConversational()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Find My Location</button>
-    </div>
-
-    <div id="photoModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(255,85,102,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--red);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📸 PHOTO → ADDRESS<button onclick="document.getElementById('photoModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <div id="photoDropzone" onclick="document.getElementById('photoInput').click()" style="border:2px dashed rgba(255,85,102,.3);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px;font-family:var(--font-mono)" onmouseover="this.style.borderColor='rgba(255,85,102,.6)';this.style.background='rgba(255,85,102,.04)'" onmouseout="this.style.borderColor='rgba(255,85,102,.3)';this.style.background='transparent'"><div style="font-size:32px;margin-bottom:10px">📷</div><div>Click to upload photo of shopfront, building or street sign</div><div style="font-size:10px;margin-top:5px">JPG · PNG · WEBP · Max 5MB</div></div>
-      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)"/>
-      <div id="photoPreview" style="display:none;margin-top:12px;text-align:center"><img id="photoImg" style="max-height:140px;border-radius:10px;border:1px solid var(--border2)"/></div>
-      <button id="photoAnalyzeBtn" onclick="analyzePhoto()" style="display:none;margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(255,85,102,.15),rgba(255,85,102,.05));border:1px solid rgba(255,85,102,.35);color:var(--red);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🔍 Extract Address from Photo</button>
-    </div>
-
-    <div id="communityModal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:420px;background:rgba(3,5,10,.98);border:1px solid rgba(56,182,255,.25);border-radius:20px;padding:22px;z-index:400;box-shadow:0 32px 80px rgba(0,0,0,.85);backdrop-filter:blur(24px)">
-      <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">🤝 COMMUNITY CORRECTION<button onclick="document.getElementById('communityModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button></div>
-      <input id="wrongAddr" placeholder="Wrong address (what was shown)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
-      <input id="correctAddr" placeholder="Correct address (what it should be)…" style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);box-sizing:border-box;margin-bottom:10px"/>
-      <button onclick="submitCorrection()" style="width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">Submit Correction</button>
-    </div>
-
-    <!-- Modal backdrop -->
-    <div id="modalBackdrop" onclick="closeAllModals()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:399;backdrop-filter:blur(3px)"></div>
-
-    <div class="chat-area" id="chatArea">
-      <div class="msg-wrap ai">
-        <div class="msg bot">
-          <strong>Namaste! 🙏</strong><br><br>
-          Type or speak any <strong>area, colony, landmark or city</strong> in India — I'll instantly find the correct address, pincode, post office and nearby places.<br><br>
-          <span style="font-size:12px;color:var(--text3)">🎤 Voice · 📮 154,784 pincodes · 🏙️ Landmarks · ✏️ AI-corrected · ☰ Tools →</span>
-        </div>
-      </div>
-      <div class="sugs" id="sugs">
-        <span class="sug" onclick="useSug(this)">Chandni Chowk, Delhi</span>
-        <span class="sug" onclick="useSug(this)">Koramangala, Bangalore</span>
-        <span class="sug" onclick="useSug(this)">Bandra West, Mumbai</span>
-        <span class="sug" onclick="useSug(this)">Sector 14, Gurugram</span>
-        <span class="sug" onclick="useSug(this)">Park Street, Kolkata</span>
-        <span class="sug" onclick="useSug(this)">Hazratganj, Lucknow</span>
-      </div>
-    </div>
-    <div class="pub-footer">
-      <div id="recentChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;min-height:0"></div>
-      <div class="pub-inp-row">
-        <div class="ac-wrap">
-          <input type="text" id="pubQ" placeholder="e.g. Lajpat Nagar Delhi, Camp Pune…" autocomplete="off"
-            onkeydown="handlePubKey(event)"
-            oninput="onSearchInput(this.value);triggerAutocomplete(this.value)"
-            onfocus="showHistoryDropdown()"
-            onblur="setTimeout(()=>{hideHistoryDropdown();hideAutocomplete()},220)"/>
-          <div class="ac-drop" id="acDrop"></div>
-        </div>
-        <button class="pub-mic" id="pubMic" onclick="togglePubMic()" title="Speak your location">🎤</button>
-        <button class="pub-send" id="pubSend" onclick="pubSearch()">➤</button>
-      </div>
-      <div class="pub-note">Vishal Navigation · Free · 🎤 Voice · 🤖 Groq AI · 📮 154,784 Pincodes · ⚔️ Council of 6</div>
-    </div>
-  </div>
-
-  <!-- AGENT VIEW -->
-  <div id="agentView">
-    <!-- LEFT -->
-    <div class="agent-left">
-      <div class="al-tabs">
-        <div class="al-tab active" onclick="switchAgentTab('history',this)">History</div>
-        <div class="al-tab" onclick="switchAgentTab('stats',this)">Stats</div>
-      </div>
-      <div class="al-content active" id="at-history">
-        <div class="al-empty" id="histEmpty">No addresses captured yet.<br>Start listening to begin.</div>
-      </div>
-      <div class="al-content" id="at-stats">
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-num" id="s-today">0</div><div class="stat-lbl">Today</div></div>
-          <div class="stat-box"><div class="stat-num" id="s-total">0</div><div class="stat-lbl">Total</div></div>
-          <div class="stat-box"><div class="stat-num" id="s-rate">0%</div><div class="stat-lbl">Success</div></div>
-          <div class="stat-box"><div class="stat-num" id="s-dup">0</div><div class="stat-lbl">Duplicates</div></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
-          <button class="al-action-btn" onclick="exportCSV()">📥 Export CSV</button>
-          <button class="al-action-btn danger" onclick="clearHistory()">🗑️ Clear History</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT -->
-    <div class="agent-right">
-
-      <!-- Listen button -->
-      <div class="listen-outer" id="listenOuter" onclick="toggleListen()">
-        <div class="listen-ring r1"></div>
-        <div class="listen-ring r2"></div>
-        <div class="listen-ring r3"></div>
-        <div class="listen-ring r4"></div>
-        <div class="listen-btn" id="listenBtn">
-          <div class="listen-icon" id="listenIcon">🎙️</div>
-          <div class="listen-lbl" id="listenLbl">TAP TO START</div>
-        </div>
-      </div>
-
-      <!-- Wave -->
-      <div class="wave-bars" id="waveBars">
-        <div class="wb" style="height:4px"></div><div class="wb" style="height:8px"></div>
-        <div class="wb" style="height:4px"></div><div class="wb" style="height:12px"></div>
-        <div class="wb" style="height:6px"></div><div class="wb" style="height:4px"></div>
-        <div class="wb" style="height:10px"></div><div class="wb" style="height:4px"></div>
-        <div class="wb" style="height:8px"></div><div class="wb" style="height:4px"></div>
-      </div>
-
-      <!-- Status -->
-      <div class="agent-status">
-        <div class="as-main" id="asMain">Tap the button to start listening</div>
-        <div class="as-sub" id="asSub">7 auto-strategies · 10 verification layers · 20 languages</div>
-      </div>
-
-      <!-- Strategy indicators -->
-      <div class="strategy-row" id="stratRow">
-        <div class="strat" id="s1">S1:AgentQ</div>
-        <div class="strat" id="s2">S2:Trigger</div>
-        <div class="strat" id="s3">S3:Context</div>
-        <div class="strat" id="s4">S4:Silence</div>
-        <div class="strat" id="s5">S5:Pattern</div>
-        <div class="strat" id="s6">S6:Pincode</div>
-        <div class="strat" id="s7">S7:Buffer</div>
-      </div>
-
-      <!-- Layer progress -->
-      <div class="layers-row" id="layersRow">
-        <div class="layer-dot" id="l1"></div><div class="layer-dot" id="l2"></div>
-        <div class="layer-dot" id="l3"></div><div class="layer-dot" id="l4"></div>
-        <div class="layer-dot" id="l5"></div><div class="layer-dot" id="l6"></div>
-        <div class="layer-dot" id="l7"></div><div class="layer-dot" id="l8"></div>
-        <div class="layer-dot" id="l9"></div><div class="layer-dot" id="l10"></div>
-      </div>
-
-      <!-- Transcript -->
-      <div class="agent-transcript" id="agentTranscript"></div>
-
-      <!-- Result -->
-      <div class="agent-result" id="agentResult">
-        <div class="result-card">
-          <div class="conf-row">
-            <span class="conf-lbl">Confidence</span>
-            <div class="conf-track"><div class="conf-fill" id="confFill" style="width:0%"></div></div>
-            <span class="conf-pct" id="confPct">0%</span>
-          </div>
-          <div class="r-addr" id="rAddr"></div>
-          <div class="r-pills" id="rPills"></div>
-          <div class="r-actions">
-            <button class="ra confirm" onclick="confirmAddr()">✅ Confirm & Save</button>
-            <button class="ra maps" onclick="openMaps()">🗺️ Maps</button>
-            <button class="ra edit" onclick="showEdit()">✏️ Edit</button>
-            <button class="ra reject" onclick="rejectAddr()">❌ Wrong</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Edit -->
-      <div class="edit-row" id="editRow">
-        <input class="edit-inp" id="editInp" placeholder="Edit the address..."/>
-        <button class="edit-go" onclick="searchEdited()">Search</button>
-      </div>
-
-      <!-- Manual -->
-      <div class="manual-row">
-        <input class="manual-inp" id="manualInp" placeholder="⌨️ Type address manually..." onkeydown="if(event.key==='Enter')manualSearch()"/>
-        <button class="manual-go" onclick="manualSearch()">Search</button>
-      </div>
-
-    </div>
-
-
-  </div>
-
-  <!-- ADMIN VIEW -->
-  <div id="adminView">
-    <div class="admin-sidebar">
-      <div class="admin-nav active" onclick="switchAdminPage('dashboard',this)">📊 Dashboard</div>
-      <div class="admin-nav" onclick="switchAdminPage('companies',this)">🏢 Companies</div>
-      <div class="admin-nav" onclick="switchAdminPage('agents',this)">👤 Agents</div>
-      <div class="admin-nav" onclick="switchAdminPage('addresses',this)">📋 Addresses</div>
-      <div class="admin-nav" onclick="switchAdminPage('settings',this)">⚙️ Settings</div>
-    </div>
-    <div class="admin-content">
-
-      <!-- Dashboard -->
-      <div class="admin-page active" id="ap-dashboard">
-        <div class="admin-page-title">Dashboard</div>
-        <div class="admin-page-sub">Overview of all activity</div>
-        <div class="admin-stats">
-          <div class="admin-stat"><div class="admin-stat-val" id="as-co">0</div><div class="admin-stat-lbl">Companies</div></div>
-          <div class="admin-stat"><div class="admin-stat-val" id="as-ag">0</div><div class="admin-stat-lbl">Agents</div></div>
-          <div class="admin-stat"><div class="admin-stat-val" id="as-addr">0</div><div class="admin-stat-lbl">Addresses</div></div>
-          <div class="admin-stat"><div class="admin-stat-val" id="as-act">0</div><div class="admin-stat-lbl">Active Today</div></div>
-        </div>
-        <div class="admin-section">
-          <div class="admin-section-hdr"><div class="admin-section-title">Recent Addresses</div></div>
-          <div class="admin-section-body">
-            <table class="admin-table"><thead><tr><th>Address</th><th>Pincode</th><th>Agent</th><th>Company</th><th>Time</th></tr></thead>
-            <tbody id="dash-addr"></tbody></table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Companies -->
-      <div class="admin-page" id="ap-companies">
-        <div class="admin-page-title">Companies</div>
-        <div class="admin-page-sub">Manage registered companies</div>
-        <div class="admin-section">
-          <div class="admin-section-hdr">
-            <div class="admin-section-title">Add Company</div>
-          </div>
-          <div class="admin-section-body">
-            <div class="admin-form">
-              <div><label class="af-label">Company Name</label><input class="af-inp" id="c-name" placeholder="ABC Sales Pvt Ltd"/></div>
-              <div><label class="af-label">Login ID</label><input class="af-inp" id="c-id" placeholder="abc_sales"/></div>
-              <div><label class="af-label">Password</label><input class="af-inp" type="password" id="c-pass" placeholder="Password"/></div>
-              <div><label class="af-label">Email (optional)</label><input class="af-inp" id="c-email" placeholder="company@email.com"/></div>
-              <div><label class="af-label">Plan</label><select class="af-select" id="c-plan"><option value="starter">Starter — 5 seats, 500/mo</option><option value="growth">Growth — 25 seats, 5,000/mo</option><option value="enterprise">Enterprise — Unlimited</option></select></div>
-            </div>
-            <div style="margin-top:14px"><button class="a-btn green" onclick="addCompany()">+ Create Company</button></div>
-          </div>
-        </div>
-        <div class="admin-section">
-          <div class="admin-section-hdr"><div class="admin-section-title">All Companies</div></div>
-          <div class="admin-section-body">
-            <table class="admin-table"><thead><tr><th>Name</th><th>ID</th><th>Agents</th><th>Addresses</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="companies-table"></tbody></table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Agents -->
-      <div class="admin-page" id="ap-agents">
-        <div class="admin-page-title">Agents</div>
-        <div class="admin-page-sub">Manage all agents</div>
-        <div class="admin-section">
-          <div class="admin-section-hdr"><div class="admin-section-title">Add Agent</div></div>
-          <div class="admin-section-body">
-            <div class="admin-form">
-              <div><label class="af-label">Full Name</label><input class="af-inp" id="a-name" placeholder="Rahul Kumar"/></div>
-              <div><label class="af-label">Agent ID</label><input class="af-inp" id="a-id" placeholder="agent_001"/></div>
-              <div><label class="af-label">Password</label><input class="af-inp" type="password" id="a-pass" placeholder="Password"/></div>
-              <div><label class="af-label">Company</label><select class="af-select" id="a-company"></select></div>
-            </div>
-            <div style="margin-top:14px"><button class="a-btn green" onclick="addAgent()">+ Create Agent</button></div>
-          </div>
-        </div>
-        <div class="admin-section">
-          <div class="admin-section-hdr">
-            <div class="admin-section-title">All Agents</div>
-            <input class="search-inp" placeholder="Search agents..." oninput="filterAgents(this.value)"/>
-          </div>
-          <div class="admin-section-body">
-            <table class="admin-table"><thead><tr><th>Name</th><th>ID</th><th>Company</th><th>Addresses</th><th>Last Active</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody id="agents-table"></tbody></table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Addresses -->
-      <div class="admin-page" id="ap-addresses">
-        <div class="admin-page-title">All Addresses</div>
-        <div class="admin-page-sub">Every address captured across all agents</div>
-        <div class="admin-section">
-          <div class="admin-section-hdr">
-            <div class="admin-section-title">Address Log</div>
-            <div style="display:flex;gap:8px">
-              <input class="search-inp" placeholder="Search..." oninput="filterAddresses(this.value)"/>
-              <button class="a-btn blue" onclick="exportAllCSV()">📥 Export All</button>
-            </div>
-          </div>
-          <div class="admin-section-body">
-            <table class="admin-table"><thead><tr><th>Address</th><th>Pincode</th><th>District</th><th>State</th><th>Agent</th><th>Company</th><th>Time</th></tr></thead>
-            <tbody id="addresses-table"></tbody></table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Settings -->
-      <div class="admin-page" id="ap-settings">
-        <div class="admin-page-title">Settings</div>
-        <div class="admin-page-sub">Admin configuration</div>
-        <div class="admin-section">
-          <div class="admin-section-hdr"><div class="admin-section-title">Change Admin Password</div></div>
-          <div class="admin-section-body">
-            <div class="admin-form">
-              <div><label class="af-label">Current Password</label><input class="af-inp" type="password" id="currPass"/></div>
-              <div><label class="af-label">New Password</label><input class="af-inp" type="password" id="newPass"/></div>
-              <div class="full"><label class="af-label">Confirm New Password</label><input class="af-inp" type="password" id="confPass"/></div>
-            </div>
-            <div style="margin-top:14px"><button class="a-btn green" onclick="changeAdminPass()">Update Password</button></div>
-          </div>
-        </div>
-        <div class="admin-section">
-          <div class="admin-section-hdr"><div class="admin-section-title">Danger Zone</div></div>
-          <div class="admin-section-body">
-            <button class="a-btn green" onclick="vnSyncToCloud()" style="margin-bottom:8px">☁️ Sync Agents to Cloud</button>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:12px">Saves agents & companies so any device can login with same credentials.</div>
-            <button class="a-btn red" onclick="clearAllData()">🗑️ Clear All Data</button>
-            <div style="margin-top:8px;font-size:11px;color:var(--text3)">Deletes all companies, agents and addresses permanently.</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-</div>
-
-<!-- ── QR Code Modal ── -->
-<div id="qrModal">
-  <div style="font-size:11px;color:var(--purple);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:8px;font-weight:700">📱 QR CODE
-    <button onclick="document.getElementById('qrModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
-  </div>
-  <canvas id="qrCanvas" width="220" height="220"></canvas>
-  <div id="qrText" style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:8px;word-break:break-all"></div>
-  <button onclick="downloadQR()" style="margin-top:12px;width:100%;background:linear-gradient(135deg,rgba(176,140,255,.15),rgba(176,140,255,.05));border:1px solid rgba(176,140,255,.3);color:var(--purple);border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⬇️ Download QR</button>
-</div>
-
-<!-- ── Bookmarks Panel ── -->
-<div id="bookmarksPanel">
-  <div style="padding:16px 18px 12px;border-bottom:1px solid rgba(255,179,71,.1);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-    <div style="font-size:13px;font-weight:700;font-family:var(--font-display);color:var(--amber)">⭐ Saved Addresses</div>
-    <button onclick="document.getElementById('bookmarksPanel').classList.remove('show');document.getElementById('modalBackdrop').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
-  </div>
-  <div id="bookmarksList" style="overflow-y:auto;flex:1;padding:8px 0"></div>
-  <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.04)">
-    <button onclick="clearBookmarks()" style="width:100%;background:none;border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:8px;padding:8px;font-size:11px;cursor:pointer;font-family:var(--font-mono)">🗑️ Clear All Saved</button>
-  </div>
-</div>
-
-<!-- ── Multi-Stop Route Planner ── -->
-<div id="multiStopModal">
-  <div style="font-size:11px;color:var(--green);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;font-weight:700">🗺️ MULTI-STOP ROUTE PLANNER
-    <button onclick="document.getElementById('multiStopModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
-  </div>
-  <div id="stopsList">
-    <div class="stop-row"><span class="stop-num">1</span><input class="stop-inp" placeholder="Starting point…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
-    <div class="stop-row"><span class="stop-num">2</span><input class="stop-inp" placeholder="Stop 2…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
-    <div class="stop-row"><span class="stop-num">3</span><input class="stop-inp" placeholder="Destination…"/><button onclick="removeStop(this)" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">✕</button></div>
-  </div>
-  <div style="display:flex;gap:8px;margin-top:10px">
-    <button onclick="addStop()" style="flex:1;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.2);color:var(--green);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;font-family:var(--font-display)">+ Add Stop</button>
-    <button onclick="planRoute()" style="flex:2;background:linear-gradient(135deg,rgba(0,255,170,.15),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.35);color:var(--green);border-radius:10px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">🗺️ Plan Route</button>
-  </div>
-  <div id="routeResult" style="margin-top:12px"></div>
-</div>
-
-<!-- ── Batch Address Upload ── -->
-<div id="batchModal">
-  <div style="font-size:11px;color:var(--blue);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700">📋 BATCH ADDRESS PROCESSOR
-    <button onclick="document.getElementById('batchModal').style.display='none';document.getElementById('modalBackdrop').style.display='none'" style="margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px">✕</button>
-  </div>
-  <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Paste up to 20 addresses (one per line) — AI will validate and enrich all at once.</div>
-  <textarea id="batchInp" rows="6" placeholder="Lajpat Nagar, Delhi&#10;Koramangala, Bangalore&#10;Bandra West, Mumbai&#10;..." style="width:100%;background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--text);outline:none;font-family:var(--font-body);resize:none;box-sizing:border-box"></textarea>
-  <button onclick="runBatch()" style="margin-top:10px;width:100%;background:linear-gradient(135deg,rgba(56,182,255,.15),rgba(56,182,255,.05));border:1px solid rgba(56,182,255,.35);color:var(--blue);border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-display)">⚡ Process All Addresses</button>
-  <div id="batchResult" style="margin-top:12px"></div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-
-
-<script src="pindb.js"></script>
- 
-<!-- ═══════════════════════════════════════════════════════
-     REAL ROAD DISTANCE FIX — injected patch
-     Overrides runCompare() and planRoute() with OSRM routing
-     ═══════════════════════════════════════════════════════ -->
-
-
-<!-- ═══════════════════════════════════════════════
-     DEEPGRAM REAL-TIME STT — INJECTED
-     Key: 6cc1f796b4d685cd65f5578d2d405e023c8db204
-     ═══════════════════════════════════════════════ -->
-
-
-
-
-
-</body>
-     It overrides: showAgentView(), showAdminView(), refreshAdmin()
-     and adds all new UI components
-     ═══════════════════════════════════════════════════════════════ -->
-
-<style id="vn-upgrade-styles">
-/* ── AGENT UPGRADE ─────────────────────────────────────── */
-.agent-left-v2{background:rgba(5,10,18,.95);border-right:1px solid rgba(0,255,170,.08);display:flex;flex-direction:column;overflow:hidden}
-.agent-right-v2{display:flex;flex-direction:column;overflow:hidden;background:#030810}
-
-/* Live fields panel */
-.live-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:520px}
-.lf-field{background:rgba(7,13,20,.9);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;transition:all .3s;position:relative}
-.lf-field.filling{border-color:var(--green);box-shadow:0 0 16px rgba(0,255,170,.15);animation:fieldPulse .6s ease}
-.lf-field.filled{border-color:rgba(0,255,170,.4);background:rgba(0,255,170,.05)}
-.lf-field.verified{border-color:var(--green);background:rgba(0,255,170,.08)}
-@keyframes fieldPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
-.lf-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
-.lf-value{font-size:13px;font-weight:600;color:var(--text);min-height:20px;font-family:var(--font-body)}
-.lf-value.empty{color:var(--text3);font-weight:400;font-size:11px;font-style:italic}
-.lf-check{font-size:12px;display:none}
-.lf-field.verified .lf-check{display:inline;color:var(--green)}
-.lf-field.filling .lf-value::after{content:'|';animation:blink .7s infinite;color:var(--green)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* Full width field */
-.lf-field.full{grid-column:1/-1}
-
-/* Live transcript */
-.live-transcript-box{width:100%;max-width:520px;background:rgba(4,8,16,.9);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;min-height:60px;max-height:100px;overflow-y:auto;font-size:11px;font-family:var(--font-mono);color:var(--text2);line-height:1.7;position:relative}
-.live-transcript-box::before{content:'🎙️ LIVE';position:absolute;top:8px;right:10px;font-size:8px;color:var(--green);letter-spacing:1px;opacity:.6}
-.live-transcript-box .word{display:inline}
-.live-transcript-box .word.new{color:var(--green);font-weight:600;animation:wordIn .3s ease}
-@keyframes wordIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
-
-/* Force extract + stop buttons */
-.agent-action-row{display:flex;gap:8px;width:100%;max-width:520px}
-.btn-force{flex:1;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.25);color:var(--blue);border-radius:10px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px}
-.btn-force:hover{background:rgba(56,182,255,.15);box-shadow:0 0 16px rgba(56,182,255,.2)}
-.btn-force:disabled{opacity:.3;cursor:not-allowed}
-.btn-stop-save{flex:2;background:linear-gradient(135deg,#00ffaa,#00cc88);border:none;color:#000;border-radius:10px;padding:9px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font-display);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 20px rgba(0,255,170,.3)}
-.btn-stop-save:hover{box-shadow:0 8px 32px rgba(0,255,170,.5);transform:translateY(-1px)}
-.btn-stop-save:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none}
-
-/* Confidence meter */
-.conf-meter-wrap{width:100%;max-width:520px}
-.conf-meter-bar{height:6px;background:var(--border2);border-radius:4px;overflow:hidden;margin-top:4px}
-.conf-meter-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.2,.8,.3,1),background .3s}
-
-/* Call records table */
-.call-records{width:100%;border-collapse:collapse;font-size:11px}
-.call-records th{font-size:9px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--text3);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
-.call-records td{padding:9px 10px;border-bottom:1px solid rgba(20,32,48,.6);color:var(--text2);font-family:var(--font-mono);font-size:11px;vertical-align:middle}
-.call-records td:first-child{color:var(--text);font-family:var(--font-body);font-size:12px;font-weight:600}
-.call-records tr:hover td{background:rgba(0,255,170,.02)}
-.call-records tr:last-child td{border-bottom:none}
-.status-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:3px 8px;border-radius:6px;font-family:var(--font-mono);font-weight:700;letter-spacing:.5px}
-.status-badge.patched{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.25)}
-.status-badge.draft{background:rgba(255,179,71,.1);color:var(--amber);border:1px solid rgba(255,179,71,.25)}
-.status-badge.review{background:rgba(255,85,102,.1);color:var(--red);border:1px solid rgba(255,85,102,.25)}
-.pin-verified{display:inline-flex;align-items:center;gap:3px;color:var(--green);font-size:10px}
-.pin-unverified{color:var(--text3);font-size:10px}
-
-/* ── ADMIN UPGRADE ─────────────────────────────────────── */
-#adminView.active{display:flex!important;flex-direction:row}
-.admin-sidebar-v2{width:220px;min-width:220px;background:rgba(3,6,12,.98);border-right:1px solid rgba(0,255,170,.06);display:flex;flex-direction:column;flex-shrink:0}
-.admin-sidebar-v2 .brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.04)}
-.admin-sidebar-v2 .brand-logo{width:36px;height:36px;background:linear-gradient(135deg,#00ffaa,#00cc88);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;box-shadow:0 0 16px rgba(0,255,170,.3)}
-.admin-sidebar-v2 .brand-name{font-size:13px;font-weight:800;font-family:var(--font-display);color:var(--text)}
-.admin-sidebar-v2 .brand-sub{font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:1.5px;margin-top:2px}
-.admin-nav-v2{display:flex;flex-direction:column;padding:12px 10px;gap:2px;flex:1}
-.admin-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--text2);font-weight:500;border:1px solid transparent}
-.admin-nav-item:hover{background:rgba(0,255,170,.04);color:var(--text)}
-.admin-nav-item.active{background:rgba(0,255,170,.08);color:var(--green);border-color:rgba(0,255,170,.15)}
-.admin-nav-item .nav-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
-.admin-nav-badge{margin-left:auto;background:rgba(255,85,102,.15);color:var(--red);font-size:9px;padding:2px 7px;border-radius:10px;font-family:var(--font-mono);border:1px solid rgba(255,85,102,.25)}
-
-.admin-content-v2{flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:var(--border2) transparent}
-
-/* Top bar */
-.admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid rgba(0,255,170,.06);background:rgba(3,6,12,.9);flex-shrink:0;backdrop-filter:blur(16px)}
-.admin-topbar-title{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:2px;text-transform:uppercase}
-.admin-topbar-heading{font-size:22px;font-weight:800;font-family:var(--font-display);color:var(--text);letter-spacing:-.5px;margin-top:2px}
-.admin-topbar-actions{display:flex;gap:10px;align-items:center}
-.btn-open-agent{display:flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(0,255,170,.08);border:1px solid rgba(0,255,170,.25);color:var(--green);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
-.btn-open-agent:hover{background:rgba(0,255,170,.15);box-shadow:0 0 16px rgba(0,255,170,.2)}
-.btn-signout{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(255,85,102,.08);border:1px solid rgba(255,85,102,.2);color:var(--red);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font-display);transition:all .25s}
-.btn-signout:hover{background:rgba(255,85,102,.15)}
-.btn-refresh{display:flex;align-items:center;gap:6px;padding:9px 16px;background:rgba(7,13,20,.8);border:1px solid var(--border2);color:var(--text2);border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-display);transition:all .25s}
-.btn-refresh:hover{border-color:var(--green);color:var(--green)}
-.btn-refresh.spinning .refresh-icon{animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.refresh-icon{display:inline-block}
-.admin-user-chip{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(0,255,170,.06);border:1px solid rgba(0,255,170,.15);border-radius:20px;font-size:11px;color:var(--green);font-family:var(--font-mono)}
-.admin-user-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:livePulse 1.5s infinite}
-
-/* Stats grid */
-.admin-body{padding:24px 28px;flex:1}
-.stats-grid-v2{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.stat-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:all .25s;cursor:default}
-.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 14px 14px;opacity:0;transition:opacity .3s}
-.stat-card.green::after{background:linear-gradient(90deg,var(--green2),var(--green));opacity:1}
-.stat-card.amber::after{background:linear-gradient(90deg,var(--amber2),var(--amber));opacity:1}
-.stat-card.blue::after{background:linear-gradient(90deg,#2563eb,var(--blue));opacity:1}
-.stat-card.red::after{background:linear-gradient(90deg,#cc2233,var(--red));opacity:1}
-.stat-card.purple::after{background:linear-gradient(90deg,#7c3aed,var(--purple));opacity:1}
-.stat-card-label{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.stat-card-icon{font-size:14px;opacity:.5}
-.stat-card-val{font-size:32px;font-weight:700;font-family:var(--font-mono);line-height:1;margin-bottom:4px}
-.stat-card.green .stat-card-val{color:var(--green);text-shadow:0 0 20px rgba(0,255,170,.3)}
-.stat-card.amber .stat-card-val{color:var(--amber);text-shadow:0 0 20px rgba(255,179,71,.3)}
-.stat-card.blue .stat-card-val{color:var(--blue);text-shadow:0 0 20px rgba(56,182,255,.3)}
-.stat-card.red .stat-card-val{color:var(--red)}
-.stat-card.purple .stat-card-val{color:var(--purple)}
-.stat-card-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
-
-/* Charts row */
-.charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:24px}
-.chart-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:18px 20px;overflow:hidden}
-.chart-title{font-size:9px;font-family:var(--font-mono);color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.chart-title-icon{font-size:12px;opacity:.6}
-
-/* Bar chart */
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:120px;padding-bottom:20px;position:relative}
-.bar-chart::after{content:'';position:absolute;bottom:20px;left:0;right:0;height:1px;background:rgba(255,255,255,.04)}
-.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
-.bar-inner{width:100%;display:flex;align-items:flex-end;flex:1}
-.bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.2,.8,.3,1);min-height:2px;position:relative}
-.bar:hover::after{content:attr(data-val);position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text);font-family:var(--font-mono);white-space:nowrap;background:rgba(7,13,20,.9);padding:2px 6px;border-radius:4px;border:1px solid var(--border2)}
-.bar-lbl{font-size:8px;color:var(--text3);font-family:var(--font-mono);text-align:center}
-
-/* Donut chart */
-.donut-wrap{display:flex;align-items:center;gap:20px}
-.donut-svg{flex-shrink:0}
-.donut-legend{display:flex;flex-direction:column;gap:8px}
-.donut-legend-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);font-family:var(--font-mono)}
-.donut-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.donut-val{margin-left:auto;font-weight:700;font-size:12px}
-
-/* Recent calls table */
-.table-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
-.table-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
-.table-card-title{font-size:13px;font-weight:700;font-family:var(--font-display)}
-.table-card-actions{display:flex;gap:8px}
-.tbl-search{background:rgba(12,21,32,.9);border:1px solid var(--border2);border-radius:8px;padding:6px 12px;font-size:11px;color:var(--text);outline:none;font-family:var(--font-body);width:160px}
-.tbl-search:focus{border-color:rgba(0,255,170,.4)}
-.tbl-export{padding:6px 14px;background:rgba(56,182,255,.08);border:1px solid rgba(56,182,255,.2);color:var(--blue);border-radius:8px;font-size:11px;cursor:pointer;font-family:var(--font-display);font-weight:600}
-
-/* Admin pages */
-.admin-page-v2{display:none}
-.admin-page-v2.active{display:block}
-
-/* Agents page */
-.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
-.agent-card{background:rgba(5,10,18,.9);border:1px solid var(--border);border-radius:14px;padding:16px;transition:all .25s}
-.agent-card:hover{border-color:var(--border2);transform:translateY(-2px)}
-.agent-card-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.agent-avatar{width:40px;height:40px;background:linear-gradient(135deg,rgba(0,255,170,.2),rgba(0,255,170,.05));border:1px solid rgba(0,255,170,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.agent-card-name{font-size:13px;font-weight:700;color:var(--text);font-family:var(--font-display)}
-.agent-card-id{font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
-.agent-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.agent-stat{text-align:center;background:rgba(12,21,32,.6);border-radius:8px;padding:8px 4px}
-.agent-stat-val{font-size:16px;font-weight:700;font-family:var(--font-mono);color:var(--green)}
-.agent-stat-lbl{font-size:9px;color:var(--text3);font-family:var(--font-mono);margin-top:2px}
-.agent-card-footer{display:flex;gap:6px;margin-top:12px}
-.agent-action{flex:1;padding:7px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-display);border:none;transition:all .2s;text-align:center}
-.agent-action.primary{background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.2)}
-.agent-action.primary:hover{background:rgba(0,255,170,.18)}
-.agent-action.danger{background:rgba(255,85,102,.08);color:var(--red);border:1px solid rgba(255,85,102,.2)}
-.agent-action.danger:hover{background:rgba(255,85,102,.15)}
-
-/* Online indicator */
-.online-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px rgba(0,255,170,.6);animation:livePulse 1.5s infinite;flex-shrink:0}
-.offline-dot{width:8px;height:8px;background:var(--text3);border-radius:50%;flex-shrink:0}
-
-/* ════════════════════════════════════════════════════════════
-   CORPORATE ENTERPRISE THEME — light, Stripe/Linear-style
-   Scoped to #agentView and #adminView only
-   ════════════════════════════════════════════════════════════ */
-:root{
-  --corp-bg:#f6f7f9;--corp-surface:#ffffff;--corp-surface2:#fafbfc;
-  --corp-border:#e3e6eb;--corp-border-strong:#d1d6dd;
-  --corp-text:#1a1d24;--corp-text2:#5e6470;--corp-text3:#94999f;
-  --corp-blue:#3b5bdb;--corp-blue-dim:#eef1fd;--corp-blue-strong:#2d46ad;
-  --corp-green:#0d9354;--corp-green-dim:#e8f7ee;
-  --corp-amber:#b5740a;--corp-amber-dim:#fdf3e2;
-  --corp-red:#c52f2f;--corp-red-dim:#fcebeb;
-  --corp-shadow:0 1px 2px rgba(20,22,30,.04),0 1px 8px rgba(20,22,30,.04);
-  --corp-shadow-md:0 2px 6px rgba(20,22,30,.06),0 8px 24px rgba(20,22,30,.06);
-  --corp-radius:10px;--corp-radius-lg:14px;
-}
-
-#agentView.active,#adminView.active{background:var(--corp-bg)!important;color:var(--corp-text)}
-.corp-shell{padding:28px 32px 48px;max-width:1080px;margin:0 auto;overflow-y:auto;height:100%;display:flex;flex-direction:column;gap:20px;font-family:var(--font-body)}
-
-.corp-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 0 4px}
-.corp-brand{display:flex;align-items:center;gap:10px}
-.corp-brand-mark{width:32px;height:32px;background:var(--corp-blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:700}
-.corp-brand-name{font-size:15px;font-weight:600;color:var(--corp-text)}
-.corp-brand-sub{font-size:11px;color:var(--corp-text3);letter-spacing:.3px}
-.corp-topbar-right{display:flex;align-items:center;gap:10px}
-.corp-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px}
-.corp-pill.live{background:var(--corp-green-dim);color:var(--corp-green)}
-.corp-pill.plan{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
-.corp-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:8px 16px;border-radius:var(--corp-radius);border:1px solid var(--corp-border);background:var(--corp-surface);color:var(--corp-text2);cursor:pointer;transition:all .15s}
-.corp-btn:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
-.corp-btn.primary{background:var(--corp-blue);border-color:var(--corp-blue);color:#fff}
-.corp-btn.primary:hover{background:var(--corp-blue-strong)}
-.corp-btn.danger{border-color:var(--corp-red-dim);color:var(--corp-red);background:var(--corp-red-dim)}
-.corp-btn.danger:hover{background:#f9dada}
-.corp-btn:disabled{opacity:.45;cursor:not-allowed}
-
-.corp-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.corp-stat{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px 20px;box-shadow:var(--corp-shadow)}
-.corp-stat-lbl{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.corp-stat-val{font-size:28px;font-weight:600;color:var(--corp-text);line-height:1}
-.corp-stat-val.green{color:var(--corp-green)}
-.corp-stat-val.amber{color:var(--corp-amber)}
-.corp-stat-sub{font-size:12px;color:var(--corp-text3);margin-top:4px}
-
-.corp-card{background:var(--corp-surface);border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:22px 24px;box-shadow:var(--corp-shadow)}
-.corp-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
-.corp-card-title{font-size:14px;font-weight:600;color:var(--corp-text);display:flex;align-items:center;gap:8px}
-.corp-card-sub{font-size:12px;color:var(--corp-text3);margin-top:2px}
-
-.corp-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:10px 13px;font-size:13px;color:var(--corp-text);outline:none;width:100%;transition:all .15s}
-.corp-inp:focus{border-color:var(--corp-blue);background:#fff;box-shadow:0 0 0 3px var(--corp-blue-dim)}
-.corp-inp::placeholder{color:var(--corp-text3)}
-.corp-inp.filled{border-color:var(--corp-green);background:var(--corp-green-dim)}
-.corp-inp.verified{box-shadow:0 0 0 2px var(--corp-green-dim)}
-.corp-field{display:flex;flex-direction:column;gap:6px}
-.corp-field.full{grid-column:1/-1}
-.corp-field label{font-size:11px;color:var(--corp-text3);font-weight:600;letter-spacing:.2px}
-.corp-field-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-
-.corp-listen-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:8px 0}
-.corp-listen-outer{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.corp-listen-ring{position:absolute;border-radius:50%;border:1px solid var(--corp-blue-dim);pointer-events:none;transition:all .4s}
-.corp-listen-ring.r1{width:120px;height:120px}.corp-listen-ring.r2{width:148px;height:148px}
-.corp-listen-ring.r3{width:176px;height:176px}.corp-listen-ring.r4{width:204px;height:204px}
-.corp-listen-outer.active .corp-listen-ring{animation:corpRingExpand 2.5s ease-out infinite}
-.corp-listen-outer.active .corp-listen-ring.r2{animation-delay:.5s}
-.corp-listen-outer.active .corp-listen-ring.r3{animation-delay:1s}
-.corp-listen-outer.active .corp-listen-ring.r4{animation-delay:1.5s}
-@keyframes corpRingExpand{0%{opacity:.6;transform:scale(.92);border-color:var(--corp-blue)}100%{opacity:0;transform:scale(1.1);border-color:transparent}}
-.corp-listen-btn{width:96px;height:96px;border-radius:50%;background:var(--corp-surface);border:2px solid var(--corp-border-strong);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .25s;z-index:1;box-shadow:var(--corp-shadow-md)}
-.corp-listen-btn:hover{border-color:var(--corp-blue)}
-.corp-listen-btn.active{background:var(--corp-red-dim);border-color:var(--corp-red)}
-.corp-listen-icon{font-size:26px}
-.corp-listen-lbl{font-size:8px;font-weight:700;color:var(--corp-text3);letter-spacing:1px;text-transform:uppercase}
-.corp-status-main{font-size:14px;font-weight:600;color:var(--corp-text)}
-.corp-status-sub{font-size:11px;color:var(--corp-text3);margin-top:2px}
-.corp-wave{display:flex;align-items:center;gap:3px;height:28px}
-.corp-wb{width:3px;border-radius:3px;background:var(--corp-border);transition:height .1s}
-.corp-wave.active .corp-wb{background:var(--corp-blue);animation:corpWave .8s ease-in-out infinite}
-
-.corp-strategy-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:480px}
-.corp-strat{font-size:9px;font-weight:600;padding:3px 9px;border-radius:10px;background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text3);transition:all .25s}
-.corp-strat.fired{background:var(--corp-blue-dim);border-color:var(--corp-blue);color:var(--corp-blue-strong)}
-.corp-layers-row{display:flex;gap:4px;width:100%;max-width:480px}
-.corp-layer-dot{flex:1;height:4px;border-radius:2px;background:var(--corp-border);transition:all .3s}
-.corp-layer-dot.active{background:var(--corp-blue)}
-.corp-layer-dot.warn{background:var(--corp-amber)}
-
-.corp-transcript{background:var(--corp-surface2);border:1px solid var(--corp-border);border-radius:var(--corp-radius);padding:12px 15px;font-size:12px;color:var(--corp-text2);width:100%;max-width:480px;min-height:48px;line-height:1.6}
-.corp-conf-wrap{width:100%;max-width:480px}
-.corp-conf-bar{height:5px;background:var(--corp-border);border-radius:3px;overflow:hidden;margin-top:5px}
-.corp-conf-fill{height:100%;border-radius:3px;transition:width .5s ease,background .3s}
-
-.corp-table{width:100%;border-collapse:collapse;font-size:13px}
-.corp-table thead th{font-size:11px;color:var(--corp-text3);font-weight:600;text-align:left;padding:10px 14px;border-bottom:1px solid var(--corp-border);white-space:nowrap}
-.corp-table tbody td{padding:11px 14px;color:var(--corp-text2);border-bottom:1px solid var(--corp-border);white-space:nowrap}
-.corp-table tbody tr:hover td{background:var(--corp-surface2)}
-.corp-table tbody tr:last-child td{border-bottom:none}
-.corp-table .addr-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--corp-text)}
-.corp-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;display:inline-block}
-.corp-badge.patched{background:var(--corp-green-dim);color:var(--corp-green)}
-.corp-badge.draft{background:var(--corp-amber-dim);color:var(--corp-amber)}
-.corp-badge.active{background:var(--corp-green-dim);color:var(--corp-green)}
-.corp-badge.inactive{background:var(--corp-surface2);color:var(--corp-text3)}
-.corp-pin-ok{color:var(--corp-green);font-weight:600}
-
-.corp-sidebar{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:2px}
-.corp-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--corp-radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--corp-text2);transition:all .15s}
-.corp-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
-.corp-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
-.corp-nav-badge{margin-left:auto;background:var(--corp-surface2);color:var(--corp-text3);font-size:10px;padding:2px 7px;border-radius:9px;font-weight:600}
-
-.corp-admin-layout{display:flex;gap:24px;padding:28px 32px 48px;max-width:1200px;margin:0 auto;overflow-y:auto;height:100%}
-.corp-admin-main{flex:1;display:flex;flex-direction:column;gap:20px;min-width:0}
-
-.corp-usage-meter{display:flex;align-items:center;gap:12px}
-.corp-usage-bar{flex:1;height:8px;background:var(--corp-border);border-radius:4px;overflow:hidden}
-.corp-usage-fill{height:100%;border-radius:4px;transition:width .4s}
-.corp-usage-fill.ok{background:var(--corp-green)}
-.corp-usage-fill.warn{background:var(--corp-amber)}
-.corp-usage-fill.over{background:var(--corp-red)}
-.corp-usage-text{font-size:12px;color:var(--corp-text2);font-weight:600;white-space:nowrap}
-
-.corp-plan-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-.corp-plan-card{border:1px solid var(--corp-border);border-radius:var(--corp-radius-lg);padding:18px;background:var(--corp-surface2)}
-.corp-plan-card.current{border:2px solid var(--corp-blue);background:var(--corp-blue-dim)}
-.corp-plan-name{font-size:13px;color:var(--corp-text3);font-weight:600}
-.corp-plan-price{font-size:22px;font-weight:600;color:var(--corp-text);margin:6px 0}
-.corp-plan-detail{font-size:12px;color:var(--corp-text2)}
-.corp-plan-current-badge{display:inline-block;background:var(--corp-blue);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:8px;margin-bottom:8px}
-
-@keyframes corpWave{0%,100%{height:4px}50%{height:24px}}
-
-@media(max-width:900px){
-  .corp-admin-layout{flex-direction:column}
-  .corp-sidebar{width:100%;flex-direction:row;overflow-x:auto}
-  .corp-stats{grid-template-columns:repeat(2,1fr)}
-  .corp-field-grid{grid-template-columns:1fr 1fr}
-  .corp-plan-grid{grid-template-columns:1fr}
-}
-
-/* ════════════════════════════════════════════════════════════
-   ADMIN VIEW LIGHT RETHEME — overrides old dark classes
-   Scoped to #adminView so public/landing pages stay untouched
-   ════════════════════════════════════════════════════════════ */
-/* Scope old dark-theme variable NAMES to light corp values inside agent/admin —
-   this catches every remaining inline style="color:var(--text3)" etc without
-   needing to edit each one individually. Public/landing pages are untouched
-   since this rule only applies inside #agentView and #adminView. */
-#agentView,#adminView{
-  --text:var(--corp-text);--text2:var(--corp-text2);--text3:var(--corp-text3);
-  --green:var(--corp-green);--green2:var(--corp-green);
-  --amber:var(--corp-amber);--amber2:var(--corp-amber);
-  --red:var(--corp-red);--blue:var(--corp-blue);
-  --border:var(--corp-border);--border2:var(--corp-border-strong);--border3:var(--corp-border-strong);
-  --surface:var(--corp-surface);--surface2:var(--corp-surface2);
-  --font-mono:var(--font-body);--font-display:var(--font-body);
-}
-
-#adminView.active{background:var(--corp-bg)!important;display:flex!important}
-
-#adminView .admin-sidebar-v2{width:230px;min-width:230px;background:var(--corp-surface);border-right:1px solid var(--corp-border);box-shadow:none}
-#adminView .brand-logo{background:var(--corp-blue);box-shadow:none;color:#fff;font-size:16px}
-#adminView .brand-name{color:var(--corp-text);font-weight:600}
-#adminView .brand-sub{color:var(--corp-text3)}
-#adminView .admin-nav-item{color:var(--corp-text2);border-radius:var(--corp-radius);font-weight:500}
-#adminView .admin-nav-item:hover{background:var(--corp-surface2);color:var(--corp-text)}
-#adminView .admin-nav-item.active{background:var(--corp-blue-dim);color:var(--corp-blue-strong)}
-#adminView .admin-nav-badge{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
-#adminView .admin-nav-item.active .admin-nav-badge{background:rgba(59,91,219,.12);color:var(--corp-blue-strong);border-color:transparent}
-#adminView .council-status-pill{background:var(--corp-surface2);border:1px solid var(--corp-border);box-shadow:none}
-#adminView .council-status-pill.active{border-color:var(--corp-blue);background:var(--corp-blue-dim);box-shadow:none;animation:none}
-#adminView .council-status-pill.done{border-color:var(--corp-green);background:var(--corp-green-dim)}
-
-#adminView .admin-content-v2{background:var(--corp-bg)}
-#adminView .admin-topbar{background:var(--corp-surface);border-bottom:1px solid var(--corp-border);backdrop-filter:none}
-#adminView .admin-topbar-title{color:var(--corp-text3)}
-#adminView .admin-topbar-heading{color:var(--corp-text);font-weight:600;font-family:var(--font-body)}
-#adminView .admin-user-chip{background:var(--corp-green-dim);border:1px solid transparent;color:var(--corp-green)}
-#adminView .admin-user-dot{background:var(--corp-green);box-shadow:none}
-#adminView .btn-open-agent{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-family:var(--font-body)}
-#adminView .btn-open-agent:hover{background:#dde4fb}
-#adminView .btn-refresh{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text2);font-family:var(--font-body)}
-#adminView .btn-refresh:hover{border-color:var(--corp-border-strong);color:var(--corp-text)}
-#adminView .btn-signout{background:var(--corp-red-dim);border:1px solid transparent;color:var(--corp-red);font-family:var(--font-body)}
-#adminView .btn-signout:hover{background:#f9dada}
-
-#adminView .admin-body{background:transparent}
-#adminView .stats-grid-v2{gap:14px}
-#adminView .stat-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
-#adminView .stat-card:hover{border-color:var(--corp-border-strong);box-shadow:var(--corp-shadow-md);transform:none}
-#adminView .stat-card::after{display:none}
-#adminView .stat-card-label{color:var(--corp-text3)}
-#adminView .stat-card-val{font-family:var(--font-body)!important;text-shadow:none!important}
-#adminView .stat-card.green .stat-card-val{color:var(--corp-green)!important}
-#adminView .stat-card.amber .stat-card-val{color:var(--corp-amber)!important}
-#adminView .stat-card.blue .stat-card-val{color:var(--corp-blue)!important}
-#adminView .stat-card.red .stat-card-val{color:var(--corp-red)!important}
-#adminView .stat-card.purple .stat-card-val{color:#7c5cd6!important}
-#adminView .stat-card-sub{color:var(--corp-text3)}
-
-#adminView .chart-card,#adminView .table-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
-#adminView .chart-title{color:var(--corp-text3)}
-#adminView .bar-chart::after{background:var(--corp-border)}
-#adminView .bar:hover::after{background:var(--corp-surface);border:1px solid var(--corp-border);color:var(--corp-text)}
-#adminView .bar-lbl{color:var(--corp-text3)}
-#adminView .donut-legend-item{color:var(--corp-text2)}
-
-#adminView .table-card-hdr{border-bottom:1px solid var(--corp-border)}
-#adminView .table-card-title{color:var(--corp-text);font-family:var(--font-body)}
-#adminView .tbl-search{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
-#adminView .tbl-search:focus{border-color:var(--corp-blue)}
-#adminView .tbl-export{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong);font-weight:600}
-#adminView .tbl-export:hover{background:#dde4fb}
-
-#adminView .admin-table th{color:var(--corp-text3);border-bottom:1px solid var(--corp-border)}
-#adminView .admin-table td{color:var(--corp-text2);border-bottom:1px solid var(--corp-border)}
-#adminView .admin-table td:first-child{color:var(--corp-text)}
-#adminView .admin-table tr:hover td{background:var(--corp-surface2)}
-
-#adminView .agents-grid{gap:14px}
-#adminView .agent-card{background:var(--corp-surface);border:1px solid var(--corp-border);box-shadow:var(--corp-shadow)}
-#adminView .agent-card:hover{border-color:var(--corp-border-strong);transform:none;box-shadow:var(--corp-shadow-md)}
-#adminView .agent-avatar{background:var(--corp-blue-dim);border:1px solid transparent;color:var(--corp-blue-strong)}
-#adminView .agent-card-name{color:var(--corp-text);font-family:var(--font-body)}
-#adminView .agent-card-id{color:var(--corp-text3)}
-#adminView .agent-stat{background:var(--corp-surface2)}
-#adminView .agent-stat-val{color:var(--corp-text);font-family:var(--font-body)}
-#adminView .agent-stat-lbl{color:var(--corp-text3)}
-#adminView .agent-action.primary{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
-#adminView .agent-action.primary:hover{background:#dde4fb}
-#adminView .agent-action.danger{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
-#adminView .agent-action.danger:hover{background:#f9dada}
-
-#adminView .a-btn.green{background:var(--corp-green);color:#fff;box-shadow:none}
-#adminView .a-btn.green:hover{background:#0b7a45;transform:none;box-shadow:none}
-#adminView .a-btn.red{background:var(--corp-red-dim);color:var(--corp-red);border:1px solid transparent}
-#adminView .a-btn.blue{background:var(--corp-blue-dim);color:var(--corp-blue-strong);border:1px solid transparent}
-#adminView .af-inp,#adminView .af-select,#adminView .search-inp{background:var(--corp-surface2);border:1px solid var(--corp-border);color:var(--corp-text)}
-#adminView .af-inp:focus,#adminView .af-select:focus{border-color:var(--corp-blue);box-shadow:0 0 0 3px var(--corp-blue-dim)}
-#adminView .af-label{color:var(--corp-text3)}
-#adminView .badge.on{background:var(--corp-green-dim);color:var(--corp-green);border:1px solid transparent}
-#adminView .badge.off{background:var(--corp-surface2);color:var(--corp-text3);border:1px solid var(--corp-border)}
-</style>
-
-
-<!-- ═══════════════════════════════════════════════════════════
-     VISHAL NAVIGATION — MASTER FIX
-     Paste this LAST, just before 
-</body>
-     Fixes: agent form filling, strategy UI, listen toggle,
-            plan enforcement, admin addCompany, corp-strat sync
-     ═══════════════════════════════════════════════════════════ -->
- 
-
 
 </body>
 </html>
