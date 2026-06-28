@@ -509,6 +509,7 @@ body.light-mode .lcard{background:#fff}
 </head>
 <body>
 <script>
+window.GROQ_KEY = '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';
 // Show landing immediately before heavy PIN_DB loads
 window.onload = function(){
   document.getElementById('landing').style.display='flex';
@@ -1040,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script src="pindb.js"></script>
 <script>
-const GROQ_KEY = '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';
+const GROQ_KEY = window.GROQ_KEY;
 const ADMIN_USER = 'vishal_admin';
 const ADMIN_PASS_KEY = 'vn_admin_pass';
 function getAdminPass(){ return localStorage.getItem(ADMIN_PASS_KEY)||'admin@1234'; }
@@ -1163,63 +1164,7 @@ function showLogin(type){
   document.getElementById('loginPass').value='';
 }
 
-async function doLogin(){
-  const id   = document.getElementById('loginId')?.value.trim();
-  const pass = document.getElementById('loginPass')?.value;
-
-  // Admin login
-  if(currentMode==='admin'){
-    const user = document.getElementById('adminUser')?.value.trim();
-    if(user===ADMIN_USER&&pass===getAdminPass()){
-      document.getElementById('loginPage').style.display='none';
-      showAdminView();
-    } else showLoginErr('Invalid admin credentials');
-    return;
-  }
-
-  // Agent login via Supabase
-  const btn = document.getElementById('loginBtn');
-  const err = document.getElementById('loginErr');
-  if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
-  if(err) err.style.display='none';
-
-  const SB_URL = 'https://siesbponoqoijidsmxky.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZXNicG9ub3' +
-                 'FvaWppZHNteGt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MzMyNDYsImV4cCI6MjA5ODEwOTI0Nn0' +
-                 '.spKeHUZjN0W_dQCUkEvi9kbMrsBdHASqbn4mhLs2-FI';
-  const headers = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
-
-  try {
-    const ar = await fetch(SB_URL+'/rest/v1/agents?id=eq.'+encodeURIComponent(id)+'&pass=eq.'+encodeURIComponent(pass)+'&active=eq.true&select=*',{headers});
-    const agents = await ar.json();
-    if(!agents||!agents.length) throw new Error('Invalid Agent ID or Password');
-    const agent = agents[0];
-
-    const cr = await fetch(SB_URL+'/rest/v1/companies?id=eq.'+encodeURIComponent(agent.company_id)+'&active=eq.true&select=*',{headers});
-    const companies = await cr.json();
-    if(!companies||!companies.length) throw new Error('Company account inactive. Contact admin.');
-    const company = companies[0];
-
-    // Update last active
-    fetch(SB_URL+'/rest/v1/agents?id=eq.'+agent.id,{method:'PATCH',headers:{...headers,'Prefer':'return=minimal'},body:JSON.stringify({last_active:new Date().toISOString()})}).catch(()=>{});
-
-    window.currentAgent   = {id:agent.id,name:agent.name,pass:agent.pass,companyId:agent.company_id,active:agent.active};
-    window.currentCompany = {id:company.id,name:company.name,pass:company.pass,email:company.email,plan:company.plan,active:company.active};
-
-    const adr = await fetch(SB_URL+'/rest/v1/addresses?select=*&agent_id=eq.'+encodeURIComponent(agent.id)+'&order=created_at.desc&limit=200',{headers});
-    const addrs = await adr.json();
-    window.addrHistory = (addrs||[]).map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status}));
-
-    if(btn){btn.disabled=false;btn.textContent='Login';}
-    document.getElementById('loginPage').style.display='none';
-    showAgentView();
-    toast('Welcome '+agent.name+'! 👋');
-
-  } catch(e) {
-    if(btn){btn.disabled=false;btn.textContent='Login';}
-    showLoginErr(e.message);
-  }
-}
+/* doLogin — handled by Supabase backend below */
 
 function showLoginErr(msg){
   const el=document.getElementById('loginErr');
@@ -1728,7 +1673,7 @@ async function analyzePhoto(){
   document.getElementById('photoAnalyzeBtn').textContent='🔍 Analyzing...';
   document.getElementById('photoAnalyzeBtn').disabled=true;
   try{
-    const GROQ = window.GROQ_KEY || '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';
+    const GROQ = window.GROQ_KEY;
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ},
@@ -2855,6 +2800,23 @@ function switchAdminPage(name,el){
 }
 
 function refreshAdmin(page='dashboard'){
+  // Load from Supabase first if available, then render
+  if(typeof sbGetCompanies==='function') {
+    Promise.all([
+      sbGetCompanies().catch(()=>null),
+      sbGetAgents().catch(()=>null),
+      sbGetAllAddresses().catch(()=>null)
+    ]).then(function([cos,ags,addrs]) {
+      if(cos) setData('vn_companies', cos.map(c=>({id:c.id,name:c.name,pass:c.pass,email:c.email,plan:c.plan,active:c.active,created:new Date(c.created_at).toLocaleDateString('en-IN'),renewsOn:new Date(c.renews_on).toLocaleDateString('en-IN')})));
+      if(ags) setData('vn_agents', ags.map(a=>({id:a.id,name:a.name,pass:a.pass,companyId:a.company_id,active:a.active,lastActive:a.last_active,created:new Date(a.created_at).toLocaleDateString('en-IN')})));
+      if(addrs) setData('vn_addresses', addrs.map(a=>({address:a.address,pincode:a.pincode||'N/A',district:a.city,state:a.state,name:a.customer_name,phone:a.customer_phone,confidence:a.confidence,time:new Date(a.created_at).toLocaleString('en-IN'),agentId:a.agent_id,companyId:a.company_id,isDuplicate:a.is_duplicate,duration:a.duration,status:a.status})));
+      _renderAdmin(page);
+    }).catch(()=>_renderAdmin(page));
+    return;
+  }
+  _renderAdmin(page);
+}
+function _renderAdmin(page='dashboard'){
   const companies=getData('vn_companies',[]);
   const agents=getData('vn_agents',[]);
   const addresses=getData('vn_addresses',[]);
@@ -3822,6 +3784,7 @@ function stopDeepgramListen(){
 const _dgOriginalStart=typeof startListen==='function'?startListen:function(){};
 const _dgOriginalStop=typeof stopListen==='function'?stopListen:function(){};
 
+const _dgPrevToggle = typeof window.toggleListen==='function' ? window.toggleListen : null;
 window.toggleListen=async function(){
   if(dgActive||window.isListening){
     stopDeepgramListen();
@@ -4430,7 +4393,7 @@ window.ipHandleRecordingUpload = function(input) {
   if (resultEl) resultEl.style.display = 'none';
   if (btnEl) btnEl.disabled = true;
 
-  var GROQ = window.GROQ_KEY || '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';
+  var GROQ = window.GROQ_KEY;
 
   // Step 1: Transcribe with Groq Whisper
   var formData = new FormData();
@@ -6887,7 +6850,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 
   const GROQ_KEY_VAL = typeof window.GROQ_KEY !== 'undefined'
     ? window.GROQ_KEY
-    : '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';
+    : window.GROQ_KEY;
 
   // ─────────────────────────────────────────────────────────────
   // UI SYNC — the ONE place that touches DOM listen elements
@@ -7322,6 +7285,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
   // ─────────────────────────────────────────────────────────────
   // THE ONE TOGGLE — wired to the listen button
   // ─────────────────────────────────────────────────────────────
+  const _oneTogglePrev = typeof window.toggleListen==='function' ? window.toggleListen : null;
   window.toggleListen = async function () {
     if (STATE.listening) {
       // ── STOP ──
@@ -7598,7 +7562,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 'use strict';
 
 // FIX 1: Correct GROQ key
-window.GROQ_KEY = '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';
+// GROQ_KEY defined at top
 
 // FIX 2: Relaxed capture — fires after 5+ words with 1.8s silence
 window._fixBuffer = '';
