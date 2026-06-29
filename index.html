@@ -2061,41 +2061,39 @@ async function togglePubMic(){
 
   pubMicActive = true;
   const micBtn = document.getElementById('pubMic');
-  const pubInput = document.getElementById('pubQ');
+  const input  = document.getElementById('pubQ');
   micBtn.classList.add('active');
   micBtn.textContent = '⏹';
-  pubInput.placeholder = 'सुन रहा हूँ... बोलिए (Listening... speak in Hindi or English)';
+  input.placeholder = '🎤 बोलिए... (Speak your location in Hindi or English)';
 
-  navigator.mediaDevices.getUserMedia({
-    audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
-  })
-  .then(function(stream) {
-    pubStream = stream;
+  try {
+    pubStream = await navigator.mediaDevices.getUserMedia({
+      audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
+    });
+
     const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-    pubMediaRecorder = new MediaRecorder(stream, {mimeType});
+    pubMediaRecorder = new MediaRecorder(pubStream, {mimeType});
     pubAudioChunks = [];
 
-    pubMediaRecorder.ondataavailable = function(e) {
-      if(e.data.size > 0) pubAudioChunks.push(e.data);
-    };
+    pubMediaRecorder.ondataavailable = e => { if(e.data.size>0) pubAudioChunks.push(e.data); };
 
-    pubMediaRecorder.onstop = async function() {
-      if(!pubAudioChunks.length) return;
-      const blob = new Blob(pubAudioChunks, {type: mimeType});
+    pubMediaRecorder.onstop = async () => {
+      if(!pubMicActive || pubAudioChunks.length===0) return;
+      const blob = new Blob(pubAudioChunks, {type:mimeType});
       pubAudioChunks = [];
 
       micBtn.textContent = '⚙️';
-      pubInput.placeholder = 'Processing... / प्रोसेस हो रहा है...';
+      input.placeholder = 'Processing...';
 
       try {
-        // ── Sarvam AI — Primary (best for Hindi/Hinglish) ──────────
+        // ── Sarvam AI — primary (best for Hindi/Hinglish) ────────
         const sarvamForm = new FormData();
         sarvamForm.append('file', blob, 'audio.webm');
         sarvamForm.append('language_code', 'hi-IN');
         sarvamForm.append('model', 'saarika:v2');
-        sarvamForm.append('prompt', 'Indian location, address, area, colony, city, pincode. पता, घर, गली, मोहल्ला, सेक्टर, कॉलोनी, शहर, पिनकोड');
+        sarvamForm.append('prompt', 'Indian location address. Area, colony, city, pincode, landmark in Hindi or English. पता, इलाका, शहर, कॉलोनी');
 
-        let transcript = '';
+        let text = '';
         try {
           const sarvamRes = await fetch('https://api.sarvam.ai/speech-to-text', {
             method: 'POST',
@@ -2103,220 +2101,61 @@ async function togglePubMic(){
             body: sarvamForm
           });
           const sarvamData = await sarvamRes.json();
-          transcript = (sarvamData.transcript || sarvamData.text || '').trim();
+          text = (sarvamData.transcript || sarvamData.text || '').trim();
         } catch(sarvamErr) {
-          console.warn('Sarvam failed, trying Groq:', sarvamErr);
-        }
-
-        // ── Groq Whisper — Fallback ─────────────────────────────────
-        if(!transcript) {
+          // ── Fallback to Groq Whisper ──────────────────────────
           const groqForm = new FormData();
           groqForm.append('file', blob, 'audio.webm');
           groqForm.append('model', 'whisper-large-v3');
           groqForm.append('response_format', 'json');
           groqForm.append('language', 'hi');
-          groqForm.append('prompt', 'India address location area colony city village pincode. पता घर गली मोहल्ला');
+          groqForm.append('prompt', 'India location, area, colony, city, pincode. पता, घर, गली, शहर');
           const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + window.GROQ_KEY },
             body: groqForm
           });
           const groqData = await groqRes.json();
-          transcript = (groqData.text || '').trim();
+          text = (groqData.text || '').trim();
         }
 
-        if(transcript && transcript.length > 1) {
-          pubInput.value = transcript;
-          pubInput.placeholder = 'Search any location in India...';
-          micBtn.textContent = '✅';
-          micBtn.classList.remove('active');
-          pubMicActive = false;
-          // Auto-search after 600ms
-          setTimeout(function() {
-            micBtn.textContent = '🎤';
-            if(typeof pubSearch === 'function') pubSearch();
-          }, 600);
+        if(text && text.length > 2) {
+          input.value = text;
+          input.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
+          stopPubMic();
+          pubSearch();
         } else {
-          throw new Error('No speech detected');
+          input.placeholder = 'Could not hear clearly — please try again';
+          stopPubMic();
         }
       } catch(err) {
-        console.error('Voice error:', err);
-        micBtn.textContent = '🎤';
-        micBtn.classList.remove('active');
-        pubMicActive = false;
-        pubInput.placeholder = 'Voice failed — type your location / आवाज़ नहीं आई, टाइप करें';
-        if(typeof toast === 'function') toast('⚠️ Voice not captured — please try again', 'err');
+        console.error('Pub mic error:', err);
+        input.placeholder = 'Error — please type your location';
+        stopPubMic();
       }
     };
 
     // Record for up to 8 seconds then auto-stop
     pubMediaRecorder.start();
-    setTimeout(function() {
-      if(pubMicActive && pubMediaRecorder && pubMediaRecorder.state === 'recording') {
+    setTimeout(() => {
+      if(pubMicActive && pubMediaRecorder.state === 'recording') {
         pubMediaRecorder.stop();
-        pubStream.getTracks().forEach(t => t.stop());
-        micBtn.textContent = '⚙️';
       }
     }, 8000);
-  })
-  .catch(function(err) {
+
+  } catch(err) {
     pubMicActive = false;
+    micBtn.classList.remove('active');
     micBtn.textContent = '🎤';
-    micBtn.classList.remove('active');
-    pubInput.placeholder = 'Mic access denied — type your location';
-    if(typeof toast === 'function') toast('⚠️ Microphone access denied', 'err');
-  });
-
-function stopPubMic(){
-  pubMicActive=false;
-  clearTimeout(pubSilenceTimer);
-  if(pubMediaRecorder&&pubMediaRecorder.state!=='inactive'){
-    try{pubMediaRecorder.stop();}catch(e){}
-  }
-  if(pubStream){
-    pubStream.getTracks().forEach(t=>t.stop());
-    pubStream=null;
-  }
-  const micBtn=document.getElementById('pubMic');
-  if(micBtn){
-    micBtn.classList.remove('active');
-    micBtn.textContent='🎤';
-  }
-  document.getElementById('pubQ').placeholder='e.g. Lajpat Nagar Delhi, Camp Pune…';
-}
-
-function useFallbackMic(){
-  // Web Speech API fallback — captures everything user says
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Microphone not supported in this browser. Use Chrome.','err');return;}
-
-  pubMicActive=true;
-  const micBtn=document.getElementById('pubMic');
-  micBtn.classList.add('active');
-  micBtn.textContent='⏹';
-
-  pubRecognition=new SR();
-  pubRecognition.continuous=false;
-  pubRecognition.interimResults=true;
-  pubRecognition.lang='hi-IN'; // Hindi first, auto-detects English too
-
-  pubRecognition.onresult=e=>{
-    let interim='',final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      if(e.results[i].isFinal) final+=e.results[i][0].transcript;
-      else interim+=e.results[i][0].transcript;
+    if(err.name === 'NotAllowedError') {
+      alert('Microphone permission denied. Please allow mic access.');
+    } else {
+      input.placeholder = 'Mic error — please type your location';
     }
-    // Show live what user is saying
-    document.getElementById('pubQ').value=final||interim;
-  };
-
-  pubRecognition.onend=()=>{
-    pubMicActive=false;
-    micBtn.classList.remove('active');
-    micBtn.textContent='🎤';
-    document.getElementById('pubQ').placeholder='e.g. Lajpat Nagar Delhi, Camp Pune…';
-    const v=document.getElementById('pubQ').value.trim();
-    // Search immediately — no trigger word needed
-    if(v) setTimeout(pubSearch,200);
-  };
-
-  pubRecognition.onerror=e=>{
-    pubMicActive=false;
-    micBtn.classList.remove('active');
-    micBtn.textContent='🎤';
-    if(e.error==='not-allowed') toast('Microphone permission denied','err');
-    else if(e.error==='no-speech') toast('No speech detected, try again','err');
-  };
-
-  pubRecognition.start();
-  document.getElementById('pubQ').placeholder='Listening... speak any India location';
-}
-
-
-// ===== AGENT STATE =====
-let currentAgent=null,currentCompany=null,addrHistory=[];
-let isListening=false,mediaRecorder=null,audioChunks=[];
-let currentResult=null,currentTranscript='',retryCount=0;
-let totalAttempts=0,successCount=0,dupCount=0;
-let rollingBuffer=[],captureMode=false,captureTimer=null,silenceTimer=null;
-let strategiesFired=new Set();
-
-// 20 India language trigger words
-const TRIGGER_WORDS={
-  agent:['address kya hai','address batao','address de','address dijiye','pata batao','pata dijiye','kahan rehte','kahan rehti','delivery kahan','kahan bhejun','where do you live','what is your address','delivery address','where should i send','your location','aapka pata','apna address','apna pata','deliver karna hai','bhejne ka address'],
-  customer:['mera address','mera pata','main rehta','main rehti','hum rehte','hamare ghar','meri gali','mera mohalla','mera sector','meri colony','hamara pincode','plot number','flat number','house number','ghar ka number','mere ghar ka','yahan deliver','idhar bhejo','is jagah','mere paas bhejo','I live at','my address is','my house is','I stay at','deliver to','send it to','my location is','mera location','mera flat','mera plot','meri building','meri society'],
-  location:['sector','gali','mohalla','colony','nagar','vihar','enclave','extension','phase','block','plot','flat','apartment','society','township','layout','nagara','ward','mandal','taluk','tehsil','panchayat','gram','village','gaon','basti','chowk','chawk','bazaar','mandi','road','street','lane','marg','path','gully'],
-  pincode:['pincode','pin code','postal code','zip code','zip'],
-  numbers:/\b\d{6}\b/,
-  // Regional language triggers
-  bengali:['আমার ঠিকানা','আমার বাড়ি','আমি থাকি','ডেলিভারি দিন'],
-  tamil:['என் முகவரி','என் வீடு','நான் வசிக்கிறேன்','டெலிவரி'],
-  telugu:['నా చిరునామా','నా ఇల్లు','నేను నివసిస్తున్నాను'],
-  marathi:['माझा पत्ता','माझे घर','मी राहतो','डिलिव्हरी'],
-  gujarati:['મારું સરનામું','મારું ઘર','હું રહું છું'],
-  kannada:['ನನ್ನ ವಿಳಾಸ','ನನ್ನ ಮನೆ','ನಾನು ವಾಸಿಸುತ್ತೇನೆ'],
-  malayalam:['എന്റെ വിലാസം','എന്റെ വീട്','ഞാൻ താമസിക്കുന്നു'],
-  punjabi:['ਮੇਰਾ ਪਤਾ','ਮੇਰਾ ਘਰ','ਮੈਂ ਰਹਿੰਦਾ ਹਾਂ'],
-  odia:['ମୋର ଠିକଣା','ମୋର ଘର','ମୁଁ ରୁହେ'],
-  urdu:['میرا پتہ','میرا گھر','میں رہتا ہوں','ڈیلیوری']
-};
-
-function checkAllTriggers(text){
-  const lower=text.toLowerCase();
-  const fired=new Set();
-  // S2: Customer trigger words
-  if(TRIGGER_WORDS.customer.some(t=>lower.includes(t.toLowerCase()))) fired.add('s2');
-  // S5: Location pattern (numbers + location words)
-  const hasNumbers=/\d/.test(text);
-  const hasLocationWord=TRIGGER_WORDS.location.some(t=>lower.includes(t));
-  if(hasNumbers&&hasLocationWord) fired.add('s5');
-  // S6: 6-digit pincode
-  if(TRIGGER_WORDS.numbers.test(text)) fired.add('s6');
-  // Regional languages
-  const allRegional=[...TRIGGER_WORDS.bengali,...TRIGGER_WORDS.tamil,...TRIGGER_WORDS.telugu,...TRIGGER_WORDS.marathi,...TRIGGER_WORDS.gujarati,...TRIGGER_WORDS.kannada,...TRIGGER_WORDS.malayalam,...TRIGGER_WORDS.punjabi,...TRIGGER_WORDS.odia,...TRIGGER_WORDS.urdu];
-  if(allRegional.some(t=>text.includes(t))) fired.add('s2');
-  return fired;
-}
-
-function checkAgentQuestion(text){
-  return TRIGGER_WORDS.agent.some(t=>text.toLowerCase().includes(t.toLowerCase()));
-}
-
-function updateStrategyUI(fired){
-  for(let i=1;i<=7;i++){
-    const el=document.getElementById('s'+i);
-    if(el) el.classList.toggle('fired',fired.has('s'+i));
   }
 }
 
-function updateLayerUI(active,warn=false){
-  for(let i=1;i<=10;i++){
-    const el=document.getElementById('l'+i);
-    if(!el) continue;
-    if(i<=active) el.className='layer-dot'+(warn&&i===active?' warn':' active');
-    else el.className='layer-dot';
-  }
-}
 
-function setStatus(main,type='',sub=''){
-  const m=document.getElementById('asMain'),s=document.getElementById('asSub');
-  if(m){m.textContent=main;m.className='as-main '+(type||'');}
-  if(s&&sub!==undefined) s.textContent=sub;
-}
-
-function setQuality(level){
-  const bars=document.getElementById('qualBars'),lbl=document.getElementById('qualLbl');
-  if(bars) bars.className='qual-bars '+(level||'');
-  if(lbl){const labels={good:'Good',medium:'Medium',poor:'Poor','':'No audio'};lbl.textContent=labels[level]||'No audio';lbl.style.color=level==='good'?'var(--green)':level==='medium'?'var(--amber)':level==='poor'?'var(--red)':'var(--text3)';}
-}
-
-function getSupportedMimeType(){
-  const types=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'];
-  for(const t of types) if(MediaRecorder.isTypeSupported(t)) return t;
-  return 'audio/webm';
-}
-
-// ===== LISTEN =====
 async function toggleListen(){
   if(isListening) stopListen();
   else await startListen();
@@ -3935,132 +3774,7 @@ console.log('\u2705 Deepgram nova-2 active | GeoKeo geocoding active');
 // ═══════════════════════════════════════════════════════════
 
 // ────────────────────────────────────────────────────────────
-// FIX 1: Replace togglePubMic with Deepgram-powered version
-// ────────────────────────────────────────────────────────────
-(function () {
-  let pubDgSocket = null, pubDgStream = null, pubDgProcessor = null;
-  let pubDgContext = null, pubDgActive = false;
-  let pubDgFinalText = '', pubDgInterim = '';
-  let pubDgSilenceTimer = null;
-
-  async function startPubDeepgram() {
-    try {
-      pubDgStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
-      });
-    } catch (e) {
-      toast('⚠️ Microphone permission denied', 'err');
-      return false;
-    }
-
-    const wsUrl =
-      'wss://api.deepgram.com/v1/listen' +
-      '?model=nova-2' +
-      '&language=hi-Latn-IN' +
-      '&detect_language=true' +
-      '&punctuate=true' +
-      '&smart_format=true' +
-      '&interim_results=true' +
-      '&endpointing=400' +
-      '&utterance_end_ms=1000';
-
-    pubDgSocket = new WebSocket(wsUrl, ['token', DEEPGRAM_KEY]);
-
-    pubDgSocket.onopen = () => {
-      pubDgActive = true;
-      pubDgFinalText = '';
-      pubDgInterim = '';
-      pubDgContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      const source = pubDgContext.createMediaStreamSource(pubDgStream);
-      pubDgProcessor = pubDgContext.createScriptProcessor(4096, 1, 1);
-      pubDgProcessor.onaudioprocess = (e) => {
-        if (!pubDgSocket || pubDgSocket.readyState !== WebSocket.OPEN) return;
-        const pcm = e.inputBuffer.getChannelData(0);
-        const int16 = new Int16Array(pcm.length);
-        for (let i = 0; i < pcm.length; i++)
-          int16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
-        pubDgSocket.send(int16.buffer);
-      };
-      source.connect(pubDgProcessor);
-      pubDgProcessor.connect(pubDgContext.destination);
-    };
-
-    pubDgSocket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const transcript = data?.channel?.alternatives?.[0]?.transcript?.trim();
-        const isFinal = data?.is_final;
-        const speechFinal = data?.speech_final;
-        if (!transcript) return;
-
-        // Show live in input box
-        const inp = document.getElementById('pubQ');
-        if (inp) inp.value = pubDgFinalText + (pubDgFinalText ? ' ' : '') + transcript;
-
-        if (isFinal || speechFinal) {
-          pubDgFinalText = (pubDgFinalText + ' ' + transcript).trim();
-          if (inp) inp.value = pubDgFinalText;
-
-          // Auto-search after 1.5s silence once we have enough words
-          clearTimeout(pubDgSilenceTimer);
-          if (pubDgFinalText.split(' ').length >= 2) {
-            pubDgSilenceTimer = setTimeout(() => {
-              if (pubDgActive && pubDgFinalText.trim().length > 2) {
-                stopPubDeepgram();
-                pubSearch();
-              }
-            }, 1500);
-          }
-        }
-      } catch (e) {}
-    };
-
-    pubDgSocket.onerror = () => {
-      stopPubDeepgram();
-      // fallback to original Groq Whisper
-      typeof togglePubMicOriginal === 'function' && togglePubMicOriginal();
-    };
-
-    pubDgSocket.onclose = () => { pubDgActive = false; };
-    return true;
-  }
-
-  function stopPubDeepgram() {
-    pubDgActive = false;
-    clearTimeout(pubDgSilenceTimer);
-    try { if (pubDgProcessor) pubDgProcessor.disconnect(); } catch (e) {}
-    try { if (pubDgContext) pubDgContext.close(); } catch (e) {}
-    try { if (pubDgSocket) pubDgSocket.close(); } catch (e) {}
-    try { if (pubDgStream) pubDgStream.getTracks().forEach(t => t.stop()); } catch (e) {}
-    pubDgSocket = null; pubDgProcessor = null; pubDgContext = null; pubDgStream = null;
-
-    const micBtn = document.getElementById('pubMic');
-    if (micBtn) { micBtn.classList.remove('active'); micBtn.textContent = '🎤'; }
-    const inp = document.getElementById('pubQ');
-    if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
-  }
-
-  // Save original as fallback
-  window.togglePubMicOriginal = window.togglePubMic;
-
-  // Override with Deepgram version
-  window.togglePubMic = async function () {
-    if (pubDgActive) { stopPubDeepgram(); return; }
-
-    const micBtn = document.getElementById('pubMic');
-    const inp = document.getElementById('pubQ');
-    if (micBtn) { micBtn.classList.add('active'); micBtn.textContent = '⏹'; }
-    if (inp) inp.placeholder = '🟢 Listening via Deepgram… speak any India location';
-
-    const ok = await startPubDeepgram();
-    if (!ok) {
-      if (micBtn) { micBtn.classList.remove('active'); micBtn.textContent = '🎤'; }
-      if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
-    }
-  };
-
-  console.log('✅ Patch Fix 1: Deepgram wired to public search mic');
-})();
+// togglePubMic override removed — base function uses Sarvam directly
 
 
 // ────────────────────────────────────────────────────────────
@@ -7468,75 +7182,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
     if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
   }
 
-  window.togglePubMic = async function () {
-    if (_pubActive) { stopPubMic(); return; }
-
-    const btn = document.getElementById('pubMic');
-    const inp = document.getElementById('pubQ');
-    if (btn) { btn.classList.add('active'); btn.textContent = '⏹'; }
-    if (inp) inp.placeholder = '🟢 Listening… speak any India location';
-
-    let micStream;
-    try {
-      micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 }
-      });
-    } catch (e) {
-      if (typeof toast === 'function') toast('⚠️ Microphone permission denied', 'err');
-      stopPubMic();
-      return;
-    }
-
-    _pubStream = micStream;
-    _pubFinal  = '';
-
-    const ws = new WebSocket(
-      'wss://api.deepgram.com/v1/listen?model=nova-2&language=multi&punctuate=true&smart_format=true&interim_results=true&endpointing=500&utterance_end_ms=800',
-      ['token', DEEPGRAM_KEY]
-    );
-    _pubWS = ws;
-
-    ws.onopen = () => {
-      _pubActive = true;
-      _pubCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      const src  = _pubCtx.createMediaStreamSource(micStream);
-      _pubProc   = _pubCtx.createScriptProcessor(4096, 1, 1);
-      _pubProc.onaudioprocess = (e) => {
-        if (!_pubWS || _pubWS.readyState !== WebSocket.OPEN) return;
-        const pcm = e.inputBuffer.getChannelData(0);
-        const i16 = new Int16Array(pcm.length);
-        for (let i = 0; i < pcm.length; i++) i16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
-        try { _pubWS.send(i16.buffer); } catch(_) {}
-      };
-      src.connect(_pubProc);
-      _pubProc.connect(_pubCtx.destination);
-    };
-
-    ws.onmessage = (ev) => {
-      try {
-        const d = JSON.parse(ev.data);
-        const t = d?.channel?.alternatives?.[0]?.transcript?.trim();
-        if (!t) return;
-        const inp2 = document.getElementById('pubQ');
-        if (inp2) inp2.value = _pubFinal + (t ? ' ' + t : '');
-        if (d?.is_final || d?.speech_final) {
-          _pubFinal = (_pubFinal + ' ' + t).trim();
-          clearTimeout(_pubSilTimer);
-          if (_pubFinal.split(' ').length >= 2) {
-            _pubSilTimer = setTimeout(() => {
-              if (_pubActive && _pubFinal.trim().length > 2) {
-                stopPubMic();
-                if (typeof pubSearch === 'function') pubSearch();
-              }
-            }, 1200);
-          }
-        }
-      } catch (_) {}
-    };
-
-    ws.onerror = () => { stopPubMic(); };
-    ws.onclose = () => { if (_pubActive) stopPubMic(); };
-  };
+  // togglePubMic override removed — using Sarvam base;
 
   // ─────────────────────────────────────────────────────────────
   // SYSTEM AUDIO BUTTON — inject into agent UI
