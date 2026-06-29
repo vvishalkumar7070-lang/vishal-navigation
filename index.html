@@ -7168,18 +7168,32 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
   let _pubFinal = '', _pubSilTimer = null;
 
   function stopPubMic() {
-    _pubActive = false;
-    clearTimeout(_pubSilTimer);
-    if (_pubProc) { try { _pubProc.disconnect(); } catch(_) {} }
-    if (_pubCtx)  { try { _pubCtx.close();       } catch(_) {} }
-    if (_pubWS)   { try { _pubWS.close();         } catch(_) {} }
-    if (_pubStream) _pubStream.getTracks().forEach(t => t.stop());
-    _pubWS = null; _pubCtx = null; _pubProc = null; _pubStream = null;
+    // Stop all variable sets (base + legacy)
+    window.pubMicActive = false;
+    if(typeof _pubActive !== 'undefined') _pubActive = false;
+    clearTimeout(window._pubSilTimer);
+
+    // Stop MediaRecorder (base function)
+    if(window.pubMediaRecorder && window.pubMediaRecorder.state === 'recording') {
+      try { window.pubMediaRecorder.stop(); } catch(_) {}
+    }
+    if(window.pubStream) {
+      window.pubStream.getTracks().forEach(t => t.stop());
+      window.pubStream = null;
+    }
+    window.pubMediaRecorder = null;
+    window.pubAudioChunks = [];
+
+    // Stop legacy vars
+    if(typeof _pubProc !== 'undefined' && _pubProc) { try { _pubProc.disconnect(); } catch(_) {} _pubProc = null; }
+    if(typeof _pubCtx  !== 'undefined' && _pubCtx)  { try { _pubCtx.close();       } catch(_) {} _pubCtx  = null; }
+    if(typeof _pubWS   !== 'undefined' && _pubWS)   { try { _pubWS.close();         } catch(_) {} _pubWS   = null; }
+    if(typeof _pubStream !== 'undefined' && _pubStream) { _pubStream.getTracks().forEach(t => t.stop()); _pubStream = null; }
 
     const btn = document.getElementById('pubMic');
     const inp = document.getElementById('pubQ');
-    if (btn) { btn.classList.remove('active'); btn.textContent = '🎤'; }
-    if (inp) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
+    if(btn) { btn.classList.remove('active'); btn.textContent = '🎤'; }
+    if(inp && inp.placeholder.includes('Processing')) inp.placeholder = 'e.g. Lajpat Nagar Delhi, Camp Pune…';
   }
 
   // togglePubMic override removed — using Sarvam base;
