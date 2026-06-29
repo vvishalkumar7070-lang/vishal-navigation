@@ -2057,100 +2057,115 @@ let pubMediaRecorder=null;
 let pubStream=null;
 
 async function togglePubMic(){
-  if(pubMicActive){
-    stopPubMic();
-    return;
-  }
+  if(pubMicActive){ stopPubMic(); return; }
 
-  pubMicActive=true;
-  const micBtn=document.getElementById('pubMic');
+  pubMicActive = true;
+  const micBtn = document.getElementById('pubMic');
+  const pubInput = document.getElementById('pubQ');
   micBtn.classList.add('active');
-  micBtn.textContent='⏹';
-  document.getElementById('pubQ').placeholder='Listening... speak any location in India';
+  micBtn.textContent = '⏹';
+  pubInput.placeholder = 'सुन रहा हूँ... बोलिए (Listening... speak in Hindi or English)';
 
-  // Try Groq Whisper first for best accuracy
-  try{
-    pubStream=await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
-    });
+  navigator.mediaDevices.getUserMedia({
+    audio: {echoCancellation:true, noiseSuppression:true, autoGainControl:true}
+  })
+  .then(function(stream) {
+    pubStream = stream;
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    pubMediaRecorder = new MediaRecorder(stream, {mimeType});
+    pubAudioChunks = [];
 
-    const mimeType=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
-    pubMediaRecorder=new MediaRecorder(pubStream,{mimeType});
-    pubAudioChunks=[];
+    pubMediaRecorder.ondataavailable = function(e) {
+      if(e.data.size > 0) pubAudioChunks.push(e.data);
+    };
 
-    pubMediaRecorder.ondataavailable=e=>{if(e.data.size>0) pubAudioChunks.push(e.data);};
+    pubMediaRecorder.onstop = async function() {
+      if(!pubAudioChunks.length) return;
+      const blob = new Blob(pubAudioChunks, {type: mimeType});
+      pubAudioChunks = [];
 
-    pubMediaRecorder.onstop=async()=>{
-      if(!pubMicActive||pubAudioChunks.length===0) return;
-      const blob=new Blob(pubAudioChunks,{type:mimeType});
-      pubAudioChunks=[];
+      micBtn.textContent = '⚙️';
+      pubInput.placeholder = 'Processing... / प्रोसेस हो रहा है...';
 
-      // Show processing indicator
-      micBtn.textContent='⚙️';
-      document.getElementById('pubQ').placeholder='Processing your voice...';
+      try {
+        // ── Sarvam AI — Primary (best for Hindi/Hinglish) ──────────
+        const sarvamForm = new FormData();
+        sarvamForm.append('file', blob, 'audio.webm');
+        sarvamForm.append('language_code', 'hi-IN');
+        sarvamForm.append('model', 'saarika:v2');
+        sarvamForm.append('prompt', 'Indian location, address, area, colony, city, pincode. पता, घर, गली, मोहल्ला, सेक्टर, कॉलोनी, शहर, पिनकोड');
 
-      try{
-        const formData=new FormData();
-        formData.append('file',blob,'audio.webm');
-        formData.append('model','whisper-large-v3');
-        formData.append('response_format','json');
-        formData.append('temperature','0');
-        formData.append('prompt','India address, location, area, colony, city, village, pincode, gali, mohalla, sector, nagar. पता, घर, गली, मोहल्ला');
-
-        // Sarvam AI — best for Hindi/Hinglish
-        const sarvamForm2 = new FormData();
-        if(audioBlob) sarvamForm2.append('file', audioBlob, 'audio.webm');
-        else if(formData.get('file')) sarvamForm2.append('file', formData.get('file'), 'audio.webm');
-        sarvamForm2.append('language_code', 'hi-IN');
-        sarvamForm2.append('model', 'saarika:v2');
-        sarvamForm2.append('prompt', 'Indian delivery address. Customer speaking Hindi or Hinglish. पता, घर, गली, मोहल्ला, सेक्टर, कॉलोनी, शहर, पिनकोड');
-        let res, data;
+        let transcript = '';
         try {
-          res = await fetch('https://api.sarvam.ai/speech-to-text',{
-            method:'POST',
-            headers:{'api-subscription-key': window.SARVAM_KEY},
-            body: sarvamForm2
+          const sarvamRes = await fetch('https://api.sarvam.ai/speech-to-text', {
+            method: 'POST',
+            headers: { 'api-subscription-key': window.SARVAM_KEY },
+            body: sarvamForm
           });
-          data = await res.json();
+          const sarvamData = await sarvamRes.json();
+          transcript = (sarvamData.transcript || sarvamData.text || '').trim();
         } catch(sarvamErr) {
-          // Fallback to Groq if Sarvam fails
-          res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
-            method:'POST',
-            headers:{'Authorization':'Bearer '+window.GROQ_KEY},
-            body:formData
-          });
-          data = await res.json();
+          console.warn('Sarvam failed, trying Groq:', sarvamErr);
         }
-        const text = (data.transcript || data.text || '').trim();
 
-        if(text&&text.length>1){
-          document.getElementById('pubQ').value=text;
-          stopPubMic();
-          // Immediately search whatever was said
-          setTimeout(pubSearch,200);
-        } else {
-          document.getElementById('pubQ').placeholder='Could not hear clearly, try again';
-          stopPubMic();
+        // ── Groq Whisper — Fallback ─────────────────────────────────
+        if(!transcript) {
+          const groqForm = new FormData();
+          groqForm.append('file', blob, 'audio.webm');
+          groqForm.append('model', 'whisper-large-v3');
+          groqForm.append('response_format', 'json');
+          groqForm.append('language', 'hi');
+          groqForm.append('prompt', 'India address location area colony city village pincode. पता घर गली मोहल्ला');
+          const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + window.GROQ_KEY },
+            body: groqForm
+          });
+          const groqData = await groqRes.json();
+          transcript = (groqData.text || '').trim();
         }
-      }catch(e){
-        // Fallback to Web Speech API
-        stopPubMic();
-        useFallbackMic();
+
+        if(transcript && transcript.length > 1) {
+          pubInput.value = transcript;
+          pubInput.placeholder = 'Search any location in India...';
+          micBtn.textContent = '✅';
+          micBtn.classList.remove('active');
+          pubMicActive = false;
+          // Auto-search after 600ms
+          setTimeout(function() {
+            micBtn.textContent = '🎤';
+            if(typeof pubSearch === 'function') pubSearch();
+          }, 600);
+        } else {
+          throw new Error('No speech detected');
+        }
+      } catch(err) {
+        console.error('Voice error:', err);
+        micBtn.textContent = '🎤';
+        micBtn.classList.remove('active');
+        pubMicActive = false;
+        pubInput.placeholder = 'Voice failed — type your location / आवाज़ नहीं आई, टाइप करें';
+        if(typeof toast === 'function') toast('⚠️ Voice not captured — please try again', 'err');
       }
     };
 
-    // Record for max 8 seconds then auto-process
+    // Record for up to 8 seconds then auto-stop
     pubMediaRecorder.start();
-    pubSilenceTimer=setTimeout(()=>{
-      if(pubMediaRecorder?.state==='recording') pubMediaRecorder.stop();
-    },8000);
-
-  }catch(e){
-    // No mic permission or not supported — use Web Speech API
-    stopPubMic();
-    useFallbackMic();
-  }
-}
+    setTimeout(function() {
+      if(pubMicActive && pubMediaRecorder && pubMediaRecorder.state === 'recording') {
+        pubMediaRecorder.stop();
+        pubStream.getTracks().forEach(t => t.stop());
+        micBtn.textContent = '⚙️';
+      }
+    }, 8000);
+  })
+  .catch(function(err) {
+    pubMicActive = false;
+    micBtn.textContent = '🎤';
+    micBtn.classList.remove('active');
+    pubInput.placeholder = 'Mic access denied — type your location';
+    if(typeof toast === 'function') toast('⚠️ Microphone access denied', 'err');
+  });
 
 function stopPubMic(){
   pubMicActive=false;
