@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOC\n          <div class=\"ip-tab\" onclick=\"switchIP(\'upload\',this)\" style=\"flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent\">🎙️ Upload</div>TYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -511,7 +511,7 @@ body.light-mode .lcard{background:#fff}
 <script>
 /* ═══ SECTION 1: CONSTANTS ═══ */
 window.SARVAM_KEY = 'sk_xk7dbg9g_'+'obtpMrEMY8hU4f5Td8cwCwjK';
-window.GROQ_KEY = ['gsk_tbUN','rAeWCTVT','338MFptD','WGdyb3FY','xoJjuZo1','93wmGhVV','OyArGfVx'].join("");
+window.GROQ_KEY = 'gsk_tbUNrAeWCTVT338M'+'FptDWGdyb3FYxoJjuZo1'+'93wmGhVVOyArGfVx';
 // Show landing immediately before heavy PIN_DB loads
 window.onload = function(){
   document.getElementById('landing').style.display='flex';
@@ -4421,8 +4421,296 @@ console.log('✅ Supabase backend loaded');
 })();
 </script>
 
+<script id="vn-tab-recording-fix">
+(function() {
+'use strict';
 
+// ═══════════════════════════════════════════════
+// FIX: Tab switching for Intel Panel
+// ═══════════════════════════════════════════════
+window.switchIP = function(tab) {
+  document.querySelectorAll('.ip-tab').forEach(function(t) {
+    var isActive = t.dataset.tab === tab;
+    t.style.color = isActive ? '#3b5bdb' : '#94999f';
+    t.style.borderBottom = isActive ? '2px solid #3b5bdb' : '2px solid transparent';
+    t.style.fontWeight = isActive ? '700' : '600';
+  });
+  ['capture','feed','notes','stats','upload'].forEach(function(p) {
+    var pane = document.getElementById('ip-pane-' + p);
+    if (!pane) return;
+    if (p === tab) {
+      pane.style.setProperty('display', 'flex', 'important');
+      pane.style.flexDirection = 'column';
+      pane.style.flex = '1';
+      pane.style.overflow = (p==='feed'||p==='stats') ? 'hidden' : 'auto';
+    } else {
+      pane.style.setProperty('display', 'none', 'important');
+    }
+  });
+  if (tab === 'stats') {
+    if (typeof ipUpdateStats === 'function') ipUpdateStats();
+    renderRecentInStats();
+  }
+};
 
+function fixTabAttributes() {
+  var tabNames = ['capture','feed','notes','stats','upload'];
+  document.querySelectorAll('.ip-tab').forEach(function(t, i) {
+    if (tabNames[i]) {
+      t.dataset.tab = tabNames[i];
+      t.onclick = (function(name){ return function(){ window.switchIP(name); }; })(tabNames[i]);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE: Upload Call Recording → Extract Address
+// ═══════════════════════════════════════════════
+window.ipHandleRecordingUpload = function(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+
+  var statusEl    = document.getElementById('rec-status');
+  var resultEl    = document.getElementById('rec-result');
+  var btnEl       = document.getElementById('rec-upload-btn');
+
+  if (!file.name.match(/\.(mp3|wav|ogg|webm|m4a|mp4|aac|flac)$/i)) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">⚠️ Please upload an audio file (MP3, WAV, M4A, OGG, WebM)</span>';
+    return;
+  }
+
+  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing… this may take a moment</span>';
+  if (resultEl) resultEl.style.display = 'none';
+  if (btnEl) btnEl.disabled = true;
+
+  var GROQ = window.GROQ_KEY;
+
+  // Step 1: Transcribe with Groq Whisper
+  var formData = new FormData();
+  formData.append('file', file, file.name);
+  formData.append('model', 'whisper-large-v3');
+  formData.append('response_format', 'json');
+  formData.append('language', 'hi'); // Indian Hindi/English mix
+  formData.append('prompt', 'This is an Indian address capture call. The customer is providing their delivery address including flat number, sector, colony, city, pincode in India.');
+
+  // Sarvam AI — best for Hindi/Hinglish recording upload
+  var sarvamUpForm = new FormData();
+  sarvamUpForm.append('file', file, file.name);
+  sarvamUpForm.append('language_code', 'hi-IN');
+  sarvamUpForm.append('model', 'saarika:v2');
+  sarvamUpForm.append('prompt', 'Indian delivery address. पता, घर, गली, कॉलोनी, शहर, पिनकोड');
+  fetch('https://api.sarvam.ai/speech-to-text', {
+    method: 'POST',
+    headers: { 'api-subscription-key': window.SARVAM_KEY },
+    body: sarvamUpForm
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var transcript = data.transcript || data.text || '';
+    if (!transcript) throw new Error((data.error && data.error.message) || data.message || 'No transcript returned');
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting address…</span>';
+
+    var transcriptBox = document.getElementById('rec-transcript-box');
+    var transcriptText = document.getElementById('rec-transcript-text');
+    if (transcriptText) { transcriptText.textContent = transcript; }
+    if (transcriptBox) transcriptBox.style.display = 'block';
+
+    // Step 2: Extract address with Groq LLaMA (no CORS issues unlike Anthropic)
+    return fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + GROQ, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 500,
+        messages: [{
+          role: 'system',
+          content: 'You are an expert Indian address extraction AI for call centers. Extract delivery addresses from transcripts. Handle Hindi, English, Hinglish. Common patterns: Plot/Flat/House, Sector/Colony/Nagar, landmarks, 6-digit pincode. Return ONLY valid JSON, no markdown, no explanation.'
+        },{
+          role: 'user',
+          content: 'Extract the complete delivery address from this Indian call center transcript. Return ONLY JSON with these fields: { "name": "", "phone": "", "address": "", "landmark": "", "city": "", "state": "", "pincode": "" }. Include full house/flat/plot number in address field. Leave empty if not mentioned. Transcript: ' + transcript
+        }]
+      })
+    });
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '{}';
+    var clean = text.replace(/```json|```/g, '').trim();
+    var addr;
+    try { addr = JSON.parse(clean); } catch(e) { addr = {}; }
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Address extracted!</span>';
+    if (btnEl) btnEl.disabled = false;
+
+    window._lastRecordingAddr = addr;
+
+    if (!window._recordingsLog) window._recordingsLog = [];
+    window._recordingsLog.push({
+      file: file.name, name: addr.name||'', phone: addr.phone||'',
+      address: addr.address||'', landmark: addr.landmark||'',
+      city: addr.city||'', state: addr.state||'', pincode: addr.pincode||'',
+      time: new Date().toLocaleString('en-IN')
+    });
+
+    if (resultEl) {
+      resultEl.style.display = 'block';
+      var fields = [
+        {lbl:'Customer Name', val:addr.name}, {lbl:'Phone', val:addr.phone},
+        {lbl:'Address', val:addr.address},    {lbl:'Landmark', val:addr.landmark},
+        {lbl:'City', val:addr.city},          {lbl:'State', val:addr.state},
+        {lbl:'Pincode', val:addr.pincode}
+      ];
+      resultEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">'
+        + fields.filter(function(f){ return f.val; }).map(function(f) {
+            return '<div style="display:flex;gap:8px;font-size:11px"><span style="color:#94999f;min-width:90px">'+f.lbl+'</span><span style="font-weight:600;color:#1a1d24">'+f.val+'</span></div>';
+          }).join('')
+        + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="ipApplyFromRecording()" style="flex:1;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;color:#0d9354">✅ Apply to Form</button>'
+        + '<button onclick="ipAddToFeed()" style="flex:1;background:#e8f0fd;border:1px solid #b4c6fb;border-radius:8px;padding:8px;font-size:11px;font-weight:700;cursor:pointer;color:#3b5bdb">📡 Add to Feed</button>'
+        + '</div>';
+    }
+  })
+  .catch(function(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c52f2f">❌ Error: ' + e.message + '</span>';
+    if (btnEl) btnEl.disabled = false;
+  });
+};
+
+window.ipApplyFromRecording = function() {
+  var a = window._lastRecordingAddr;
+  if (!a) return;
+  var map = {
+    'ip-inp-name':a.name, 'ip-inp-phone':a.phone, 'ip-inp-addr':a.address,
+    'ip-inp-landmark':a.landmark, 'ip-inp-city':a.city, 'ip-inp-state':a.state, 'ip-inp-pin':a.pincode
+  };
+  var mainMap = {
+    'lfv-name':a.name, 'lfv-phone':a.phone, 'lfv-addrline':a.address,
+    'lfv-landmark':a.landmark, 'lfv-city':a.city, 'lfv-state':a.state, 'lfv-pincode':a.pincode
+  };
+  [map, mainMap].forEach(function(m) {
+    Object.keys(m).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && m[id]) { el.value = m[id]; el.classList.add('filled'); }
+    });
+  });
+  ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+    var btn = document.getElementById(id); if (btn) btn.disabled = false;
+  });
+  window.switchIP('capture');
+  if (typeof toast === 'function') toast('✅ Address applied to capture form!');
+};
+
+window.ipAddToFeed = function() {
+  var a = window._lastRecordingAddr || {};
+  if (!window._ipCaptures) window._ipCaptures = [];
+  window._ipCaptures.push({
+    name:a.name||'', addr:a.address||'', pin:a.pincode||'', city:a.city||'',
+    time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    source:'🎙️ Recording'
+  });
+  if (typeof ipRenderFeed === 'function') ipRenderFeed();
+  window.switchIP('feed');
+  if (typeof toast === 'function') toast('📋 Added to feed!');
+};
+
+window.ipExportAll = function() {
+  var rows = [];
+  (window._ipCaptures||[]).forEach(function(c) {
+    rows.push([c.name||'',c.addr||'',c.pin||'',c.city||'',c.time||'','Live']);
+  });
+  (window._recordingsLog||[]).forEach(function(c) {
+    rows.push([c.name||'',c.address||'',c.pincode||'',c.city||'',c.time||'','Recording: '+c.file]);
+  });
+  if (!rows.length) { if (typeof toast==='function') toast('No captures to export yet','err'); return; }
+  var csv = 'Name,Address,Pincode,City,Time,Source\n'
+    + rows.map(function(r){ return r.map(function(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }).join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+  if (typeof toast==='function') toast('📥 Exported '+rows.length+' records!');
+};
+
+function renderRecentInStats() {
+  var el = document.getElementById('ip-recent');
+  if (!el) return;
+  var caps = window._ipCaptures || [];
+  if (!caps.length) { el.innerHTML = '<div style="color:#94999f;font-style:italic">No captures yet</div>'; return; }
+  el.innerHTML = caps.slice(-5).reverse().map(function(c) {
+    return '<div style="background:#fff;border:1px solid #e3e6eb;border-radius:8px;padding:8px 10px">'
+      + '<div style="font-size:11px;font-weight:600;color:#1a1d24">'+(c.addr||'—')+'</div>'
+      + '<div style="font-size:10px;color:#94999f;margin-top:2px">'+(c.city||'')+(c.pin?' · '+c.pin:'')+(c.source?' · '+c.source:'')+' · '+(c.time||'')+'</div>'
+      + '</div>';
+  }).join('');
+}
+
+// Inject Upload tab into Intel Panel
+function injectUploadTab() {
+  var intelPanel = document.getElementById('intelPanel');
+  if (!intelPanel) return;
+  if (document.getElementById('ip-pane-upload')) return;
+
+  var tabBar = intelPanel.querySelector('div');
+  if (tabBar) {
+    var uploadTab = document.createElement('div');
+    uploadTab.className = 'ip-tab';
+    uploadTab.dataset.tab = 'upload';
+    uploadTab.onclick = function() { window.switchIP('upload'); };
+    uploadTab.setAttribute('style','flex:1;padding:10px 4px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:center;color:#94999f;border-bottom:2px solid transparent;transition:all .2s');
+    uploadTab.textContent = '🎙️ Upload';
+    tabBar.appendChild(uploadTab);
+  }
+
+  var uploadPane = document.createElement('div');
+  uploadPane.id = 'ip-pane-upload';
+  uploadPane.setAttribute('style','display:none;flex-direction:column;flex:1;overflow-y:auto;padding:14px 12px;gap:12px');
+  uploadPane.innerHTML = ''
+    + '<div style="font-size:12px;font-weight:700;color:#1a1d24">Upload Call Recording</div>'
+    + '<div style="font-size:11px;color:#5e6470;line-height:1.6">Upload any audio file from a customer call. AI will transcribe and extract the delivery address automatically.</div>'
+    + '<label id="rec-upload-btn" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px;border:2px dashed #d1d6dd;border-radius:12px;cursor:pointer;background:#fafbfc">'
+    + '<span style="font-size:28px">🎵</span>'
+    + '<span style="font-size:12px;font-weight:600;color:#3b5bdb">Click to upload audio</span>'
+    + '<span style="font-size:10px;color:#94999f">MP3, WAV, M4A, OGG, WebM</span>'
+    + '<input id="rec-file-input" type="file" accept="audio/*" style="display:none" onchange="ipHandleRecordingUpload(this)"/>'
+    + '</label>'
+    + '<div id="rec-status" style="font-size:11px;min-height:18px"></div>'
+    + '<div id="rec-transcript-box" style="display:none;background:#f6f7f9;border:1px solid #e3e6eb;border-radius:10px;padding:10px 12px">'
+    + '<div style="font-size:9px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Transcript</div>'
+    + '<div id="rec-transcript-text" style="font-size:11px;color:#1a1d24;line-height:1.7;max-height:100px;overflow-y:auto"></div>'
+    + '</div>'
+    + '<div id="rec-result" style="display:none;background:#e8f7ee;border:1px solid #a3e0bc;border-radius:10px;padding:12px"></div>'
+    + '<div style="border-top:1px solid #e3e6eb;padding-top:12px">'
+    + '<button onclick="ipExportAll()" style="width:100%;background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;color:#5e6470">📥 Export All Captures (CSV)</button>'
+    + '</div>';
+
+  intelPanel.appendChild(uploadPane);
+  fixTabAttributes();
+}
+
+// Hook into showAgentView
+var _prevShowAgentRecording = window.showAgentView;
+window.showAgentView = async function() {
+  if (typeof _prevShowAgentRecording === 'function') await _prevShowAgentRecording();
+  // Use requestAnimationFrame instead of setTimeout for reliable DOM injection
+  requestAnimationFrame(function() {
+    requestAnimationFrame(function() {
+      injectUploadTab();
+      fixTabAttributes();
+      window.switchIP('capture');
+    });
+  });
+};
+
+if (document.getElementById('intelPanel')) {
+  setTimeout(function() { injectUploadTab(); fixTabAttributes(); window.switchIP('capture'); }, 200);
+}
+
+console.log('✅ Tab fix + Recording upload + CSV export loaded');
+})();
+</script>
+</body>
 
 <style id="vn-upgrade-styles">
 /* ── AGENT UPGRADE ─────────────────────────────────────── */
@@ -5194,11 +5482,11 @@ function renderAgentView() {
 
         <!-- Intel Panel Tabs -->
         <div style="display:flex;border-bottom:1px solid #e3e6eb;flex-shrink:0;background:#fff">
-          <div class="ip-tab active" onclick="switchIP('capture')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
-          <div class="ip-tab" onclick="switchIP('feed')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
-          <div class="ip-tab" onclick="switchIP('notes')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
-          <div class="ip-tab" onclick="switchIP('stats')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
-          <div class="ip-tab" onclick="switchIP('upload')" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">🎙️ Upload</div>
+          <div class="ip-tab active" onclick="switchIP('capture',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#3b5bdb;text-align:center;cursor:pointer;border-bottom:2px solid #3b5bdb">📋 Capture</div>
+          <div class="ip-tab" onclick="switchIP('feed',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📡 Feed</div>
+          <div class="ip-tab" onclick="switchIP('notes',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📝 Notes</div>
+          <div class="ip-tab" onclick="switchIP('stats',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">📊 Stats</div>
+          <div class="ip-tab" onclick="switchIP('upload',this)" style="flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent">🎙️ Upload</div>
         </div>
 
         <!-- CAPTURE PANE -->
@@ -6305,12 +6593,327 @@ console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
 <!-- ═══════════════════════════════════════════════════════════
      VISHAL NAVIGATION — MASTER FIX
      Paste this LAST, just before 
-
+</body>
      Fixes: agent form filling, strategy UI, listen toggle,
             plan enforcement, admin addCompany, corp-strat sync
      ═══════════════════════════════════════════════════════════ -->
- 
-, AFTER all existing scripts
+<script id="master-fix">
+(function() {
+'use strict';
+
+// ══════════════════════════════════════════════════════════
+// FIX 1: updateStrategyUI — works with BOTH .strat and .corp-strat
+// ══════════════════════════════════════════════════════════
+window.updateStrategyUI = function(fired) {
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('s' + i);
+    if (!el) continue;
+    const has = fired.has('s' + i);
+    // works for both .strat.fired and .corp-strat.fired
+    el.classList.toggle('fired', has);
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 2: updateLayerUI — works with .layer-dot AND .corp-layer-dot
+// ══════════════════════════════════════════════════════════
+window.updateLayerUI = function(active, warn) {
+  for (let i = 1; i <= 10; i++) {
+    const el = document.getElementById('l' + i);
+    if (!el) continue;
+    el.className = el.className.replace(/\s*(active|warn|fail)\b/g, '');
+    if (i <= active) {
+      el.className += warn && i === active ? ' warn' : ' active';
+    }
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 3: syncListenButtons — handles both old and new UI
+// ══════════════════════════════════════════════════════════
+window.syncListenButtons = function() {
+  const outer = document.getElementById('listenOuter');
+  const btn   = document.getElementById('listenBtn');
+  const icon  = document.getElementById('listenIcon');
+  const lbl   = document.getElementById('listenLbl');
+  const wave  = document.getElementById('waveBars');
+
+  if (window.isListening || window.dgActive) {
+    outer?.classList.add('active');
+    btn?.classList.add('active');
+    if (icon) icon.textContent = '⏹';
+    if (lbl)  lbl.textContent  = 'TAP TO STOP';
+    wave?.classList.add('active');
+  } else {
+    outer?.classList.remove('active');
+    btn?.classList.remove('active');
+    if (icon) icon.textContent = '🎙️';
+    if (lbl)  lbl.textContent  = 'TAP TO START';
+    wave?.classList.remove('active');
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 4: extractAndVerify — fills lfv-* fields AND old fields
+// ══════════════════════════════════════════════════════════
+const _prevExtract = window.extractAndVerify;
+window.extractAndVerify = async function(transcript) {
+  if (_prevExtract) await _prevExtract(transcript);
+
+  const r = window.currentResult;
+  if (!r) return;
+
+  // Build address line
+  const addrLine = [r.house, r.street, r.colony].filter(Boolean).join(', ');
+
+  const fills = {
+    'lfv-name':     r.name     || '',
+    'lfv-phone':    r.phone    || '',
+    'lfv-addrline': addrLine   || r.rawAddress || '',
+    'lfv-landmark': r.landmark || '',
+    'lfv-city':     r.city     || r.district   || '',
+    'lfv-state':    r.state    || '',
+    'lfv-pincode':  r.pincode  || '',
+  };
+
+  Object.entries(fills).forEach(([id, val]) => {
+    if (!val) return;
+    const el = document.getElementById(id);
+    if (!el || el.value) return; // don't overwrite manual entry
+    el.value = val;
+    el.classList.add('filled');
+    if (id === 'lfv-pincode' && /^\d{6}$/.test(val)) el.classList.add('verified');
+  });
+
+  // Update confidence live
+  if (typeof updateConfidenceLive === 'function') {
+    updateConfidenceLive(r.confidence || 0);
+  }
+
+  // Update live transcript box
+  if (typeof updateLiveTranscript === 'function' && window.currentTranscript) {
+    updateLiveTranscript(window.currentTranscript);
+  }
+
+  // Sync listen buttons state
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 5: transcribeChunk — sync UI after each chunk
+// ══════════════════════════════════════════════════════════
+const _prevTranscribeChunk = window.transcribeChunk;
+if (_prevTranscribeChunk) {
+  window.transcribeChunk = async function(blob) {
+    await _prevTranscribeChunk(blob);
+    if (window.currentTranscript && typeof updateLiveTranscript === 'function') {
+      updateLiveTranscript(window.currentTranscript);
+    }
+    syncListenButtons();
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// FIX 6: toggleListen — sync after every toggle
+// ══════════════════════════════════════════════════════════
+const _prevToggleListen = window.toggleListen;
+if (_prevToggleListen) {
+  window.toggleListen = async function() {
+    await _prevToggleListen();
+    syncListenButtons();
+    if (window.isListening && typeof currentCallStart !== 'undefined') {
+      window.currentCallStart = Date.now();
+    }
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// FIX 7: addCompany — works regardless of plan select presence
+// ══════════════════════════════════════════════════════════
+window.addCompany = function() {
+  const name  = (document.getElementById('c-name')?.value  || '').trim();
+  const id    = (document.getElementById('c-id')?.value    || '').trim();
+  const pass  =  document.getElementById('c-pass')?.value  || '';
+  const email = (document.getElementById('c-email')?.value || '').trim();
+  const plan  = (document.getElementById('c-plan')?.value  || 'starter');
+
+  if (!name || !id || !pass) { toast('Fill all required fields', 'err'); return; }
+
+  const companies = getData('vn_companies', []);
+  if (companies.find(c => c.id === id)) { toast('Company ID already exists', 'err'); return; }
+
+  companies.push({
+    id, name, pass, email, plan, active: true,
+    created: new Date().toLocaleDateString('en-IN'),
+    renewsOn: new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-IN'),
+  });
+  setData('vn_companies', companies);
+
+  // Refresh whichever admin UI is active
+  if (typeof refreshAdminV2 === 'function') refreshAdminV2();
+  else if (typeof refreshAdmin === 'function') refreshAdmin();
+
+  toast('✅ Company created: ' + name);
+  ['c-name','c-id','c-pass','c-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 8: setStatus — updates both old and new UI elements
+// ══════════════════════════════════════════════════════════
+const _prevSetStatus = window.setStatus;
+window.setStatus = function(main, type, sub) {
+  // old agent right panel
+  const m = document.getElementById('asMain');
+  const s = document.getElementById('asSub');
+  if (m) { m.textContent = main; m.className = 'as-main corp-status-main ' + (type || ''); }
+  if (s && sub !== undefined) s.textContent = sub;
+
+  // update listen button state
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 9: Deepgram transcript → live transcript box
+// ══════════════════════════════════════════════════════════
+setInterval(function() {
+  const t = window.dgLiveTranscript || window.currentTranscript || '';
+  if (!t) return;
+  const box = document.getElementById('liveTranscriptBox');
+  if (box && box._lastText !== t) {
+    box._lastText = t;
+    if (typeof updateLiveTranscript === 'function') {
+      updateLiveTranscript(t);
+    } else {
+      box.textContent = t;
+    }
+  }
+  // also update old agent transcript
+  const oldBox = document.getElementById('agentTranscript');
+  if (oldBox && oldBox._lastText !== t) {
+    oldBox._lastText = t;
+    oldBox.classList.add('show');
+    oldBox.innerHTML = '🎙️ ' + t;
+  }
+}, 400);
+
+// ══════════════════════════════════════════════════════════
+// FIX 10: showAgentView — hide topbar, render new UI
+// ══════════════════════════════════════════════════════════
+window.showAgentView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.add('active');
+  document.getElementById('adminView').classList.remove('active');
+
+  // Hide old topbar — new agent UI has its own header
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = 'none';
+
+  if (typeof renderAgentView === 'function') {
+    renderAgentView();
+  }
+
+  window.currentMode = 'agent';
+  window.currentCallStart = Date.now();
+
+  if (typeof startAgentTracking === 'function') {
+    setTimeout(startAgentTracking, 500);
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 11: showAdminView — hide topbar, render new admin UI
+// ══════════════════════════════════════════════════════════
+window.showAdminView = function() {
+  document.getElementById('appShell').classList.add('active');
+  document.getElementById('publicView').style.display = 'none';
+  document.getElementById('agentView').classList.remove('active');
+  document.getElementById('adminView').classList.add('active');
+
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = 'none';
+
+  if (typeof renderAdminView === 'function') {
+    renderAdminView();
+  }
+
+  window.currentMode = 'admin';
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 12: backToLanding / agentLogout — restore topbar
+// ══════════════════════════════════════════════════════════
+const _prevBack = window.backToLanding;
+window.backToLanding = function() {
+  const tb = document.querySelector('.topbar');
+  if (tb) tb.style.display = '';
+
+  if (typeof stopDeepgramListen === 'function') { try { stopDeepgramListen(); } catch(e) {} }
+  if (typeof stopListen === 'function') { try { stopListen(); } catch(e) {} }
+  if (typeof stopAgentTracking === 'function') { try { stopAgentTracking(); } catch(e) {} }
+
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appShell').classList.remove('active');
+  window.currentMode = '';
+};
+
+const _prevLogout = window.agentLogout;
+window.agentLogout = function() {
+  if (typeof stopDeepgramListen === 'function') { try { stopDeepgramListen(); } catch(e) {} }
+  if (typeof stopAgentTracking === 'function') { try { stopAgentTracking(); } catch(e) {} }
+  window.currentAgent = null;
+  window.currentCompany = null;
+  window.addrHistory = [];
+  window.backToLanding();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 13: Auto-confirm patch — also resets live fields
+// ══════════════════════════════════════════════════════════
+const _prevConfirmAddr = window.confirmAddr;
+window.confirmAddr = function() {
+  if (_prevConfirmAddr) _prevConfirmAddr();
+  // Reset live fields after save
+  if (typeof resetLiveFields === 'function') resetLiveFields();
+  if (typeof renderPatchedRecordsTable === 'function') renderPatchedRecordsTable();
+  if (typeof updatePatcherStats === 'function') updatePatcherStats();
+  syncListenButtons();
+};
+
+// ══════════════════════════════════════════════════════════
+// FIX 14: manualSearch — works with new agent UI input
+// ══════════════════════════════════════════════════════════
+const _prevManual = window.manualSearch;
+window.manualSearch = function() {
+  const inp = document.getElementById('manualInp');
+  const q = (inp?.value || '').trim();
+  if (!q) return;
+  if (inp) inp.value = '';
+  window.currentTranscript = q;
+  window.totalAttempts = (window.totalAttempts || 0) + 1;
+  window.retryCount = 0;
+
+  const box = document.getElementById('liveTranscriptBox') || document.getElementById('agentTranscript');
+  if (box) {
+    box.textContent = '⌨️ Manual: ' + q;
+    box.classList?.add('show');
+  }
+
+  if (typeof extractAndVerify === 'function') extractAndVerify(q);
+};
+
+console.log('✅ Master Fix loaded — all 14 fixes active');
+})();
+</script> 
+<script>
+// ═══════════════════════════════════════════════════════════════
+// VISHAL NAVIGATION — CRITICAL FIX PATCH
+// Paste this entire block just before 
+</body>, AFTER all existing scripts
 //
 // Fixes:
 //   1. Listen button: toggle works reliably every click (start/stop/start/stop)
@@ -7057,90 +7660,874 @@ console.log('✅ Vishal Navigation Agent + Admin v2 loaded');
 
 })();
 
+<script id="vn-final-fix">
+/* VISHAL NAVIGATION — FINAL FIX PATCH
+   1. GROQ key corrected
+   2. Address capture fires after ANY 5+ words (no keyword gate)
+   3. System audio popup removed from auto-start
+   4. Right panel: Live Feed + Smart Keyboard + Notes + Stats */
+(function() {
+'use strict';
+
+// FIX 1: Correct GROQ key
+// GROQ_KEY defined at top
+
+// FIX 2: Relaxed capture — fires after 5+ words with 1.8s silence
+window._fixBuffer = '';
+window._fixSilTimer = null;
+
+window._fixedHandleDGMsg = function(raw) {
+  var data;
+  try { data = JSON.parse(raw); } catch(_) { return; }
+  var transcript = data && data.channel && data.channel.alternatives && data.channel.alternatives[0] && data.channel.alternatives[0].transcript;
+  if (!transcript) transcript = '';
+  transcript = transcript.trim();
+  var isFinal = data && data.is_final;
+  var speechEnd = data && data.speech_final;
+  if (!transcript) return;
+
+  if (typeof updateLayerUI === 'function') updateLayerUI(3);
+
+  var interim = window._fixBuffer + ' ' + transcript;
+
+  var box = document.getElementById('liveTranscriptBox');
+  if (box) {
+    box.innerHTML = '<span style="color:#5e6470">' + window._fixBuffer + '</span> <span style="color:#0d9354;font-weight:600">' + transcript + '</span>';
+    box.scrollTop = box.scrollHeight;
+  }
+  var oldBox = document.getElementById('agentTranscript');
+  if (oldBox) {
+    oldBox.classList.add('show');
+    oldBox.textContent = '🎙️ ' + interim.trim();
+  }
+
+  if (isFinal || speechEnd) {
+    window._fixBuffer = (window._fixBuffer + ' ' + transcript).trim();
+    window.currentTranscript = window._fixBuffer;
+    window.dgLiveTranscript  = window._fixBuffer;
+
+    var fired = (typeof checkAllTriggers === 'function') ? checkAllTriggers(window._fixBuffer) : new Set();
+    if (!window.strategiesFired) window.strategiesFired = new Set();
+    fired.forEach(function(s) { window.strategiesFired.add(s); });
+    if (typeof checkAgentQuestion === 'function' && checkAgentQuestion(window._fixBuffer))
+      window.strategiesFired.add('s1');
+    if (typeof updateStrategyUI === 'function') updateStrategyUI(window.strategiesFired);
+
+    var wordCount = window._fixBuffer.split(/\s+/).filter(Boolean).length;
+    if (typeof updateLayerUI === 'function') updateLayerUI(Math.min(wordCount, 10));
+
+    // KEY FIX: capture after 5+ words, no keyword gate
+    if (wordCount >= 5) {
+      clearTimeout(window._fixSilTimer);
+      window._fixSilTimer = setTimeout(function() {
+        if (!window._fixBuffer || window._fixBuffer.trim().length < 6) return;
+        if (typeof updateLayerUI === 'function') updateLayerUI(6);
+        if (typeof extractAndVerify === 'function') {
+          extractAndVerify(window._fixBuffer);
+        }
+        var pct = Math.min(30 + wordCount * 4, 80);
+        var fill = document.getElementById('confFillLive');
+        var pctEl = document.getElementById('confPctLive');
+        if (fill) { fill.style.width = pct + '%'; fill.style.background = '#0d9354'; }
+        if (pctEl) pctEl.textContent = pct + '%';
+      }, 1800);
+    }
+  }
+};
+
+// Intercept Deepgram WebSocket messages
+var _OrigWS = window.WebSocket;
+function PatchedWS(url, protocols) {
+  var ws = protocols ? new _OrigWS(url, protocols) : new _OrigWS(url);
+  if (url && url.indexOf('deepgram.com') !== -1) {
+    ws.addEventListener('message', function(evt) {
+      window._fixedHandleDGMsg(evt.data);
+    });
+  }
+  return ws;
+}
+PatchedWS.prototype = _OrigWS.prototype;
+PatchedWS.CONNECTING = _OrigWS.CONNECTING;
+PatchedWS.OPEN       = _OrigWS.OPEN;
+PatchedWS.CLOSING    = _OrigWS.CLOSING;
+PatchedWS.CLOSED     = _OrigWS.CLOSED;
+window.WebSocket = PatchedWS;
+
+// FIX 3: System audio opt-in only
+window._sysAudioEnabled = false;
+window.getSystemAudioStream = function() {
+  if (!window._sysAudioEnabled) return Promise.resolve(null);
+  return navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+};
+
+// FIX 4: Reset buffer + fields on new listen session
+var _lastToggleFix = window.toggleListen;
+window.toggleListen = async function() {
+  if (!window.isListening && !window.dgActive) {
+    window._fixBuffer = '';
+    clearTimeout(window._fixSilTimer);
+    ['lfv-name','lfv-phone','lfv-altphone','lfv-addrline','lfv-landmark','lfv-city','lfv-state','lfv-pincode'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.value = ''; el.classList.remove('filled','verified'); }
+    });
+    var fill = document.getElementById('confFillLive');
+    var pct  = document.getElementById('confPctLive');
+    if (fill) { fill.style.width = '0%'; fill.style.background = ''; }
+    if (pct)  pct.textContent = '0%';
+    var box = document.getElementById('liveTranscriptBox');
+    if (box) box.innerHTML = '<span style="color:#94999f;font-style:italic">Transcript will appear here as the customer speaks\u2026</span>';
+  }
+  if (typeof _lastToggleFix === 'function') await _lastToggleFix();
+};
+
+// RIGHT PANEL
 
 
-<script>
-window.switchIP=function(tab){
-  document.querySelectorAll('.ip-tab').forEach(function(t){
-    var a=t.dataset.tab===tab;
-    t.style.color=a?'#3b5bdb':'#94999f';
-    t.style.borderBottom=a?'2px solid #3b5bdb':'2px solid transparent';
-    t.style.fontWeight=a?'700':'600';
-  });
-  ['capture','feed','notes','stats','upload'].forEach(function(p){
-    var pane=document.getElementById('ip-pane-'+p);if(!pane)return;
-    if(p===tab){pane.style.setProperty('display','flex','important');pane.style.flexDirection='column';pane.style.flex='1';pane.style.minHeight='0';pane.style.overflow='auto';}
-    else pane.style.setProperty('display','none','important');
+window.insertChip = function(el) {
+  var word = el.textContent.trim();
+  var target = document.activeElement;
+  var addrField = document.getElementById('lfv-addrline');
+  if (!target || ['lfv-addrline','lfv-landmark','lfv-city','lfv-state'].indexOf(target.id) === -1) target = addrField;
+  if (target) {
+    target.value = target.value ? target.value + ' ' + word : word;
+    target.focus();
+    target.classList.add('filled');
+    el.style.background = '#eef1fd';
+    el.style.borderColor = '#3b5bdb';
+    el.style.color = '#3b5bdb';
+    setTimeout(function() {
+      el.style.background = '#fff';
+      el.style.borderColor = '#e3e6eb';
+      el.style.color = '#5e6470';
+    }, 600);
+  }
+};
+
+var _rpSaved = 0, _rpDrafts = 0, _rpCalls = 0, _rpCallTimes = [];
+
+function addFeedCard() {
+  var feed = document.getElementById('liveFeed');
+  if (!feed) return;
+  var r = window.currentResult;
+  var addr = (r && r.rawAddress) || (document.getElementById('lfv-addrline') && document.getElementById('lfv-addrline').value) || 'Address captured';
+  var pin  = (r && r.pincode)     || (document.getElementById('lfv-pincode') && document.getElementById('lfv-pincode').value) || '';
+  var city = (r && r.city)        || (document.getElementById('lfv-city') && document.getElementById('lfv-city').value) || '';
+  var now  = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  var empty = feed.querySelector('[data-empty]');
+  if (empty) empty.remove();
+  var card = document.createElement('div');
+  card.setAttribute('style','background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:11px 13px;animation:vn-fadein .3s ease');
+  card.dataset.addr = addr;
+  card.dataset.pin  = pin;
+  card.dataset.city = city;
+  card.innerHTML = '<div style="font-size:12px;font-weight:600;color:#1a1d24;margin-bottom:5px;line-height:1.4">' + addr + '</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    + (pin  ? '<span style="font-size:10px;background:#e8f7ee;color:#0d9354;padding:2px 8px;border-radius:8px;font-weight:700">&#128238; ' + pin + '</span>' : '')
+    + (city ? '<span style="font-size:10px;color:#5e6470">&#127961;&#65039; ' + city + '</span>' : '')
+    + '<span style="font-size:10px;color:#94999f;margin-left:auto">' + now + '</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:8px">'
+    + '<button onclick="copyFeedCard(this)" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:8px;background:#f6f7f9;color:#5e6470;cursor:pointer;font-family:inherit;font-weight:600">&#128203; Copy</button>'
+    + '<button onclick="sendWhatsApp(this)" style="font-size:10px;padding:4px 10px;border:1px solid #e3e6eb;border-radius:8px;background:#f6f7f9;color:#5e6470;cursor:pointer;font-family:inherit;font-weight:600">&#128172; WhatsApp</button>'
+    + '</div>';
+  feed.insertBefore(card, feed.firstChild);
+  var fc = document.getElementById('feedCount');
+  if (fc) fc.textContent = _rpSaved + ' saved';
+}
+
+function updateRightPanelStats() {
+  var s = document.getElementById('rp-saved');
+  var d = document.getElementById('rp-drafts');
+  var c = document.getElementById('rp-calls');
+  var t = document.getElementById('rp-time');
+  if (s) s.textContent = _rpSaved;
+  if (d) d.textContent = _rpDrafts;
+  if (c) c.textContent = _rpCalls;
+  if (t && _rpCallTimes.length) {
+    var avg = Math.round(_rpCallTimes.reduce(function(a,b){return a+b;},0) / _rpCallTimes.length);
+    t.textContent = (Math.floor(avg/60)).toString().padStart(2,'0') + ':' + (avg%60).toString().padStart(2,'0');
+  }
+}
+
+var _origConfirmFix = window.confirmAddr;
+window.confirmAddr = function() {
+  if (typeof _origConfirmFix === 'function') _origConfirmFix();
+  _rpSaved++; _rpCalls++;
+  var dur = window.currentCallStart ? Math.round((Date.now()-window.currentCallStart)/1000) : 0;
+  if (dur>0) _rpCallTimes.push(dur);
+  addFeedCard(); updateRightPanelStats();
+};
+
+var _origStopSaveFix = window.stopAndSave;
+window.stopAndSave = function() {
+  if (typeof _origStopSaveFix === 'function') _origStopSaveFix();
+  _rpSaved++; _rpCalls++;
+  var dur = window.currentCallStart ? Math.round((Date.now()-window.currentCallStart)/1000) : 0;
+  if (dur>0) _rpCallTimes.push(dur);
+  addFeedCard(); updateRightPanelStats();
+};
+
+window.copyFeedCard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = (card.dataset.addr||'') + (card.dataset.pin ? ', ' + card.dataset.pin : '') + (card.dataset.city ? ', ' + card.dataset.city : '');
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = '✅ Copied';
+    setTimeout(function() { btn.innerHTML = '&#128203; Copy'; }, 1500);
   });
 };
-window.ipRenderFeed=function(){
-  var list=document.getElementById('ip-feed-list');
-  var cnt=document.getElementById('ip-feed-count');
-  if(!list)return;
-  var caps=window._ipCaptures||[];
-  if(cnt)cnt.textContent=caps.length+' saved';
-  if(!caps.length){list.innerHTML='<div style="text-align:center;padding:20px;color:#94999f;font-size:12px">No captures yet</div>';return;}
-  list.innerHTML=caps.slice().reverse().map(function(c){
-    return '<div style="background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-size:12px;font-weight:600;color:#1a1d24">'+(c.addr||'---')+'</div><div style="font-size:10px;color:#94999f;margin-top:3px">'+(c.city||'')+(c.pin?' - '+c.pin:'')+(c.time?' - '+c.time:'')+'</div></div>';
-  }).join('');
+
+window.sendWhatsApp = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = 'Address: ' + (card.dataset.addr||'') + (card.dataset.pin ? '\nPincode: '+card.dataset.pin : '') + (card.dataset.city ? '\nCity: '+card.dataset.city : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
 };
-window.ipExportAll=function(){
-  var rows=(window._ipCaptures||[]).map(function(c){return[c.name||'',c.addr||'',c.pin||'',c.city||'',c.time||'','Live'];});
-  (window._recordingsLog||[]).forEach(function(c){rows.push([c.name||'',c.address||'',c.pincode||'',c.city||'',c.time||'','Recording']);});
-  if(!rows.length){typeof toast==='function'&&toast('No captures yet','err');return;}
-  var csv='Name,Address,Pincode,City,Time,Source
-'+rows.map(function(r){return r.map(function(v){return'"'+(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('
+
+window.exportRightPanel = function() {
+  var feed = document.getElementById('liveFeed');
+  if (!feed) return;
+  var cards = Array.from(feed.querySelectorAll('[data-addr]'));
+  if (!cards.length) { if (typeof toast==='function') toast('No addresses yet','err'); return; }
+  var csv = 'Address,Pincode,City\n' + cards.map(function(c) {
+    return '"'+(c.dataset.addr||'')+'","'+(c.dataset.pin||'')+'","'+(c.dataset.city||'')+'"';
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'session_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+  if (typeof toast==='function') toast('📥 Exported!');
+};
+
+// Inject animation style
+var sty = document.createElement('style');
+sty.textContent = '@keyframes vn-fadein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}';
+document.head.appendChild(sty);
+
+// Watch for agent view activation
+console.log('✅ VN Final Fix Patch: mic capture fixed');
+})();
+
+// ===== INTEL PANEL LOGIC =====
+(function(){
+'use strict';
+
+// Tab switching
+// switchIntelTab removed — replaced by switchIP
+
+// Chip insert
+window.insertIntelChip = function(word) {
+  var target = document.activeElement;
+  var fallback = document.getElementById('ip-addr');
+  var validIds = ['ip-addr','ip-landmark','ip-city','ip-state','ip-name'];
+  if(!target || !validIds.includes(target.id)) target = fallback;
+  if(target) {
+    target.value = target.value ? target.value + ' ' + word : word;
+    target.focus();
+    markFilled(target.id.replace('ip-','ipf-'));
+  }
+};
+
+function markFilled(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('filled'); }
+}
+function markFilling(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filled','verified'); f.classList.add('filling'); }
+}
+function markVerified(fieldId) {
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('verified','filled'); }
+}
+
+// Sync with main result — hook into extractAndVerify output
+var _origExtract = window.extractAndVerify;
+window.extractAndVerify = async function(transcript) {
+  if(typeof _origExtract === 'function') await _origExtract(transcript);
+  // Mirror transcript to corp intel panel
+  var box = document.getElementById('ip-transcript-box');
+  if(box && transcript) {
+    box.innerHTML = transcript;
+    box.style.color = '#1a1d24';
+    box.style.fontStyle = 'normal';
+  }
+  // Sync confidence
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct  = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct  = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct)   dstPct.textContent  = srcPct.textContent;
+  // Sync address fields after delay
+  setTimeout(function() {
+    var r = window.currentResult;
+    if(!r) return;
+    var map = {
+      'ip-inp-name':r.name||'', 'ip-inp-phone':r.phone||'',
+      'ip-inp-addr':r.rawAddress||r.full_address||'',
+      'ip-inp-landmark':r.landmark||'', 'ip-inp-pin':r.pincode||'',
+      'ip-inp-city':r.district||r.city||'', 'ip-inp-state':r.state||''
+    };
+    var anyFilled = false;
+    Object.keys(map).forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el && map[id]) { el.value = map[id]; anyFilled = true; }
+    });
+    if(anyFilled) {
+      var conf = r.confidence || 0;
+      var f = document.getElementById('ip-conf-fill');
+      var p = document.getElementById('ip-conf-pct');
+      if(f) f.style.width = conf+'%';
+      if(p) p.textContent = conf+'%';
+      ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+        var btn = document.getElementById(id); if(btn) btn.disabled = false;
+      });
+    }
+  }, 800);
+};
+
+// Sync address fields from main result
+function syncIntelFields() {
+  var r = window.currentResult;
+  if(!r) return;
+
+  function setField(inpId, fieldId, val) {
+    var inp = document.getElementById(inpId);
+    if(inp && val && !inp.value) {
+      inp.value = val;
+      markVerified(fieldId);
+    } else if(inp && val) {
+      inp.value = val;
+      markFilled(fieldId);
+    }
+  }
+
+  // Try to get values from main live fields or result
+  var name = document.getElementById('lfv-name')?.value || r.name || '';
+  var phone = document.getElementById('lfv-phone')?.value || r.phone || '';
+  var addr = document.getElementById('lfv-addrline')?.value || r.rawAddress || r.full_address || '';
+  var landmark = document.getElementById('lfv-landmark')?.value || r.landmark || '';
+  var pin = document.getElementById('lfv-pincode')?.value || r.pincode || '';
+  var city = document.getElementById('lfv-city')?.value || r.city || '';
+  var state = document.getElementById('lfv-state')?.value || r.state || '';
+
+  setField('ip-name', 'ipf-name', name);
+  setField('ip-phone', 'ipf-phone', phone);
+  setField('ip-addr', 'ipf-addr', addr);
+  setField('ip-landmark', 'ipf-landmark', landmark);
+  setField('ip-pin', 'ipf-pin', pin);
+  setField('ip-city', 'ipf-city', city);
+  setField('ip-state', 'ipf-state', state);
+
+  // Update confidence
+  var conf = r.confidence || 0;
+  var fill = document.getElementById('ip-conf-fill');
+  var pct = document.getElementById('ip-conf-pct');
+  if(fill) fill.style.width = conf + '%';
+  if(pct) pct.textContent = conf + '%';
+
+  // Enable action buttons
+  ['ip-confirm-btn','ip-wa-btn','ip-copy-btn'].forEach(function(id) {
+    var btn = document.getElementById(id);
+    if(btn && addr) btn.disabled = false;
+  });
+}
+
+// Also sync live transcript from Deepgram patch
+var _origDGMsg = window._fixedHandleDGMsg;
+window._fixedHandleDGMsg = function(raw) {
+  if(typeof _origDGMsg === 'function') _origDGMsg(raw);
+  // Mirror transcript to intel panel
+  var box = document.getElementById('ip-transcript');
+  var dgBox = document.getElementById('liveTranscriptBox');
+  if(box && dgBox) box.innerHTML = dgBox.innerHTML;
+  // Sync confidence
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+};
+
+// Session tracking
+var _ipSaved = 0, _ipCalls = 0, _ipAttempts = 0, _ipCallTimes = [], _ipCaptures = [];
+var _ipCallStart = null;
+
+// Track call start
+var _origToggle = window.toggleListen;
+window.toggleListen = async function() {
+  if(!window.isListening && !window.dgActive) {
+    _ipCallStart = Date.now();
+    _ipCalls++;
+    _ipAttempts++;
+    updateIntelStats();
+    // Clear fields for new call
+    ['ip-name','ip-phone','ip-addr','ip-landmark','ip-pin','ip-city','ip-state'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    ['ipf-name','ipf-phone','ipf-addr','ipf-landmark','ipf-pin','ipf-city','ipf-state'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if(el) el.classList.remove('filling','filled','verified');
+    });
+    var box = document.getElementById('ip-transcript');
+    if(box) box.innerHTML = '<span style="color:var(--text3);font-style:italic">Listening…</span>';
+    var fill = document.getElementById('ip-conf-fill');
+    var pct = document.getElementById('ip-conf-pct');
+    if(fill) fill.style.width = '0%';
+    if(pct) pct.textContent = '0%';
+    ['ip-confirm-btn','ip-wa-btn','ip-copy-btn'].forEach(function(id) {
+      var btn = document.getElementById(id); if(btn) btn.disabled = true;
+    });
+  }
+  if(typeof _origToggle === 'function') await _origToggle();
+};
+
+function addToFeed() {
+  var addr = document.getElementById('ip-addr')?.value || '';
+  var pin = document.getElementById('ip-pin')?.value || '';
+  var city = document.getElementById('ip-city')?.value || '';
+  var name = document.getElementById('ip-name')?.value || '';
+  if(!addr) return;
+
+  var now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  _ipCaptures.unshift({addr,pin,city,name,time:now});
+  _ipSaved++;
+
+  // Update feed
+  var list = document.getElementById('ip-feed-list');
+  var count = document.getElementById('ip-feed-count');
+  if(list) {
+    var empty = list.querySelector('.feed-empty');
+    if(empty) empty.remove();
+    var card = document.createElement('div');
+    card.className = 'feed-card';
+    card.dataset.addr = addr; card.dataset.pin = pin; card.dataset.city = city;
+    card.innerHTML = '<div class="feed-card-addr">' + (name ? '<span style="color:var(--green);font-size:10px">'+name+'</span><br>' : '') + addr + '</div>'
+      + '<div class="feed-card-meta">'
+      + (pin ? '<span class="feed-pin">📮 '+pin+'</span>' : '')
+      + (city ? '<span class="feed-city">'+city+'</span>' : '')
+      + '<span class="feed-time">'+now+'</span>'
+      + '</div>'
+      + '<div style="display:flex;gap:5px;margin-top:6px">'
+      + '<button onclick="intelCopyCard(this)" style="font-size:9px;padding:3px 8px;border:1px solid var(--border2);border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-mono)">📋 Copy</button>'
+      + '<button onclick="intelWACard(this)" style="font-size:9px;padding:3px 8px;border:1px solid rgba(37,211,102,.2);border-radius:6px;background:transparent;color:#25d366;cursor:pointer;font-family:var(--font-mono)">💬 WA</button>'
+      + '</div>';
+    list.insertBefore(card, list.firstChild);
+  }
+  if(count) count.textContent = _ipSaved + ' saved';
+
+  // Update recent in stats
+  var recent = document.getElementById('ip-recent-list');
+  if(recent) {
+    if(recent.querySelector('[style*="italic"]')) recent.innerHTML = '';
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:5px 0;border-bottom:1px solid var(--border);line-height:1.5';
+    item.innerHTML = '<span style="color:var(--green)">'+now+'</span> · ' + addr.substring(0,35) + (addr.length>35?'…':'');
+    recent.insertBefore(item, recent.firstChild);
+  }
+
+  updateIntelStats();
+  if(_ipCallStart) {
+    _ipCallTimes.push(Math.round((Date.now()-_ipCallStart)/1000));
+    _ipCallStart = null;
+  }
+}
+
+function updateIntelStats() {
+  var s = document.getElementById('ip-s-saved'); if(s) s.textContent = _ipSaved;
+  var c = document.getElementById('ip-s-calls'); if(c) c.textContent = _ipCalls;
+  var r = document.getElementById('ip-s-rate');
+  if(r) r.textContent = _ipAttempts > 0 ? Math.round((_ipSaved/_ipAttempts)*100)+'%' : '0%';
+  var a = document.getElementById('ip-s-avg');
+  if(a && _ipCallTimes.length) {
+    var avg = Math.round(_ipCallTimes.reduce(function(x,y){return x+y;},0)/_ipCallTimes.length);
+    a.textContent = Math.floor(avg/60).toString().padStart(2,'0')+':'+( avg%60).toString().padStart(2,'0');
+  }
+}
+
+// Hook confirm
+var _origConfirm = window.confirmAddr;
+window.confirmAddr = function() {
+  if(typeof _origConfirm === 'function') _origConfirm();
+  syncIntelFields();
+  addToFeed();
+};
+
+// Intel panel actions
+window.intelConfirm = function() { syncIntelFields(); addToFeed(); if(typeof confirmAddr==='function') confirmAddr(); };
+
+window.intelCopy = function() {
+  var parts = [
+    document.getElementById('ip-name')?.value,
+    document.getElementById('ip-addr')?.value,
+    document.getElementById('ip-landmark')?.value ? 'Near: '+document.getElementById('ip-landmark').value : '',
+    document.getElementById('ip-pin')?.value ? 'PIN: '+document.getElementById('ip-pin').value : '',
+    document.getElementById('ip-city')?.value,
+    document.getElementById('ip-state')?.value
+  ].filter(Boolean);
+  navigator.clipboard.writeText(parts.join(', ')).then(function() {
+    var btn = document.getElementById('ip-copy-btn');
+    if(btn) { btn.textContent = '✅ Copied!'; setTimeout(function(){ btn.innerHTML='📋 Copy'; }, 1500); }
+  });
+};
+
+window.intelWhatsApp = function() {
+  var text = '📍 Address Details
+'
+    + (document.getElementById('ip-name')?.value ? '👤 ' + document.getElementById('ip-name').value + '
+' : '')
+    + (document.getElementById('ip-phone')?.value ? '📞 ' + document.getElementById('ip-phone').value + '
+' : '')
+    + '🏠 ' + (document.getElementById('ip-addr')?.value || '') + '
+'
+    + (document.getElementById('ip-landmark')?.value ? '📌 Near: ' + document.getElementById('ip-landmark').value + '
+' : '')
+    + (document.getElementById('ip-pin')?.value ? '📮 PIN: ' + document.getElementById('ip-pin').value + '
+' : '')
+    + (document.getElementById('ip-city')?.value ? '🏙️ ' + document.getElementById('ip-city').value : '')
+    + (document.getElementById('ip-state')?.value ? ', ' + document.getElementById('ip-state').value : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
+};
+
+window.intelRetry = function() {
+  var t = window.currentTranscript || window._fixBuffer || '';
+  if(t && typeof extractAndVerify === 'function') {
+    extractAndVerify(t);
+  } else {
+    var box = document.getElementById('ip-transcript');
+    if(box) box.innerHTML = '<span style="color:var(--amber)">No transcript yet — start mic first</span>';
+  }
+};
+
+window.intelCopyCard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = (card.dataset.addr||'') + (card.dataset.pin ? ', PIN: '+card.dataset.pin : '') + (card.dataset.city ? ', '+card.dataset.city : '');
+  navigator.clipboard.writeText(text).then(function() {
+    btn.textContent = '✅'; setTimeout(function(){ btn.textContent='📋 Copy'; }, 1200);
+  });
+};
+
+window.intelWACard = function(btn) {
+  var card = btn.closest('[data-addr]');
+  var text = '📍 ' + (card.dataset.addr||'') + (card.dataset.pin ? '
+📮 PIN: '+card.dataset.pin : '') + (card.dataset.city ? '
+🏙️ '+card.dataset.city : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
+};
+
+window.intelExportCSV = function() {
+  if(!_ipCaptures.length) return;
+  var csv = 'Name,Address,Landmark,Pincode,City,Time
+' + _ipCaptures.map(function(c) {
+    return '"'+(c.name||'')+'","'+(c.addr||'')+'","","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
+  }).join('
 ');
-  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download='captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';a.click();
-  typeof toast==='function'&&toast('Exported '+rows.length+' records!');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
 };
-window.ipApplyFromRecording=function(){
-  var a=window._lastRecordingAddr;if(!a)return;
-  [['ip-inp-name',a.name],['ip-inp-phone',a.phone],['ip-inp-addr',a.address],['ip-inp-landmark',a.landmark],['ip-inp-city',a.city],['ip-inp-state',a.state],['ip-inp-pin',a.pincode],
-   ['lfv-name',a.name],['lfv-phone',a.phone],['lfv-addrline',a.address],['lfv-landmark',a.landmark],['lfv-city',a.city],['lfv-state',a.state],['lfv-pincode',a.pincode]
-  ].forEach(function(kv){var el=document.getElementById(kv[0]);if(el&&kv[1]){el.value=kv[1];el.classList.add('filled');el.style.background='#f0fff4';setTimeout(function(){el.style.background='';},2000);}});
-  window.switchIP('capture');
-  typeof toast==='function'&&toast('Applied!');
+
+window.intelClearNotes = function() {
+  var t = document.getElementById('ip-notes-text'); if(t) t.value = '';
 };
-window.ipAddToFeed=function(){
-  var a=window._lastRecordingAddr||{};
-  if(!window._ipCaptures)window._ipCaptures=[];
-  window._ipCaptures.push({addr:a.address||'',pin:a.pincode||'',city:a.city||'',name:a.name||'',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),source:'Recording'});
-  window.ipRenderFeed();window.switchIP('feed');
-  typeof toast==='function'&&toast('Added to feed!');
+window.intelCopyNotes = function() {
+  var t = document.getElementById('ip-notes-text');
+  if(t && t.value) navigator.clipboard.writeText(t.value).then(function(){ alert('Notes copied!'); });
 };
-window.ipSaveCapture=function(){
-  var addr=(document.getElementById('ip-inp-addr')||{}).value||'';
-  if(!addr){typeof toast==='function'&&toast('Fill address first','err');return;}
-  if(!window._ipCaptures)window._ipCaptures=[];
-  window._ipCaptures.push({name:(document.getElementById('ip-inp-name')||{}).value||'',addr:addr,pin:(document.getElementById('ip-inp-pin')||{}).value||'',city:(document.getElementById('ip-inp-city')||{}).value||'',time:new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),source:'Live'});
-  window.ipRenderFeed();
-  var cnt=document.getElementById('ip-s-saved');if(cnt)cnt.textContent=window._ipCaptures.length;
-  typeof confirmAddr==='function'&&confirmAddr();
-  typeof toast==='function'&&toast('Saved!');
+
+console.log('✅ Intel Panel loaded');
+
+// ===== INTEL PANEL v2 — works with corp UI =====
+(function(){
+
+// Add CSS for ip-field elements
+var style = document.createElement('style');
+style.textContent = `
+  .ip-field{background:#fff;border:1px solid #e3e6eb;border-radius:9px;padding:8px 11px;transition:all .3s;position:relative;overflow:hidden}
+  .ip-field::after{content:'';position:absolute;bottom:0;left:0;width:0%;height:2px;background:#0d9354;transition:width .4s ease}
+  .ip-field.filling::after{width:60%;background:#f59f00}
+  .ip-field.filled::after{width:100%;background:#0d9354}
+  .ip-field.verified{border-color:#b2f2d0;background:#f0faf5}
+  .ip-field-lbl{font-size:8px;font-weight:700;color:#94999f;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px}
+  .ip-field.filled .ip-field-lbl::after{content:' ✓';color:#0d9354}
+  .ip-field-inp{width:100%;background:transparent;border:none;outline:none;font-size:12px;font-weight:600;color:#1a1d24;font-family:inherit}
+  .ip-field-inp::placeholder{color:#c1c4cc;font-weight:400;font-size:11px}
+  .ip-tab.active{color:#3b5bdb!important;border-bottom-color:#3b5bdb!important}
+`;
+document.head.appendChild(style);
+
+// Tab switching
+window.switchIP = function(tab, el) {
+  document.querySelectorAll('.ip-tab').forEach(function(t) {
+    t.style.color = '#94999f';
+    t.style.borderBottomColor = 'transparent';
+    t.classList.remove('active');
+  });
+  if(el) { el.style.color = '#3b5bdb'; el.style.borderBottomColor = '#3b5bdb'; el.classList.add('active'); }
+  ['capture','feed','notes','stats'].forEach(function(p) {
+    var pane = document.getElementById('ip-pane-'+p);
+    if(pane) pane.style.display = p === tab ? 'flex' : 'none';
+  });
+  if(tab==='stats') ipUpdateStats();
 };
-window.ipWhatsApp=function(){
-  var addr=(document.getElementById('ip-inp-addr')||{}).value||'';
-  var pin=(document.getElementById('ip-inp-pin')||{}).value||'';
-  var city=(document.getElementById('ip-inp-city')||{}).value||'';
-  var name=(document.getElementById('ip-inp-name')||{}).value||'';
-  var phone=(document.getElementById('ip-inp-phone')||{}).value||'';
-  window.open('https://wa.me/?text='+encodeURIComponent('Delivery:
-Name: '+name+'
-Phone: '+phone+'
-Address: '+addr+(pin?'
-Pin: '+pin:'')+(city?'
-City: '+city:'')),'_blank');
+
+// Quick insert chips
+window.ipChip = function(word) {
+  var target = document.activeElement;
+  var validIds = ['ip-inp-addr','ip-inp-landmark','ip-inp-city','ip-inp-state'];
+  if(!target || !validIds.includes(target.id)) target = document.getElementById('ip-inp-addr');
+  if(target) { target.value = (target.value ? target.value + ' ' : '') + word; target.focus(); ipMarkField(target.id); }
 };
-window.ipCopy=function(){
-  var addr=(document.getElementById('ip-inp-addr')||{}).value||'';
-  var pin=(document.getElementById('ip-inp-pin')||{}).value||'';
-  var city=(document.getElementById('ip-inp-city')||{}).value||'';
-  navigator.clipboard.writeText(addr+(pin?', '+pin:'')+(city?', '+city:'')).then(function(){typeof toast==='function'&&toast('Copied!');});
+
+function ipMarkField(inpId) {
+  var fieldId = 'ipf-' + inpId.replace('ip-inp-','');
+  var f = document.getElementById(fieldId);
+  if(f) { f.classList.remove('filling'); f.classList.add('filled'); }
+}
+
+// Sync fields from main result
+function ipSync() {
+  var r = window.currentResult;
+
+  // Map from main corp fields
+  var map = {
+    'ip-inp-name':     document.getElementById('lfv-name')?.value || (r && r.name) || '',
+    'ip-inp-phone':    document.getElementById('lfv-phone')?.value || (r && r.phone) || '',
+    'ip-inp-addr':     document.getElementById('lfv-addrline')?.value || (r && (r.rawAddress||r.full_address)) || '',
+    'ip-inp-landmark': document.getElementById('lfv-landmark')?.value || (r && r.landmark) || '',
+    'ip-inp-pin':      document.getElementById('lfv-pincode')?.value || (r && r.pincode) || '',
+    'ip-inp-city':     document.getElementById('lfv-city')?.value || (r && r.city) || '',
+    'ip-inp-state':    document.getElementById('lfv-state')?.value || (r && r.state) || ''
+  };
+
+  var anyFilled = false;
+  Object.entries(map).forEach(function(entry) {
+    var inpId = entry[0], val = entry[1];
+    var inp = document.getElementById(inpId);
+    if(inp && val) {
+      inp.value = val;
+      var fieldId = 'ipf-' + inpId.replace('ip-inp-','');
+      var f = document.getElementById(fieldId);
+      if(f) { f.classList.remove('filling'); f.classList.add('filled','verified'); }
+      anyFilled = true;
+    }
+  });
+
+  // Sync confidence from corp UI
+  var srcFill = document.getElementById('confFillLive');
+  var srcPct = document.getElementById('confPctLive');
+  var dstFill = document.getElementById('ip-conf-fill');
+  var dstPct = document.getElementById('ip-conf-pct');
+  if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+  if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+
+  if(anyFilled) {
+    ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+      var btn = document.getElementById(id);
+      if(btn) btn.disabled = false;
+    });
+  }
+}
+
+// Mirror live transcript
+function ipMirrorTranscript() {
+  var src = document.getElementById('liveTranscriptBox');
+  var dst = document.getElementById('ip-transcript-box');
+  if(src && dst && src.textContent.trim()) {
+    dst.innerHTML = src.innerHTML;
+    dst.style.color = '#1a1d24';
+    dst.style.fontStyle = 'normal';
+  }
+}
+
+// Poll for updates every 800ms when listening
+var _ipPollTimer = null;
+function ipStartPoll() {
+  if(_ipPollTimer) return;
+  _ipPollTimer = setInterval(function() {
+    ipMirrorTranscript();
+    // Sync confidence
+    var srcFill = document.getElementById('confFillLive');
+    var dstFill = document.getElementById('ip-conf-fill');
+    var srcPct = document.getElementById('confPctLive');
+    var dstPct = document.getElementById('ip-conf-pct');
+    if(srcFill && dstFill) dstFill.style.width = srcFill.style.width;
+    if(srcPct && dstPct) dstPct.textContent = srcPct.textContent;
+  }, 800);
+}
+function ipStopPoll() {
+  clearInterval(_ipPollTimer); _ipPollTimer = null;
+}
+
+// Hook toggleListen
+var _ipOrigToggle = window.toggleListen;
+window.toggleListen = async function() {
+  if(!window.isListening && !window.dgActive) {
+    // New call starting — reset fields
+    ['ip-inp-name','ip-inp-phone','ip-inp-addr','ip-inp-landmark','ip-inp-pin','ip-inp-city','ip-inp-state'].forEach(function(id) {
+      var el = document.getElementById(id); if(el) el.value = '';
+    });
+    ['ipf-name','ipf-phone','ipf-addr','ipf-landmark','ipf-pin','ipf-city','ipf-state'].forEach(function(id) {
+      var el = document.getElementById(id); if(el) el.classList.remove('filling','filled','verified');
+    });
+    var box = document.getElementById('ip-transcript-box');
+    if(box) { box.innerHTML = '<span style="color:#94999f;font-style:italic">Listening…</span>'; }
+    var dstFill = document.getElementById('ip-conf-fill');
+    var dstPct = document.getElementById('ip-conf-pct');
+    if(dstFill) dstFill.style.width = '0%';
+    if(dstPct) dstPct.textContent = '0%';
+    ['ip-btn-save','ip-btn-wa','ip-btn-copy'].forEach(function(id) {
+      var btn = document.getElementById(id); if(btn) btn.disabled = true;
+    });
+    _ipCalls++; _ipAttempts++;
+    _ipCallStart = Date.now();
+    ipStartPoll();
+  } else {
+    ipStopPoll();
+    setTimeout(ipSync, 800);
+  }
+  if(typeof _ipOrigToggle === 'function') await _ipOrigToggle();
 };
-window.ipClearNotes=function(){var el=document.getElementById('ip-notes-box');if(el)el.value='';};
-console.log('Intel Panel ready - Sarvam AI + Groq fallback');
+
+// Session data
+var _ipSaved = 0, _ipCalls = 0, _ipAttempts = 0, _ipCallTimes = [], _ipCaptures = [];
+var _ipCallStart = null;
+
+// Actions
+window.ipSave = function() {
+  ipSync();
+  var addr = document.getElementById('ip-inp-addr')?.value || '';
+  if(!addr) return;
+  var pin = document.getElementById('ip-inp-pin')?.value || '';
+  var city = document.getElementById('ip-inp-city')?.value || '';
+  var name = document.getElementById('ip-inp-name')?.value || '';
+  var now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  _ipSaved++; _ipCaptures.unshift({addr,pin,city,name,time:now});
+  if(_ipCallStart) { _ipCallTimes.push(Math.round((Date.now()-_ipCallStart)/1000)); _ipCallStart = null; }
+  ipAddToFeed(addr, pin, city, name, now);
+  ipUpdateStats();
+  if(typeof stopAndSave === 'function') stopAndSave();
+};
+
+window.ipCopy = function() {
+  var parts = [
+    document.getElementById('ip-inp-name')?.value,
+    document.getElementById('ip-inp-addr')?.value,
+    document.getElementById('ip-inp-landmark')?.value ? 'Near: '+document.getElementById('ip-inp-landmark').value : '',
+    document.getElementById('ip-inp-pin')?.value ? 'PIN: '+document.getElementById('ip-inp-pin').value : '',
+    document.getElementById('ip-inp-city')?.value,
+    document.getElementById('ip-inp-state')?.value
+  ].filter(Boolean);
+  navigator.clipboard.writeText(parts.join(', ')).then(function() {
+    var b = document.getElementById('ip-btn-copy');
+    if(b) { b.textContent = '✅ Copied!'; setTimeout(function(){ b.textContent='📋 Copy'; },1500); }
+  });
+};
+
+window.ipWhatsApp = function() {
+  var n = document.getElementById('ip-inp-name')?.value;
+  var ph = document.getElementById('ip-inp-phone')?.value;
+  var a = document.getElementById('ip-inp-addr')?.value || '';
+  var lm = document.getElementById('ip-inp-landmark')?.value;
+  var pin = document.getElementById('ip-inp-pin')?.value;
+  var ci = document.getElementById('ip-inp-city')?.value;
+  var st = document.getElementById('ip-inp-state')?.value;
+  var text = '📍 Address Details\n'
+    + (n ? '👤 '+n+'\n' : '')
+    + (ph ? '📞 '+ph+'\n' : '')
+    + '🏠 '+a+'\n'
+    + (lm ? '📌 Near: '+lm+'\n' : '')
+    + (pin ? '📮 PIN: '+pin+'\n' : '')
+    + (ci ? '🏙️ '+ci+(st?', '+st:'') : '');
+  window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+};
+
+window.ipRetry = function() {
+  var t = window.currentTranscript || window._fixBuffer || '';
+  if(t && typeof extractAndVerify === 'function') {
+    extractAndVerify(t);
+    setTimeout(ipSync, 1500);
+  }
+};
+
+function ipAddToFeed(addr, pin, city, name, now) {
+  var list = document.getElementById('ip-feed-list');
+  var count = document.getElementById('ip-feed-count');
+  if(!list) return;
+  var empty = list.querySelector('[style*="📭"]');
+  if(empty) empty.remove();
+  var card = document.createElement('div');
+  card.style.cssText = 'background:#fff;border:1px solid #e3e6eb;border-left:3px solid #0d9354;border-radius:10px;padding:10px 12px;animation:vn-fadein .3s ease';
+  card.dataset.addr = addr; card.dataset.pin = pin; card.dataset.city = city;
+  card.innerHTML = '<div style="font-size:11px;font-weight:600;color:#1a1d24;margin-bottom:5px;line-height:1.5">'+(name?'<span style="font-size:10px;color:#0d9354">'+name+'</span><br>':'')+addr+'</div>'
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+    + (pin?'<span style="font-size:9px;background:#e8f7ee;color:#0d9354;padding:2px 7px;border-radius:8px;font-weight:700">📮 '+pin+'</span>':'')
+    + (city?'<span style="font-size:9px;color:#94999f">'+city+'</span>':'')
+    + '<span style="font-size:9px;color:#c1c4cc;margin-left:auto">'+now+'</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:5px;margin-top:7px">'
+    + '<button onclick="ipCopyCard(this)" style="font-size:9px;padding:3px 9px;border:1px solid #e3e6eb;border-radius:6px;background:#f6f7f9;color:#5e6470;cursor:pointer">📋 Copy</button>'
+    + '<button onclick="ipWACard(this)" style="font-size:9px;padding:3px 9px;border:1px solid #d1f0db;border-radius:6px;background:#f0faf5;color:#25d366;cursor:pointer">💬 WA</button>'
+    + '</div>';
+  list.insertBefore(card, list.firstChild);
+  if(count) count.textContent = _ipSaved + ' saved';
+  // Update recent in stats
+  var rec = document.getElementById('ip-recent');
+  if(rec) {
+    if(rec.querySelector('[style*="italic"]')) rec.innerHTML = '';
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:5px 0;border-bottom:1px solid #e3e6eb;line-height:1.5;font-size:10px';
+    item.innerHTML = '<span style="color:#0d9354">'+now+'</span> · '+(addr.substring(0,38))+(addr.length>38?'…':'');
+    rec.insertBefore(item, rec.firstChild);
+  }
+}
+
+window.ipCopyCard = function(btn) {
+  var c = btn.closest('[data-addr]');
+  var text = (c.dataset.addr||'')+(c.dataset.pin?', PIN: '+c.dataset.pin:'')+(c.dataset.city?', '+c.dataset.city:'');
+  navigator.clipboard.writeText(text).then(function(){ btn.textContent='✅'; setTimeout(function(){ btn.textContent='📋 Copy'; },1200); });
+};
+window.ipWACard = function(btn) {
+  var c = btn.closest('[data-addr]');
+  window.open('https://wa.me/?text='+encodeURIComponent('📍 '+(c.dataset.addr||'')+(c.dataset.pin?'\n📮 PIN: '+c.dataset.pin:'')+(c.dataset.city?'\n🏙️ '+c.dataset.city:'')),'_blank');
+};
+
+function ipUpdateStats() {
+  var s = document.getElementById('ip-s-saved'); if(s) s.textContent = _ipSaved;
+  var c = document.getElementById('ip-s-calls'); if(c) c.textContent = _ipCalls;
+  var r = document.getElementById('ip-s-rate'); if(r) r.textContent = _ipAttempts>0 ? Math.round((_ipSaved/_ipAttempts)*100)+'%' : '0%';
+  var a = document.getElementById('ip-s-avg');
+  if(a && _ipCallTimes.length) {
+    var avg = Math.round(_ipCallTimes.reduce(function(x,y){return x+y;},0)/_ipCallTimes.length);
+    a.textContent = Math.floor(avg/60).toString().padStart(2,'0')+':'+(avg%60).toString().padStart(2,'0');
+  }
+}
+window.ipUpdateStats = ipUpdateStats;
+
+window.ipExport = function() {
+  if(typeof ipExportAll==='function'){ipExportAll();return;}
+  if(!_ipCaptures.length) { alert('No captures yet!'); return; }
+  var csv = 'Name,Address,Pincode,City,Time\n' + _ipCaptures.map(function(c) {
+    return '"'+(c.name||'')+'","'+(c.addr||'')+'","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
+  }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
+  a.click();
+};
+
+// Hook stopAndSave and confirmAddr to auto-sync intel panel
+var _ipOrigStopSave = window.stopAndSave;
+window.stopAndSave = function() {
+  if(typeof _ipOrigStopSave === 'function') _ipOrigStopSave();
+  setTimeout(ipSync, 500);
+};
+
+console.log('✅ Intel Panel v2 loaded');
+})();
 </script>
+
 </body>
 </html>
