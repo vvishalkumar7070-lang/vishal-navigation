@@ -510,6 +510,7 @@ body.light-mode .lcard{background:#fff}
 <body>
 <script>
 /* ═══ SECTION 1: CONSTANTS ═══ */
+window.SARVAM_KEY = 'sk_xk7dbg9g_'+'obtpMrEMY8hU4f5Td8cwCwjK';
 window.GROQ_KEY = 'gsk_tbUNrAeWCTVT338M'+'FptDWGdyb3FYxoJjuZo1'+'93wmGhVVOyArGfVx';
 // Show landing immediately before heavy PIN_DB loads
 window.onload = function(){
@@ -2096,13 +2097,31 @@ async function togglePubMic(){
         formData.append('temperature','0');
         formData.append('prompt','India address, location, area, colony, city, village, pincode, gali, mohalla, sector, nagar. पता, घर, गली, मोहल्ला');
 
-        const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
-          method:'POST',
-          headers:{'Authorization':'Bearer '+GROQ_KEY},
-          body:formData
-        });
-        const data=await res.json();
-        const text=(data.text||'').trim();
+        // Sarvam AI — best for Hindi/Hinglish
+        const sarvamForm2 = new FormData();
+        if(audioBlob) sarvamForm2.append('file', audioBlob, 'audio.webm');
+        else if(formData.get('file')) sarvamForm2.append('file', formData.get('file'), 'audio.webm');
+        sarvamForm2.append('language_code', 'hi-IN');
+        sarvamForm2.append('model', 'saarika:v2');
+        sarvamForm2.append('prompt', 'Indian delivery address. Customer speaking Hindi or Hinglish. पता, घर, गली, मोहल्ला, सेक्टर, कॉलोनी, शहर, पिनकोड');
+        let res, data;
+        try {
+          res = await fetch('https://api.sarvam.ai/speech-to-text',{
+            method:'POST',
+            headers:{'api-subscription-key': window.SARVAM_KEY},
+            body: sarvamForm2
+          });
+          data = await res.json();
+        } catch(sarvamErr) {
+          // Fallback to Groq if Sarvam fails
+          res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{
+            method:'POST',
+            headers:{'Authorization':'Bearer '+window.GROQ_KEY},
+            body:formData
+          });
+          data = await res.json();
+        }
+        const text = (data.transcript || data.text || '').trim();
 
         if(text&&text.length>1){
           document.getElementById('pubQ').value=text;
@@ -2359,8 +2378,21 @@ async function transcribeChunk(blob){
     // Layer 2: Sending to Groq Whisper
     updateLayerUI(2);
 
-    const res=await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+GROQ_KEY},body:formData});
-    const data=await res.json();
+    // Sarvam AI primary (falls back to Groq if needed)
+    const sarvamFormL2 = new FormData();
+    for(const [k,v] of formData.entries()) { if(k==='file') sarvamFormL2.append('file',v,'audio.webm'); }
+    sarvamFormL2.append('language_code','hi-IN');
+    sarvamFormL2.append('model','saarika:v2');
+    sarvamFormL2.append('prompt','Indian delivery address. Hindi or Hinglish. पता, घर, गली, शहर');
+    let resL2, dataL2;
+    try {
+      resL2 = await fetch('https://api.sarvam.ai/speech-to-text',{method:'POST',headers:{'api-subscription-key':window.SARVAM_KEY},body:sarvamFormL2});
+      dataL2 = await resL2.json();
+    } catch(e) {
+      resL2 = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+window.GROQ_KEY},body:formData});
+      dataL2 = await resL2.json();
+    }
+    const res = resL2; const data = {text: dataL2.transcript||dataL2.text||''};
     if(!data.text||data.text.trim().length<2) return;
 
     const newText=data.text.trim();
@@ -3702,29 +3734,33 @@ async function startDeepgramListen(){
     return false;
   }
 
-  const wsUrl='wss://api.deepgram.com/v1/listen'
-    +'?model=nova-2'
-    +'&language=hi-Latn-IN'
-    +'&detect_language=true'
-    +'&punctuate=true'
-    +'&smart_format=true'
-    +'&interim_results=true'
-    +'&endpointing=300'
-    +'&utterance_end_ms=1000';
+  // ── Sarvam AI WebSocket (replaces Deepgram) ──────────────
+  // Sarvam is purpose-built for Hindi/Hinglish — far better than Deepgram for Indian calls
+  const wsUrl = 'wss://api.sarvam.ai/speech-to-text-streaming';
+  setStatus('🔌 Connecting to Sarvam AI...','connecting','Hindi STT');
+  dgSocket = new WebSocket(wsUrl);
 
-  dgSocket=new WebSocket(wsUrl,['token',DEEPGRAM_KEY]);
-
-  dgSocket.onopen=()=>{
-    dgActive=true;dgLiveTranscript='';
-    console.log('\u2705 Deepgram connected');
-    dgContext=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
-    const source=dgContext.createMediaStreamSource(dgStream);
-    dgProcessor=dgContext.createScriptProcessor(4096,1,1);
-    dgProcessor.onaudioprocess=(e)=>{
-      if(!dgSocket||dgSocket.readyState!==WebSocket.OPEN)return;
-      const pcm=e.inputBuffer.getChannelData(0);
-      const int16=new Int16Array(pcm.length);
-      for(let i=0;i<pcm.length;i++)int16[i]=Math.max(-32768,Math.min(32767,pcm[i]*32768));
+  dgSocket.onopen = () => {
+    dgActive = true; dgLiveTranscript = '';
+    // Send Sarvam config immediately on open
+    dgSocket.send(JSON.stringify({
+      api_key: window.SARVAM_KEY,
+      language_code: 'hi-IN',
+      model: 'saarika:v2',
+      enable_preprocessing: true,
+      with_timestamps: false,
+      transcript_format: 'text'
+    }));
+    console.log('✅ Sarvam AI connected');
+    // Set up audio capture
+    dgContext = new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+    const source = dgContext.createMediaStreamSource(dgStream);
+    dgProcessor = dgContext.createScriptProcessor(4096,1,1);
+    dgProcessor.onaudioprocess = (e) => {
+      if(!dgSocket || dgSocket.readyState !== WebSocket.OPEN) return;
+      const pcm = e.inputBuffer.getChannelData(0);
+      const int16 = new Int16Array(pcm.length);
+      for(let i=0;i<pcm.length;i++) int16[i] = Math.max(-32768,Math.min(32767,pcm[i]*32768));
       dgSocket.send(int16.buffer);
     };
     source.connect(dgProcessor);
@@ -3734,9 +3770,14 @@ async function startDeepgramListen(){
   dgSocket.onmessage=(event)=>{
     try{
       const data=JSON.parse(event.data);
-      const transcript=data?.channel?.alternatives?.[0]?.transcript?.trim();
-      const isFinal=data?.is_final;
-      const speechFinal=data?.speech_final;
+      // Handle both Sarvam and Deepgram response formats
+      const transcript=(
+        data?.transcript ||                                    // Sarvam format
+        data?.channel?.alternatives?.[0]?.transcript ||       // Deepgram format
+        ''
+      ).trim();
+      const isFinal = data?.is_final ?? data?.type === 'final';
+      const speechFinal = data?.speech_final ?? isFinal;
       if(!transcript)return;
 
       const transEl=document.getElementById('agentTranscript');
@@ -4452,15 +4493,21 @@ window.ipHandleRecordingUpload = function(input) {
   formData.append('language', 'hi'); // Indian Hindi/English mix
   formData.append('prompt', 'This is an Indian address capture call. The customer is providing their delivery address including flat number, sector, colony, city, pincode in India.');
 
-  fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+  // Sarvam AI — best for Hindi/Hinglish recording upload
+  var sarvamUpForm = new FormData();
+  sarvamUpForm.append('file', file, file.name);
+  sarvamUpForm.append('language_code', 'hi-IN');
+  sarvamUpForm.append('model', 'saarika:v2');
+  sarvamUpForm.append('prompt', 'Indian delivery address. पता, घर, गली, कॉलोनी, शहर, पिनकोड');
+  fetch('https://api.sarvam.ai/speech-to-text', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + GROQ },
-    body: formData
+    headers: { 'api-subscription-key': window.SARVAM_KEY },
+    body: sarvamUpForm
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    var transcript = data.text || '';
-    if (!transcript) throw new Error(data.error && data.error.message || 'No transcript returned');
+    var transcript = data.transcript || data.text || '';
+    if (!transcript) throw new Error((data.error && data.error.message) || data.message || 'No transcript returned');
 
     if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting address…</span>';
 
@@ -7291,11 +7338,20 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         form.append('temperature', '0');
         form.append('prompt', 'India address, delivery, pincode, gali, mohalla, sector, colony, नगर');
 
-        const res  = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + GROQ_KEY_VAL },
-          body: form,
-        });
+        // Sarvam AI for this recording path
+        const sarvamForm4 = new FormData();
+        for(const [k,v] of form.entries()) { if(k==='file') sarvamForm4.append('file',v,v.name||'audio.webm'); }
+        sarvamForm4.append('language_code','hi-IN');
+        sarvamForm4.append('model','saarika:v2');
+        sarvamForm4.append('prompt','Indian delivery address in Hindi or Hinglish');
+        let res4;
+        try {
+          res4 = await fetch('https://api.sarvam.ai/speech-to-text',{method:'POST',headers:{'api-subscription-key':window.SARVAM_KEY},body:sarvamForm4});
+          if(!res4.ok) throw new Error('Sarvam error');
+        } catch(e4) {
+          res4 = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+window.GROQ_KEY},body:form});
+        }
+        const res  = res4;
         const data = await res.json();
         const text = (data.text || '').trim();
         if (!text) return;
