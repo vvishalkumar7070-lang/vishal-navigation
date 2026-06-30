@@ -510,6 +510,7 @@ body.light-mode .lcard{background:#fff}
 <body>
 <script>
 /* ═══ SECTION 1: CONSTANTS ═══ */
+window.SARVAM_PROXY_URL = 'https://sarvam-proxy-pgmd.onrender.com';
 window.SARVAM_KEY = 'sk_xk7dbg9g_'+'obtpMrEMY8hU4f5Td8cwCwjK';
 window.GROQ_KEY = 'gsk_tbUNrAeWCTVT338M'+'FptDWGdyb3FYxoJjuZo1'+'93wmGhVVOyArGfVx';
 // Show landing immediately before heavy PIN_DB loads
@@ -2112,9 +2113,8 @@ async function togglePubMic(){
         } catch(groqErr) {
           // Fallback to Sarvam
           try {
-            const sarvamRes = await fetch('https://api.sarvam.ai/speech-to-text', {
+            const sarvamRes = await fetch(window.SARVAM_PROXY_URL + '/transcribe-file', {
               method: 'POST',
-              headers: { 'api-subscription-key': window.SARVAM_KEY },
               body: sarvamForm
             });
             const sarvamData = await sarvamRes.json();
@@ -2247,7 +2247,7 @@ async function transcribeChunk(blob){
     sarvamFormL2.append('prompt','Indian delivery address. Hindi or Hinglish. पता, घर, गली, शहर');
     let resL2, dataL2;
     try {
-      resL2 = await fetch('https://api.sarvam.ai/speech-to-text',{method:'POST',headers:{'api-subscription-key':window.SARVAM_KEY},body:sarvamFormL2});
+      resL2 = await fetch(window.SARVAM_PROXY_URL + '/transcribe-file',{method:'POST',body:sarvamFormL2});
       dataL2 = await resL2.json();
     } catch(e) {
       resL2 = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+window.GROQ_KEY},body:formData});
@@ -3597,20 +3597,9 @@ async function startDeepgramListen(){
 
   // ── Sarvam AI via our proxy server (browsers can't send auth headers directly) ──
   // Proxy: wss://sarvam-proxy-pgmd.onrender.com/stt — bridges to Sarvam with the Api-Subscription-Key header
-  const wsUrl = 'wss://sarvam-proxy-pgmd.onrender.com/stt?language_code=hi-IN&model=saaras:v3&mode=transcribe&sample_rate=16000';
-  setStatus('🔌 Connecting to Sarvam AI (may take 30s on first call of the day)...','connecting','Hindi STT');
+  const wsUrl = 'wss://sarvam-proxy-pgmd.onrender.com/stt?language_code=hi-IN&model=saarika:v2.5&sample_rate=16000';
+  setStatus('🔌 Connecting to Sarvam AI...','connecting','Hindi STT');
   dgSocket = new WebSocket(wsUrl);
-
-  // Render free tier sleeps after inactivity — give it up to 25s to wake & connect
-  // before giving up and falling back to Groq, so the agent isn't stuck waiting forever.
-  const _sarvamConnectTimeout = setTimeout(() => {
-    if(!dgActive && dgSocket && dgSocket.readyState !== WebSocket.OPEN) {
-      console.warn('Sarvam proxy connect timeout — falling back to Groq Whisper');
-      try { dgSocket.close(); } catch(e) {}
-      stopDeepgramListen();
-      typeof _dgOriginalStart==='function'&&_dgOriginalStart();
-    }
-  }, 25000);
 
   dgSocket.onopen = () => {
     dgActive = true; dgLiveTranscript = '';
@@ -3619,37 +3608,6 @@ async function startDeepgramListen(){
   };
 
   let _sarvamAudioStarted = false;
-
-  // Wrap raw 16-bit PCM samples in a valid WAV file header.
-  // Sarvam's streaming API requires encoding "audio/wav" — bare PCM bytes alone are rejected.
-  function _pcmToWavBytes(int16Samples, sampleRate) {
-    const numChannels = 1, bitsPerSample = 16;
-    const byteRate = sampleRate * numChannels * (bitsPerSample/8);
-    const blockAlign = numChannels * (bitsPerSample/8);
-    const dataSize = int16Samples.length * 2;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
-    function writeStr(offset, str) { for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
-    writeStr(0, 'RIFF'); view.setUint32(4, 36+dataSize, true); writeStr(8, 'WAVE');
-    writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-    view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitsPerSample, true);
-    writeStr(36, 'data'); view.setUint32(40, dataSize, true);
-    let offset = 44;
-    for(let i=0;i<int16Samples.length;i++, offset+=2) view.setInt16(offset, int16Samples[i], true);
-    return new Uint8Array(buffer);
-  }
-
-  function _bytesToBase64(bytes) {
-    let binary = '';
-    const chunkSize = 0x8000; // avoid call-stack overflow on large arrays
-    for(let i=0;i<bytes.length;i+=chunkSize) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunkSize));
-    }
-    return btoa(binary);
-  }
-
   function _startSarvamAudioCapture() {
     if(_sarvamAudioStarted) return;
     _sarvamAudioStarted = true;
@@ -3661,10 +3619,13 @@ async function startDeepgramListen(){
       const pcm = e.inputBuffer.getChannelData(0);
       const int16 = new Int16Array(pcm.length);
       for(let i=0;i<pcm.length;i++) int16[i] = Math.max(-32768,Math.min(32767,pcm[i]*32768));
-      const wavBytes = _pcmToWavBytes(int16, 16000);
-      const base64Audio = _bytesToBase64(wavBytes);
+      // Sarvam expects base64-encoded audio in a JSON message
+      let binary = '';
+      const bytes = new Uint8Array(int16.buffer);
+      for(let j=0;j<bytes.length;j++) binary += String.fromCharCode(bytes[j]);
+      const base64Audio = btoa(binary);
       dgSocket.send(JSON.stringify({
-        audio: { data: base64Audio, encoding: 'audio/wav', sample_rate: '16000' }
+        audio: { data: base64Audio, encoding: 'audio/x-raw', sample_rate: 16000 }
       }));
     };
     source.connect(dgProcessor);
@@ -3677,7 +3638,6 @@ async function startDeepgramListen(){
 
       // Proxy ready signal — Sarvam connection established, start streaming audio
       if(data.type === 'ready') {
-        clearTimeout(_sarvamConnectTimeout);
         console.log('✅ Sarvam AI ready via proxy');
         setStatus('🟢 Connected — बोलिए (speak now)','live','Sarvam AI Hindi STT');
         isListening = true;
@@ -3695,15 +3655,22 @@ async function startDeepgramListen(){
         return;
       }
 
-      // Confirmed Sarvam format: {"type":"data","data":{"transcript":"...","request_id":"..."}}
-      // or {"type":"events","data":{"signal_type":"START_SPEECH"|"END_SPEECH"}}
-      if(data.type === 'events') {
-        return; // VAD signal — speech boundary detected, no transcript text yet
+      // Sarvam transcript formats: speech_start / speech_end / transcript (data field)
+      if(data.type === 'speech_start' || data.signal_type === 'START_SPEECH') {
+        return; // VAD signal, no transcript yet
+      }
+      if(data.type === 'speech_end' || data.signal_type === 'END_SPEECH') {
+        return; // VAD signal
       }
 
-      const transcript = (data?.data?.transcript || '').trim();
-      const isFinal = (data.type === 'data');
-      const speechFinal = isFinal;
+      const transcript=(
+        data?.transcript ||                                    // Sarvam transcript field
+        data?.data?.transcript ||                              // Sarvam nested format
+        data?.channel?.alternatives?.[0]?.transcript ||        // Deepgram-style fallback
+        ''
+      ).trim();
+      const isFinal = data?.is_final ?? (data?.type === 'transcript') ?? true;
+      const speechFinal = data?.speech_final ?? isFinal;
       if(!transcript)return;
 
       const transEl=document.getElementById('agentTranscript');
@@ -3765,20 +3732,11 @@ async function startDeepgramListen(){
   };
 
   dgSocket.onerror=()=>{
-    console.warn('Sarvam proxy error — falling back to Groq Whisper');
+    console.warn('Deepgram error \u2014 falling back to Groq Whisper');
     stopDeepgramListen();
     typeof _dgOriginalStart==='function'&&_dgOriginalStart();
   };
-  dgSocket.onclose=(ev)=>{
-    dgActive=false;
-    // Proxy server (Render free tier) may take 30-60s to wake from sleep on first connect.
-    // If closed abnormally before we ever got a transcript, fall back to Groq immediately
-    // rather than leaving the agent stuck with a dead mic button.
-    if(!dgLiveTranscript && ev && (ev.code===1006 || ev.code===1011)) {
-      console.warn('Sarvam proxy closed before ready (code '+ev.code+') — falling back to Groq Whisper');
-      typeof _dgOriginalStart==='function'&&_dgOriginalStart();
-    }
-  };
+  dgSocket.onclose=()=>{dgActive=false;};
   return true;
 }
 
@@ -4309,9 +4267,8 @@ window.ipHandleRecordingUpload = function(input) {
   sarvamUpForm.append('language_code', 'hi-IN');
   sarvamUpForm.append('model', 'saarika:v2');
   sarvamUpForm.append('prompt', 'Indian delivery address. पता, घर, गली, कॉलोनी, शहर, पिनकोड');
-  fetch('https://api.sarvam.ai/speech-to-text', {
+  fetch(window.SARVAM_PROXY_URL + '/transcribe-file', {
     method: 'POST',
-    headers: { 'api-subscription-key': window.SARVAM_KEY },
     body: sarvamUpForm
   })
   .then(function(r) { return r.json(); })
@@ -7156,7 +7113,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         sarvamForm4.append('prompt','Indian delivery address in Hindi or Hinglish');
         let res4;
         try {
-          res4 = await fetch('https://api.sarvam.ai/speech-to-text',{method:'POST',headers:{'api-subscription-key':window.SARVAM_KEY},body:sarvamForm4});
+          res4 = await fetch(window.SARVAM_PROXY_URL + '/transcribe-file',{method:'POST',body:sarvamForm4});
           if(!res4.ok) throw new Error('Sarvam error');
         } catch(e4) {
           res4 = await fetch('https://api.groq.com/openai/v1/audio/transcriptions',{method:'POST',headers:{'Authorization':'Bearer '+window.GROQ_KEY},body:form});
