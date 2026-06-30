@@ -2093,7 +2093,6 @@ async function togglePubMic(){
         sarvamForm.append('language_code', 'hi-IN');
         sarvamForm.append('model', 'saaras:v3');
         sarvamForm.append('mode', 'transcribe');
-        sarvamForm.append('prompt', 'Indian location address. Area, colony, city, pincode, landmark in Hindi or English. पता, इलाका, शहर, कॉलोनी');
 
         let text = '';
         // Try Groq Whisper first (confirmed CORS-friendly from browser)
@@ -2246,7 +2245,6 @@ async function transcribeChunk(blob){
     sarvamFormL2.append('language_code','hi-IN');
     sarvamFormL2.append('model','saaras:v3');
     sarvamFormL2.append('mode','transcribe');
-    sarvamFormL2.append('prompt','Indian delivery address. Hindi or Hinglish. पता, घर, गली, शहर');
     let resL2, dataL2;
     try {
       resL2 = await fetch(window.SARVAM_PROXY_URL + '/transcribe-file',{method:'POST',body:sarvamFormL2});
@@ -4269,7 +4267,6 @@ window.ipHandleRecordingUpload = function(input) {
   sarvamUpForm.append('language_code', 'hi-IN');
   sarvamUpForm.append('model', 'saaras:v3');
   sarvamUpForm.append('mode', 'transcribe');
-  sarvamUpForm.append('prompt', 'Indian delivery address. पता, घर, गली, कॉलोनी, शहर, पिनकोड');
   fetch(window.SARVAM_PROXY_URL + '/transcribe-file', {
     method: 'POST',
     body: sarvamUpForm
@@ -7114,7 +7111,6 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         sarvamForm4.append('language_code','hi-IN');
         sarvamForm4.append('model','saaras:v3');
         sarvamForm4.append('mode','transcribe');
-        sarvamForm4.append('prompt','Indian delivery address in Hindi or Hinglish');
         let res4;
         try {
           res4 = await fetch(window.SARVAM_PROXY_URL + '/transcribe-file',{method:'POST',body:sarvamForm4});
