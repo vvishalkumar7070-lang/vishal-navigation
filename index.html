@@ -3595,25 +3595,22 @@ async function startDeepgramListen(){
     return false;
   }
 
-  // ── Sarvam AI WebSocket (replaces Deepgram) ──────────────
-  // Sarvam is purpose-built for Hindi/Hinglish — far better than Deepgram for Indian calls
-  const wsUrl = 'wss://api.sarvam.ai/speech-to-text-streaming';
+  // ── Sarvam AI via our proxy server (browsers can't send auth headers directly) ──
+  // Proxy: wss://sarvam-proxy-pgmd.onrender.com/stt — bridges to Sarvam with the Api-Subscription-Key header
+  const wsUrl = 'wss://sarvam-proxy-pgmd.onrender.com/stt?language_code=hi-IN&model=saarika:v2.5&sample_rate=16000';
   setStatus('🔌 Connecting to Sarvam AI...','connecting','Hindi STT');
   dgSocket = new WebSocket(wsUrl);
 
   dgSocket.onopen = () => {
     dgActive = true; dgLiveTranscript = '';
-    // Send Sarvam config immediately on open
-    dgSocket.send(JSON.stringify({
-      api_key: window.SARVAM_KEY,
-      language_code: 'hi-IN',
-      model: 'saarika:v2',
-      enable_preprocessing: true,
-      with_timestamps: false,
-      transcript_format: 'text'
-    }));
-    console.log('✅ Sarvam AI connected');
-    // Set up audio capture
+    console.log('🔌 Proxy connected, waiting for Sarvam ready signal...');
+    // Audio capture starts once we get the {type:'ready'} message from proxy
+  };
+
+  let _sarvamAudioStarted = false;
+  function _startSarvamAudioCapture() {
+    if(_sarvamAudioStarted) return;
+    _sarvamAudioStarted = true;
     dgContext = new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
     const source = dgContext.createMediaStreamSource(dgStream);
     dgProcessor = dgContext.createScriptProcessor(4096,1,1);
@@ -3622,22 +3619,57 @@ async function startDeepgramListen(){
       const pcm = e.inputBuffer.getChannelData(0);
       const int16 = new Int16Array(pcm.length);
       for(let i=0;i<pcm.length;i++) int16[i] = Math.max(-32768,Math.min(32767,pcm[i]*32768));
-      dgSocket.send(int16.buffer);
+      // Sarvam expects base64-encoded audio in a JSON message
+      let binary = '';
+      const bytes = new Uint8Array(int16.buffer);
+      for(let j=0;j<bytes.length;j++) binary += String.fromCharCode(bytes[j]);
+      const base64Audio = btoa(binary);
+      dgSocket.send(JSON.stringify({
+        audio: { data: base64Audio, encoding: 'audio/x-raw', sample_rate: 16000 }
+      }));
     };
     source.connect(dgProcessor);
     dgProcessor.connect(dgContext.destination);
-  };
+  }
 
   dgSocket.onmessage=(event)=>{
     try{
       const data=JSON.parse(event.data);
-      // Handle both Sarvam and Deepgram response formats
+
+      // Proxy ready signal — Sarvam connection established, start streaming audio
+      if(data.type === 'ready') {
+        console.log('✅ Sarvam AI ready via proxy');
+        setStatus('🟢 Connected — बोलिए (speak now)','live','Sarvam AI Hindi STT');
+        isListening = true;
+        if(typeof syncListenButtons==='function') syncListenButtons();
+        _startSarvamAudioCapture();
+        return;
+      }
+      if(data.type === 'error') {
+        console.error('Sarvam proxy error:', data.message);
+        setStatus('⚠️ '+data.message,'error','Sarvam connection issue');
+        return;
+      }
+      if(data.type === 'closed') {
+        console.log('Sarvam connection closed:', data.code, data.reason);
+        return;
+      }
+
+      // Sarvam transcript formats: speech_start / speech_end / transcript (data field)
+      if(data.type === 'speech_start' || data.signal_type === 'START_SPEECH') {
+        return; // VAD signal, no transcript yet
+      }
+      if(data.type === 'speech_end' || data.signal_type === 'END_SPEECH') {
+        return; // VAD signal
+      }
+
       const transcript=(
-        data?.transcript ||                                    // Sarvam format
-        data?.channel?.alternatives?.[0]?.transcript ||       // Deepgram format
+        data?.transcript ||                                    // Sarvam transcript field
+        data?.data?.transcript ||                              // Sarvam nested format
+        data?.channel?.alternatives?.[0]?.transcript ||        // Deepgram-style fallback
         ''
       ).trim();
-      const isFinal = data?.is_final ?? data?.type === 'final';
+      const isFinal = data?.is_final ?? (data?.type === 'transcript') ?? true;
       const speechFinal = data?.speech_final ?? isFinal;
       if(!transcript)return;
 
