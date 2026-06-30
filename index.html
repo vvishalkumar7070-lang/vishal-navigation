@@ -2091,7 +2091,8 @@ async function togglePubMic(){
         const sarvamForm = new FormData();
         sarvamForm.append('file', blob, 'audio.webm');
         sarvamForm.append('language_code', 'hi-IN');
-        sarvamForm.append('model', 'saarika:v2');
+        sarvamForm.append('model', 'saaras:v3');
+        sarvamForm.append('mode', 'transcribe');
         sarvamForm.append('prompt', 'Indian location address. Area, colony, city, pincode, landmark in Hindi or English. पता, इलाका, शहर, कॉलोनी');
 
         let text = '';
@@ -2243,7 +2244,8 @@ async function transcribeChunk(blob){
     const sarvamFormL2 = new FormData();
     for(const [k,v] of formData.entries()) { if(k==='file') sarvamFormL2.append('file',v,'audio.webm'); }
     sarvamFormL2.append('language_code','hi-IN');
-    sarvamFormL2.append('model','saarika:v2');
+    sarvamFormL2.append('model','saaras:v3');
+    sarvamFormL2.append('mode','transcribe');
     sarvamFormL2.append('prompt','Indian delivery address. Hindi or Hinglish. पता, घर, गली, शहर');
     let resL2, dataL2;
     try {
@@ -4265,7 +4267,8 @@ window.ipHandleRecordingUpload = function(input) {
   var sarvamUpForm = new FormData();
   sarvamUpForm.append('file', file, file.name);
   sarvamUpForm.append('language_code', 'hi-IN');
-  sarvamUpForm.append('model', 'saarika:v2');
+  sarvamUpForm.append('model', 'saaras:v3');
+  sarvamUpForm.append('mode', 'transcribe');
   sarvamUpForm.append('prompt', 'Indian delivery address. पता, घर, गली, कॉलोनी, शहर, पिनकोड');
   fetch(window.SARVAM_PROXY_URL + '/transcribe-file', {
     method: 'POST',
@@ -7109,7 +7112,8 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         const sarvamForm4 = new FormData();
         for(const [k,v] of form.entries()) { if(k==='file') sarvamForm4.append('file',v,v.name||'audio.webm'); }
         sarvamForm4.append('language_code','hi-IN');
-        sarvamForm4.append('model','saarika:v2');
+        sarvamForm4.append('model','saaras:v3');
+        sarvamForm4.append('mode','transcribe');
         sarvamForm4.append('prompt','Indian delivery address in Hindi or Hinglish');
         let res4;
         try {
