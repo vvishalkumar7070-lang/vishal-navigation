@@ -1,4 +1,4 @@
-<!DOC\n          <div class=\"ip-tab\" onclick=\"switchIP(\'upload\',this)\" style=\"flex:1;padding:10px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#94999f;text-align:center;cursor:pointer;border-bottom:2px solid transparent\">🎙️ Upload</div>TYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -2094,22 +2094,14 @@ async function togglePubMic(){
         sarvamForm.append('prompt', 'Indian location address. Area, colony, city, pincode, landmark in Hindi or English. पता, इलाका, शहर, कॉलोनी');
 
         let text = '';
+        // Try Groq Whisper first (confirmed CORS-friendly from browser)
         try {
-          const sarvamRes = await fetch('https://api.sarvam.ai/speech-to-text', {
-            method: 'POST',
-            headers: { 'api-subscription-key': window.SARVAM_KEY },
-            body: sarvamForm
-          });
-          const sarvamData = await sarvamRes.json();
-          text = (sarvamData.transcript || sarvamData.text || '').trim();
-        } catch(sarvamErr) {
-          // ── Fallback to Groq Whisper ──────────────────────────
           const groqForm = new FormData();
           groqForm.append('file', blob, 'audio.webm');
           groqForm.append('model', 'whisper-large-v3');
           groqForm.append('response_format', 'json');
           groqForm.append('language', 'hi');
-          groqForm.append('prompt', 'India location, area, colony, city, pincode. पता, घर, गली, शहर');
+          groqForm.append('prompt', 'India location, area, colony, city, pincode, landmark. पता, घर, गली, शहर, कॉलोनी, सेक्टर');
           const groqRes = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + window.GROQ_KEY },
@@ -2117,6 +2109,19 @@ async function togglePubMic(){
           });
           const groqData = await groqRes.json();
           text = (groqData.text || '').trim();
+        } catch(groqErr) {
+          // Fallback to Sarvam
+          try {
+            const sarvamRes = await fetch('https://api.sarvam.ai/speech-to-text', {
+              method: 'POST',
+              headers: { 'api-subscription-key': window.SARVAM_KEY },
+              body: sarvamForm
+            });
+            const sarvamData = await sarvamRes.json();
+            text = (sarvamData.transcript || sarvamData.text || '').trim();
+          } catch(sarvamErr) {
+            throw new Error('Both Groq and Sarvam failed');
+          }
         }
 
         if(text && text.length > 2) {
@@ -2130,7 +2135,9 @@ async function togglePubMic(){
         }
       } catch(err) {
         console.error('Pub mic error:', err);
-        input.placeholder = 'Error — please type your location';
+        console.error('Pub mic err:', err);
+        input.value = '';
+        input.placeholder = 'Mic error — please type your location';
         stopPubMic();
       }
     };
