@@ -6972,21 +6972,17 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
       STATE.dgStream = micStream;
     }
 
-    // 4. Open Deepgram WebSocket
+    // 4. Open Sarvam AI (via our proxy — browsers can't send the auth header Sarvam requires)
     const wsUrl =
-      'wss://api.deepgram.com/v1/listen' +
-      '?model=nova-2' +
-      '&language=multi' +
-      '&punctuate=true' +
-      '&smart_format=true' +
-      '&interim_results=true' +
-      '&endpointing=400' +
-      '&utterance_end_ms=1200' +
-      '&filler_words=false';
+      'wss://sarvam-proxy-pgmd.onrender.com/stt' +
+      '?language_code=hi-IN' +
+      '&model=saaras:v3' +
+      '&mode=transcribe' +
+      '&sample_rate=16000';
 
     let ws;
     try {
-      ws = new WebSocket(wsUrl, ['token', DEEPGRAM_KEY]);
+      ws = new WebSocket(wsUrl);
     } catch (e) {
       hardStop();
       startGroqFallback(finalStream);
@@ -6994,14 +6990,20 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
     }
     STATE.dgSocket = ws;
 
-    ws.onopen = () => {
-      STATE.listening = true;
-      syncUI(true);
-      if (typeof setQuality  === 'function') setQuality('good');
-      if (typeof setStatus   === 'function')
-        setStatus('🟢 Deepgram LIVE — speak or play audio', 'listening',
-          sysStream ? '🎤 mic + 🔊 system audio · 20 languages' : '🎤 mic only · add system audio via screen share');
-      if (typeof updateLayerUI === 'function') updateLayerUI(1);
+    // Render free tier sleeps when idle — give it time to wake before giving up.
+    const _sysAudioConnectTimeout = setTimeout(() => {
+      if (!STATE.listening) {
+        console.warn('Sarvam proxy connect timeout (system audio) — falling back to Groq');
+        try { ws.close(); } catch(_) {}
+        hardStop();
+        startGroqFallback(finalStream);
+      }
+    }, 25000);
+
+    let _sysAudioCaptureStarted = false;
+    function _startSysAudioCapture() {
+      if (_sysAudioCaptureStarted) return;
+      _sysAudioCaptureStarted = true;
 
       // Add LIVE badge to admin topbar if present
       const center = document.getElementById('tbCenter') || document.getElementById('lcStatusBadge');
@@ -7010,11 +7012,11 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         badge.id = 'dgLiveBadge';
         badge.className = 'tb-badge live';
         badge.style.cssText = 'background:rgba(0,255,170,.1);color:var(--green);border:1px solid rgba(0,255,170,.3);padding:4px 12px;border-radius:20px;font-size:10px;font-family:var(--font-mono);display:flex;align-items:center;gap:5px';
-        badge.innerHTML = '🟢 DEEPGRAM LIVE';
+        badge.innerHTML = '🟢 SARVAM AI LIVE';
         center.appendChild(badge);
       }
 
-      // Wire up audio processor → WebSocket
+      // Wire up audio processor → WebSocket (WAV-wrapped chunks, per Sarvam's streaming format)
       const source = ctx.createMediaStreamSource(finalStream);
       const proc   = ctx.createScriptProcessor(4096, 1, 1);
       STATE.dgProcessor = proc;
@@ -7025,29 +7027,68 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
         const int16 = new Int16Array(pcm.length);
         for (let i = 0; i < pcm.length; i++)
           int16[i] = Math.max(-32768, Math.min(32767, pcm[i] * 32768));
-        try { STATE.dgSocket.send(int16.buffer); } catch(_) {}
+        const wavBytes = (typeof _pcmToWavBytes === 'function') ? _pcmToWavBytes(int16, 16000) : null;
+        if (!wavBytes) return;
+        const base64Audio = (typeof _bytesToBase64 === 'function') ? _bytesToBase64(wavBytes) : btoa(String.fromCharCode.apply(null, wavBytes));
+        try {
+          STATE.dgSocket.send(JSON.stringify({
+            audio: { data: base64Audio, sample_rate: '16000', encoding: 'audio/wav' }
+          }));
+        } catch(_) {}
       };
 
       source.connect(proc);
       proc.connect(ctx.destination);
-    };
+    }
 
     ws.onmessage = (event) => {
-      handleDeepgramMessage(event.data);
+      let data;
+      try { data = JSON.parse(event.data); } catch(_) { return; }
+
+      if (data.type === 'ready') {
+        clearTimeout(_sysAudioConnectTimeout);
+        STATE.listening = true;
+        syncUI(true);
+        if (typeof setQuality  === 'function') setQuality('good');
+        if (typeof setStatus   === 'function')
+          setStatus('🟢 Sarvam AI LIVE — speak or play audio', 'listening',
+            sysStream ? '🎤 mic + 🔊 system audio · Hindi/Hinglish' : '🎤 mic only · add system audio via screen share');
+        if (typeof updateLayerUI === 'function') updateLayerUI(1);
+        _startSysAudioCapture();
+        return;
+      }
+      if (data.type === 'error') {
+        console.warn('Sarvam proxy error (system audio):', data.message);
+        return;
+      }
+      if (data.type === 'closed' || data.type === 'events') {
+        return; // connection-lifecycle / VAD signal, handled by ws.onclose below
+      }
+      if (data.type !== 'data') return;
+
+      // Reconstruct a Deepgram-shaped payload so the existing handleDeepgramMessage
+      // logic (which the rest of the app depends on) keeps working unchanged.
+      handleDeepgramMessage(JSON.stringify({
+        channel: { alternatives: [{ transcript: data?.data?.transcript || '' }] },
+        is_final: true,
+        speech_final: true
+      }));
     };
 
     ws.onerror = () => {
-      console.warn('Deepgram WS error — falling back to Groq Whisper chunks');
+      console.warn('Sarvam proxy WS error — falling back to Groq Whisper chunks');
+      clearTimeout(_sysAudioConnectTimeout);
       hardStop();
       startGroqFallback(finalStream);
     };
 
     ws.onclose = (ev) => {
+      clearTimeout(_sysAudioConnectTimeout);
       // Only trigger hardStop if we thought we were still listening
       if (STATE.listening) {
-        console.warn('Deepgram WS closed unexpectedly', ev.code, ev.reason);
+        console.warn('Sarvam proxy WS closed unexpectedly', ev.code, ev.reason);
         hardStop();
-        if (typeof toast === 'function') toast('⚠️ Deepgram disconnected', 'err');
+        if (typeof toast === 'function') toast('⚠️ Sarvam AI disconnected', 'err');
       }
     };
 
