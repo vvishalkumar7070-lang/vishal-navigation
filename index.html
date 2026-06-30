@@ -3828,17 +3828,17 @@ window.toggleListen=async function(){
     if(lbl)lbl.textContent='TAP TO STOP';
     document.getElementById('waveBars')?.classList.add('active');
     typeof setQuality==='function'&&setQuality('good');
-    typeof setStatus==='function'&&setStatus('\ud83d\udfe2 Deepgram LIVE \u2014 speak naturally...','listening','Real-time \u00b7 nova-2 \u00b7 20 Indian languages');
+    typeof setStatus==='function'&&setStatus('\ud83d\udfe2 Sarvam AI LIVE \u2014 \u092c\u094b\u0932\u093f\u090f...','listening','Real-time \u00b7 saaras:v3 \u00b7 Hindi/Hinglish');
     typeof updateLayerUI==='function'&&updateLayerUI(1);
     const center=document.getElementById('tbCenter');
     if(center&&!document.getElementById('dgLiveBadge')){
       const badge=document.createElement('span');
       badge.id='dgLiveBadge';
       badge.className='tb-badge live';
-      badge.innerHTML='\ud83d\udfe2 DEEPGRAM LIVE';
+      badge.innerHTML='\ud83d\udfe2 SARVAM AI LIVE';
       center.appendChild(badge);
     }
-    typeof toast==='function'&&toast('\ud83c\udf99\ufe0f Deepgram streaming \u2014 speak the address!');
+    typeof toast==='function'&&toast('\ud83c\udf99\ufe0f Sarvam AI streaming \u2014 speak the address!');
   }else{
     _dgOriginalStart();
   }
