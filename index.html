@@ -3614,14 +3614,18 @@ async function startDeepgramListen(){
       audio:{echoCancellation:true,noiseSuppression:true,sampleRate:16000}
     });
   }catch(e){
-    console.warn('Mic denied:',e.name,e.message);
-    let reason='Allow microphone access to use voice capture';
-    if(e.name==='NotAllowedError') reason='Microphone permission was blocked. Click the 🔒 icon in your browser address bar and allow microphone access, then try again.';
-    else if(e.name==='NotFoundError') reason='No microphone was found on this device.';
-    else if(e.name==='NotReadableError') reason='Microphone is being used by another app or tab. Close other apps using the mic.';
+    console.warn('Mic denied:', e && e.name, e && e.message);
+    let reason = 'Allow microphone access to use voice capture';
+    const errName = (e && e.name) || 'MicError';
+    if(errName==='NotAllowedError') reason='Microphone permission was blocked. Click the 🔒 icon in your browser address bar and allow microphone access, then try again.';
+    else if(errName==='NotFoundError') reason='No microphone was found on this device.';
+    else if(errName==='NotReadableError') reason='Microphone is being used by another app or tab. Close other apps using the mic.';
     else if(location.protocol!=='https:'&&location.hostname!=='localhost') reason='Microphone needs HTTPS. This page must be served over https:// for voice capture to work.';
-    else reason=e.message||reason;
-    typeof setStatus==='function'&&setStatus('❌ '+e.name||'Mic error','',reason);
+    else reason = (e && e.message) || reason;
+    // e.name was formerly concatenated unsafely; errName above is already safe.
+    // fallback unreachable, printing "❌ undefined" whenever e.name was empty).
+    // errName already has a guaranteed safe fallback above, so just use it directly.
+    typeof setStatus==='function'&&setStatus('❌ '+errName,'',reason);
     typeof toast==='function'&&toast('⚠️ '+reason,'err',5000);
     return false;
   }
@@ -4284,6 +4288,137 @@ function fixTabAttributes() {
 // ═══════════════════════════════════════════════
 // FEATURE: Upload Call Recording → Extract Address
 // ═══════════════════════════════════════════════
+// ── Recording-upload transcription helpers ──────────────────────────────
+// Sarvam's REST /speech-to-text endpoint only accepts clips up to 30 seconds.
+// These helpers detect longer files and split them into chunks so call
+// recordings of any length can still be transcribed, instead of silently
+// failing or getting truncated past 30s.
+
+function ipGetAudioDuration(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      var ctx = new AudioCtx();
+      ctx.decodeAudioData(reader.result.slice(0), function(buf) {
+        var duration = buf.duration;
+        ctx.close();
+        resolve(duration);
+      }, function(err) {
+        ctx.close();
+        reject(err || new Error('decodeAudioData failed'));
+      });
+    };
+    reader.onerror = function() { reject(reader.error); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Transcribe a single short (<=28s) file via Sarvam, falling back to Groq Whisper
+// (which handles much longer/larger files natively) if Sarvam errors.
+function ipTranscribeSingleChunk(fileOrBlob, filename) {
+  filename = filename || (fileOrBlob.name || 'audio.webm');
+  var sarvamForm = new FormData();
+  sarvamForm.append('file', fileOrBlob, filename);
+  sarvamForm.append('language_code', 'hi-IN');
+  sarvamForm.append('model', 'saaras:v3');
+  sarvamForm.append('mode', 'transcribe');
+
+  return fetch(window.SARVAM_PROXY_URL + '/transcribe-file', { method: 'POST', body: sarvamForm })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var transcript = data.transcript || data.text || '';
+      if (transcript) return transcript;
+      throw new Error((data.error && data.error.message) || data.message || 'Sarvam returned no transcript');
+    })
+    .catch(function(sarvamErr) {
+      console.warn('Sarvam transcription failed, falling back to Groq Whisper:', sarvamErr.message);
+      var groqForm = new FormData();
+      groqForm.append('file', fileOrBlob, filename);
+      groqForm.append('model', 'whisper-large-v3');
+      groqForm.append('response_format', 'json');
+      groqForm.append('language', 'hi');
+      groqForm.append('prompt', 'Indian address capture call. Customer giving house number, sector, colony, city, pincode.');
+      return fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + window.GROQ_KEY },
+        body: groqForm
+      })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var transcript = (data.text || '').trim();
+          if (transcript) return transcript;
+          throw new Error('Both Sarvam and Groq returned no transcript');
+        });
+    });
+}
+
+// Split a long recording into ~25s WAV chunks via Web Audio, transcribe each
+// chunk in sequence, and stitch the results into one continuous transcript.
+function ipTranscribeLongRecording(file, durationSec, statusEl) {
+  var CHUNK_SECONDS = 25; // safely under Sarvam's 30s REST cap
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      var ctx = new AudioCtx();
+      ctx.decodeAudioData(reader.result.slice(0), function(audioBuffer) {
+        var sampleRate = audioBuffer.sampleRate;
+        var totalSamples = audioBuffer.length;
+        var chunkSamples = Math.floor(CHUNK_SECONDS * sampleRate);
+        var numChunks = Math.ceil(totalSamples / chunkSamples);
+        var channelData = audioBuffer.getChannelData(0); // mono mixdown of channel 0
+
+        var transcripts = [];
+        var chunkIndex = 0;
+
+        function processNextChunk() {
+          if (chunkIndex >= numChunks) {
+            ctx.close();
+            resolve(transcripts.filter(Boolean).join(' '));
+            return;
+          }
+          if (statusEl) {
+            statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing chunk ' + (chunkIndex+1) + ' of ' + numChunks + '…</span>';
+          }
+          var start = chunkIndex * chunkSamples;
+          var end = Math.min(start + chunkSamples, totalSamples);
+          var chunkLength = end - start;
+
+          // Build int16 PCM for this chunk, then wrap as a standalone WAV file
+          var int16 = new Int16Array(chunkLength);
+          for (var i = 0; i < chunkLength; i++) {
+            var s = channelData[start + i];
+            int16[i] = Math.max(-32768, Math.min(32767, s * 32768));
+          }
+          var wavBytes = _pcmToWavBytes(int16, sampleRate);
+          var blob = new Blob([wavBytes], { type: 'audio/wav' });
+
+          ipTranscribeSingleChunk(blob, 'chunk_' + chunkIndex + '.wav')
+            .then(function(text) {
+              transcripts.push(text);
+              chunkIndex++;
+              processNextChunk();
+            })
+            .catch(function(chunkErr) {
+              console.warn('Chunk ' + chunkIndex + ' failed, skipping:', chunkErr.message);
+              transcripts.push(''); // keep going even if one chunk fails
+              chunkIndex++;
+              processNextChunk();
+            });
+        }
+
+        processNextChunk();
+      }, function(decodeErr) {
+        ctx.close();
+        reject(decodeErr || new Error('decodeAudioData failed during chunking'));
+      });
+    };
+    reader.onerror = function() { reject(reader.error); };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 window.ipHandleRecordingUpload = function(input) {
   var file = input.files && input.files[0];
   if (!file) return;
@@ -4297,34 +4432,38 @@ window.ipHandleRecordingUpload = function(input) {
     return;
   }
 
-  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing… this may take a moment</span>';
+  if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Checking audio length…</span>';
   if (resultEl) resultEl.style.display = 'none';
   if (btnEl) btnEl.disabled = true;
 
   var GROQ = window.GROQ_KEY;
 
-  // Step 1: Transcribe with Groq Whisper
-  var formData = new FormData();
-  formData.append('file', file, file.name);
-  formData.append('model', 'whisper-large-v3');
-  formData.append('response_format', 'json');
-  formData.append('language', 'hi'); // Indian Hindi/English mix
-  formData.append('prompt', 'This is an Indian address capture call. The customer is providing their delivery address including flat number, sector, colony, city, pincode in India.');
-
-  // Sarvam AI — best for Hindi/Hinglish recording upload
-  var sarvamUpForm = new FormData();
-  sarvamUpForm.append('file', file, file.name);
-  sarvamUpForm.append('language_code', 'hi-IN');
-  sarvamUpForm.append('model', 'saaras:v3');
-  sarvamUpForm.append('mode', 'transcribe');
-  fetch(window.SARVAM_PROXY_URL + '/transcribe-file', {
-    method: 'POST',
-    body: sarvamUpForm
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var transcript = data.transcript || data.text || '';
-    if (!transcript) throw new Error((data.error && data.error.message) || data.message || 'No transcript returned');
+  // ── Step 1: Decode audio to find its real duration, then transcribe. ──
+  // Sarvam's REST endpoint only accepts clips up to 30 seconds — longer files
+  // must be split into chunks and stitched, or routed to Groq Whisper instead
+  // (which handles files up to 25MB / much longer durations in one call).
+  ipGetAudioDuration(file)
+    .then(function(durationSec) {
+      if (durationSec && durationSec > 28) {
+        // Longer than Sarvam's REST limit — split into ~25s chunks via Web Audio,
+        // transcribe each with Sarvam, and stitch the transcripts together.
+        if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Long recording (' + Math.round(durationSec) + 's) — splitting into chunks…</span>';
+        return ipTranscribeLongRecording(file, durationSec, statusEl);
+      }
+      // Short enough for a single Sarvam call
+      if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing… this may take a moment</span>';
+      return ipTranscribeSingleChunk(file);
+    })
+    .catch(function(durErr) {
+      // Couldn't determine duration (e.g. unsupported codec for decodeAudioData) —
+      // just attempt a single Sarvam call; Sarvam itself will error out if it's too long,
+      // and that error is still shown to the user rather than silently failing.
+      console.warn('Could not determine audio duration, attempting single-chunk transcription:', durErr);
+      if (statusEl) statusEl.innerHTML = '<span style="color:#b5740a">🔄 Transcribing… this may take a moment</span>';
+      return ipTranscribeSingleChunk(file);
+    })
+  .then(function(transcript) {
+    if (!transcript) throw new Error('No transcript returned');
 
     if (statusEl) statusEl.innerHTML = '<span style="color:#0d9354">✅ Transcribed! Extracting address…</span>';
 
@@ -6729,15 +6868,12 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
 <script>
 // ═══════════════════════════════════════════════════════════════
 // VISHAL NAVIGATION — CRITICAL FIX PATCH
-// Paste this entire block just before 
-</body>, AFTER all existing scripts
-//
 // Fixes:
-//   1. Listen button: toggle works reliably every click (start/stop/start/stop)
-//   2. Deepgram WebSocket fully destroyed on stop (no zombie connections)
-//   3. Animation ring + wave bars always stop when listening stops
-//   4. System audio / loopback capture (plays recorded audio through speaker)
-//   5. Works for BOTH live calls AND recorded audio playing on device
+//   1. Listen button: toggle works reliably every click
+//   2. Deepgram WebSocket fully destroyed on stop
+//   3. Animation ring + wave bars always stop
+//   4. System audio / loopback capture
+//   5. Works for live calls AND recorded audio
 // ═══════════════════════════════════════════════════════════════
 
 (function () {
@@ -7463,6 +7599,7 @@ console.log('✅ Master Fix loaded — all 14 fixes active');
   console.log('   ✓ Animation rings + wave: always sync with state');
 
 })();
+</script>
 
 <script id="vn-final-fix">
 /* VISHAL NAVIGATION — FINAL FIX PATCH
