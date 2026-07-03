@@ -8114,18 +8114,12 @@ window.intelCopy = function() {
 };
 
 window.intelWhatsApp = function() {
-  var text = '📍 Address Details
-'
-    + (document.getElementById('ip-name')?.value ? '👤 ' + document.getElementById('ip-name').value + '
-' : '')
-    + (document.getElementById('ip-phone')?.value ? '📞 ' + document.getElementById('ip-phone').value + '
-' : '')
-    + '🏠 ' + (document.getElementById('ip-addr')?.value || '') + '
-'
-    + (document.getElementById('ip-landmark')?.value ? '📌 Near: ' + document.getElementById('ip-landmark').value + '
-' : '')
-    + (document.getElementById('ip-pin')?.value ? '📮 PIN: ' + document.getElementById('ip-pin').value + '
-' : '')
+  var text = '📍 Address Details\n'
+    + (document.getElementById('ip-name')?.value ? '👤 ' + document.getElementById('ip-name').value + '\n' : '')
+    + (document.getElementById('ip-phone')?.value ? '📞 ' + document.getElementById('ip-phone').value + '\n' : '')
+    + '🏠 ' + (document.getElementById('ip-addr')?.value || '') + '\n'
+    + (document.getElementById('ip-landmark')?.value ? '📌 Near: ' + document.getElementById('ip-landmark').value + '\n' : '')
+    + (document.getElementById('ip-pin')?.value ? '📮 PIN: ' + document.getElementById('ip-pin').value + '\n' : '')
     + (document.getElementById('ip-city')?.value ? '🏙️ ' + document.getElementById('ip-city').value : '')
     + (document.getElementById('ip-state')?.value ? ', ' + document.getElementById('ip-state').value : '');
   window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
@@ -8151,19 +8145,15 @@ window.intelCopyCard = function(btn) {
 
 window.intelWACard = function(btn) {
   var card = btn.closest('[data-addr]');
-  var text = '📍 ' + (card.dataset.addr||'') + (card.dataset.pin ? '
-📮 PIN: '+card.dataset.pin : '') + (card.dataset.city ? '
-🏙️ '+card.dataset.city : '');
+  var text = '📍 ' + (card.dataset.addr||'') + (card.dataset.pin ? '\n📮 PIN: '+card.dataset.pin : '') + (card.dataset.city ? '\n🏙️ '+card.dataset.city : '');
   window.open('https://wa.me/?text='+encodeURIComponent(text), '_blank');
 };
 
 window.intelExportCSV = function() {
   if(!_ipCaptures.length) return;
-  var csv = 'Name,Address,Landmark,Pincode,City,Time
-' + _ipCaptures.map(function(c) {
+  var csv = 'Name,Address,Landmark,Pincode,City,Time\n' + _ipCaptures.map(function(c) {
     return '"'+(c.name||'')+'","'+(c.addr||'')+'","","'+(c.pin||'')+'","'+(c.city||'')+'","'+(c.time||'')+'"';
-  }).join('
-');
+  }).join('\n');
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download = 'captures_'+new Date().toLocaleDateString('en-IN').replace(/\//g,'-')+'.csv';
@@ -8179,6 +8169,7 @@ window.intelCopyNotes = function() {
 };
 
 console.log('✅ Intel Panel loaded');
+})();
 
 // ===== INTEL PANEL v2 — works with corp UI =====
 (function(){
